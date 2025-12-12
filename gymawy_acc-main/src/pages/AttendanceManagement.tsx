@@ -1,0 +1,597 @@
+import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/authStore';
+import { useDataStore } from '../store/dataStore';
+import { usePermissions } from '../hooks/usePermissions';
+import api from '../services/api';
+import Toast from '../components/Toast';
+import Modal from '../components/Modal';
+import { Card, StatCard, Badge, Button, Table, Avatar } from '../components/ui';
+import {
+  BarChart3,
+  Plus,
+  Edit2,
+  Trash2,
+  Lock,
+  MapPin,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Palmtree,
+  Timer,
+  FileText,
+  Smartphone
+} from 'lucide-react';
+
+const AttendanceManagement: React.FC = () => {
+  const { user } = useAuthStore();
+  const { employees } = useDataStore();
+  const { canRead, canWrite, canDelete } = usePermissions();
+
+  const canViewAttendance = canRead('attendance');
+  const canWriteAttendance = canWrite('attendance');
+  const canDeleteAttendance = canDelete('attendance');
+  const [records, setRecords] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
+
+  useEffect(() => {
+    if (canViewAttendance) loadRecords();
+  }, [selectedMonth, selectedYear, selectedEmployee, canViewAttendance]);
+
+  const loadRecords = async () => {
+    try {
+      const params: any = { month: selectedMonth, year: selectedYear };
+      if (selectedEmployee) params.userId = selectedEmployee;
+
+      const response = await api.get('/attendance-records/monthly-report', { params });
+      const sortedRecords = response.data.data.records.sort((a: any, b: any) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      setRecords(sortedRecords);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+
+    try {
+      const data = {
+        userId: formData.get('userId'),
+        date: formData.get('date'),
+        checkIn: formData.get('checkIn') || undefined,
+        checkOut: formData.get('checkOut') || undefined,
+        status: formData.get('status'),
+        leaveType: formData.get('leaveType') || undefined,
+        delay: parseInt(formData.get('delay') as string) || 0,
+        overtime: parseFloat(formData.get('overtime') as string) || 0
+      };
+
+      if (editingRecord) {
+        const recordId = editingRecord._id || editingRecord.id;
+        if (!recordId) {
+          setToast({ message: 'معرف السجل غير صحيح', type: 'error', isOpen: true });
+          return;
+        }
+        console.log('Updating record:', recordId, data);
+        await api.put(`/attendance-records/${recordId}`, data);
+      } else {
+        await api.post('/attendance-records/manual', data);
+      }
+
+      setToast({ message: editingRecord ? 'تم التحديث بنجاح' : 'تم الإضافة بنجاح', type: 'success', isOpen: true });
+      setShowModal(false);
+      setEditingRecord(null);
+      loadRecords();
+    } catch (error: any) {
+      console.error('Submit error:', error.response?.data);
+      setToast({ message: error.response?.data?.message || 'فشل الحفظ', type: 'error', isOpen: true });
+    }
+  };
+
+  const handleEdit = (record: any) => {
+    if (!record || (!record._id && !record.id)) {
+      setToast({ message: 'معرف السجل غير صحيح', type: 'error', isOpen: true });
+      return;
+    }
+    console.log('Editing record:', record);
+    setEditingRecord(record);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!id || id === 'undefined') {
+      setToast({ message: 'معرف السجل غير صحيح', type: 'error', isOpen: true });
+      return;
+    }
+    if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+
+    try {
+      console.log('Deleting record with ID:', id);
+      await api.delete(`/attendance-records/${id}`);
+      setToast({ message: 'تم الحذف بنجاح', type: 'success', isOpen: true });
+      loadRecords();
+    } catch (error: any) {
+      console.error('Delete error:', error.response?.data);
+      setToast({ message: error.response?.data?.message || 'فشل الحذف', type: 'error', isOpen: true });
+    }
+  };
+
+  const openLocationOnMap = (lat: number, lng: number) => {
+    window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'present':
+        return <Badge variant="success">حاضر</Badge>;
+      case 'late':
+        return <Badge variant="warning">متأخر</Badge>;
+      case 'absent':
+        return <Badge variant="error">غائب</Badge>;
+      case 'leave':
+        return <Badge variant="info">إجازة</Badge>;
+      default:
+        return <Badge variant="light">{status}</Badge>;
+    }
+  };
+
+  if (!canViewAttendance) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto mb-4 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center">
+            <Lock className="w-10 h-10 text-error-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">ليس لديك صلاحية</h2>
+          <p className="text-gray-600 dark:text-gray-400">لا يمكنك الوصول إلى إدارة الحضور</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate summary statistics
+  const presentDays = records.filter(r => r.status === 'present' || r.status === 'late').length;
+  const absentDays = records.filter(r => r.status === 'absent').length;
+  const leaveDays = records.filter(r => r.status === 'leave').length;
+  const totalDelay = records.reduce((sum, r) => sum + (r.delay || 0), 0);
+  const totalOvertime = records.reduce((sum, r) => sum + (r.overtime || 0), 0);
+
+  return (
+    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+            </div>
+            إدارة الحضور
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">مراجعة وتعديل سجلات الحضور</p>
+        </div>
+        {canWriteAttendance && (
+          <Button onClick={() => { setEditingRecord(null); setShowModal(true); }}>
+            <Plus className="w-4 h-4" />
+            إضافة سجل يدوي
+          </Button>
+        )}
+      </div>
+
+      {/* Statistics Cards */}
+      {selectedEmployee && records.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard
+            title="أيام الحضور"
+            value={presentDays}
+            icon={<CheckCircle className="w-6 h-6" />}
+            iconColor="green"
+          />
+          <StatCard
+            title="أيام الغياب"
+            value={absentDays}
+            icon={<XCircle className="w-6 h-6" />}
+            iconColor="red"
+          />
+          <StatCard
+            title="أيام الإجازة"
+            value={leaveDays}
+            icon={<Palmtree className="w-6 h-6" />}
+            iconColor="blue"
+          />
+          <StatCard
+            title="دقائق التأخير"
+            value={totalDelay}
+            icon={<Timer className="w-6 h-6" />}
+            iconColor="orange"
+          />
+          <StatCard
+            title="ساعات إضافية"
+            value={totalOvertime.toFixed(1)}
+            icon={<Clock className="w-6 h-6" />}
+            iconColor="purple"
+          />
+        </div>
+      )}
+
+      {/* Filters */}
+      <Card>
+        <Card.Body>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الموظف</label>
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                <option value="">جميع الموظفين</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.userId?._id || emp.userId}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {new Date(selectedYear, i).toLocaleDateString('ar-EG', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السنة</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - 2 + i;
+                  return <option key={year} value={year}>{year}</option>;
+                })}
+              </select>
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* Records Table */}
+      <Card>
+        <Card.Body className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <Table.Header>
+                <Table.Row>
+                  <Table.Head>الموظف</Table.Head>
+                  <Table.Head>التاريخ</Table.Head>
+                  <Table.Head>الحضور</Table.Head>
+                  <Table.Head>الانصراف</Table.Head>
+                  <Table.Head>الحالة</Table.Head>
+                  <Table.Head>التأخير</Table.Head>
+                  <Table.Head>الموقع</Table.Head>
+                  <Table.Head>النوع</Table.Head>
+                  <Table.Head>إجراءات</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {records.length === 0 ? (
+                  <Table.Row key="no-records">
+                    <Table.Cell colSpan={9}>
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                          <FileText className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 dark:text-gray-400">لا توجد سجلات لهذا الشهر</p>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                ) : records.map((record) => (
+                  <Table.Row key={record._id}>
+                    <Table.Cell>
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          src={record.userId?.avatar}
+                          alt={record.userId?.name}
+                          size="small"
+                        />
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {record.userId?.name}
+                        </span>
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {new Date(record.date).toLocaleDateString('ar-EG')}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4" />
+                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4" />
+                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell>
+                      {getStatusBadge(record.status)}
+                    </Table.Cell>
+                    <Table.Cell>
+                      <span className={`font-medium ${record.delay > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400'}`}>
+                        {record.delay > 0 ? `${record.delay} دقيقة` : '-'}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      {record.checkInLocation?.latitude && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openLocationOnMap(record.checkInLocation.latitude, record.checkInLocation.longitude)}
+                          className="text-success-600 hover:text-success-700"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          عرض
+                        </Button>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {record.isManualEntry ? (
+                        <Badge variant="warning" size="sm">
+                          <Edit2 className="w-3 h-3 ml-1" />
+                          يدوي
+                        </Badge>
+                      ) : (
+                        <Badge variant="info" size="sm">
+                          <Smartphone className="w-3 h-3 ml-1" />
+                          تلقائي
+                        </Badge>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="flex items-center gap-2">
+                        {canWriteAttendance && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const recordId = record._id || record.id;
+                              if (recordId) handleEdit(record);
+                            }}
+                            disabled={!record._id && !record.id}
+                            className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/20"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canDeleteAttendance && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const recordId = record._id || record.id;
+                              if (recordId) handleDelete(recordId);
+                            }}
+                            disabled={!record._id && !record.id}
+                            className="text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* Monthly Calendar View */}
+      {selectedEmployee && records.length > 0 && (
+        <Card>
+          <Card.Header>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-brand-500" />
+              سجل شهر {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+            </h2>
+          </Card.Header>
+          <Card.Body>
+            <div className="grid grid-cols-7 gap-2">
+              {/* Days Headers */}
+              {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((day, idx) => (
+                <div key={`day-${idx}`} className="text-center font-semibold text-gray-700 dark:text-gray-300 py-2 text-sm">{day}</div>
+              ))}
+
+              {/* Calendar Days */}
+              {Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }, (_, i) => {
+                const day = i + 1;
+                const record = records.find(r => new Date(r.date).getDate() === day);
+
+                return (
+                  <div
+                    key={day}
+                    className={`p-3 border rounded-lg text-center transition-all ${
+                      record?.status === 'present' ? 'bg-success-50 dark:bg-success-900/20 border-success-300 dark:border-success-700' :
+                      record?.status === 'late' ? 'bg-warning-50 dark:bg-warning-900/20 border-warning-300 dark:border-warning-700' :
+                      record?.status === 'absent' ? 'bg-error-50 dark:bg-error-900/20 border-error-300 dark:border-error-700' :
+                      record?.status === 'leave' ? 'bg-info-50 dark:bg-info-900/20 border-info-300 dark:border-info-700' :
+                      'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    <div className="font-bold text-lg text-gray-800 dark:text-white">{day}</div>
+                    {record ? (
+                      <div className="text-xs mt-1 space-y-1">
+                        <div className="font-medium flex items-center justify-center gap-1">
+                          {record.status === 'present' && <><CheckCircle className="w-3 h-3 text-success-500" /> <span className="text-success-600 dark:text-success-400">حاضر</span></>}
+                          {record.status === 'late' && <><AlertCircle className="w-3 h-3 text-warning-500" /> <span className="text-warning-600 dark:text-warning-400">متأخر</span></>}
+                          {record.status === 'absent' && <><XCircle className="w-3 h-3 text-error-500" /> <span className="text-error-600 dark:text-error-400">غائب</span></>}
+                          {record.status === 'leave' && <><Palmtree className="w-3 h-3 text-info-500" /> <span className="text-info-600 dark:text-info-400">إجازة</span></>}
+                        </div>
+                        {record.checkIn && (
+                          <div className="text-gray-600 dark:text-gray-400">
+                            {new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                        {record.delay > 0 && (
+                          <div className="text-warning-600 dark:text-warning-400 font-medium flex items-center justify-center gap-1">
+                            <Timer className="w-3 h-3" /> {record.delay}د
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">-</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      {/* Add/Edit Modal */}
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingRecord(null); }} title={editingRecord ? 'تعديل السجل' : 'إضافة سجل يدوي'}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الموظف *</label>
+            <select
+              name="userId"
+              required
+              disabled={!!editingRecord}
+              defaultValue={editingRecord?.userId?._id || editingRecord?.userId || ''}
+              className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
+            >
+              <option value="">اختر موظف</option>
+              {employees.map((emp: any) => (
+                <option key={emp.id} value={emp.userId?._id || emp.userId}>{emp.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">التاريخ *</label>
+            <input
+              type="date"
+              name="date"
+              required
+              disabled={!!editingRecord}
+              defaultValue={editingRecord ? new Date(editingRecord.date).toISOString().split('T')[0] : ''}
+              className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وقت الحضور</label>
+              <input
+                type="time"
+                name="checkIn"
+                defaultValue={editingRecord?.checkIn ? new Date(editingRecord.checkIn).toTimeString().slice(0, 5) : ''}
+                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وقت الانصراف</label>
+              <input
+                type="time"
+                name="checkOut"
+                defaultValue={editingRecord?.checkOut ? new Date(editingRecord.checkOut).toTimeString().slice(0, 5) : ''}
+                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الحالة *</label>
+            <select
+              name="status"
+              required
+              defaultValue={editingRecord?.status || 'present'}
+              className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            >
+              <option value="present">حاضر</option>
+              <option value="late">متأخر</option>
+              <option value="absent">غائب</option>
+              <option value="leave">إجازة</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نوع الإجازة</label>
+            <select
+              name="leaveType"
+              defaultValue={editingRecord?.leaveType || ''}
+              className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            >
+              <option value="">-- اختر --</option>
+              <option value="annual">سنوية</option>
+              <option value="emergency">طارئة</option>
+              <option value="sick">مرضية</option>
+              <option value="unpaid">بدون راتب</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">التأخير (دقيقة)</label>
+              <input
+                type="number"
+                name="delay"
+                defaultValue={editingRecord?.delay || 0}
+                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الوقت الإضافي (ساعة)</label>
+              <input
+                type="number"
+                name="overtime"
+                defaultValue={editingRecord?.overtime || 0}
+                step="0.5"
+                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button type="submit" className="flex-1">
+              {editingRecord ? (
+                <><CheckCircle className="w-4 h-4" /> تحديث</>
+              ) : (
+                <><Plus className="w-4 h-4" /> حفظ</>
+              )}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => { setShowModal(false); setEditingRecord(null); }} className="flex-1">
+              إلغاء
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Toast message={toast.message} type={toast.type} isOpen={toast.isOpen} onClose={() => setToast({ ...toast, isOpen: false })} />
+    </div>
+  );
+};
+
+export default AttendanceManagement;
