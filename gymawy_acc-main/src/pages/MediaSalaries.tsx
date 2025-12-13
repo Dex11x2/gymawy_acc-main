@@ -13,11 +13,9 @@ import {
   Trash2,
   Save,
   X,
-  DollarSign,
   Award,
   Calendar,
-  Settings,
-  FileText
+  Settings
 } from 'lucide-react';
 
 type ContentType = 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';

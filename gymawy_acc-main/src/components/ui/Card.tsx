@@ -6,6 +6,7 @@ export interface CardProps {
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 export interface CardHeaderProps {
@@ -37,6 +38,7 @@ const Card: React.FC<CardProps> & {
   hover = false,
   padding = 'none',
   onClick,
+  style,
 }) => {
   const paddingClasses = {
     none: '',
@@ -48,6 +50,7 @@ const Card: React.FC<CardProps> & {
   return (
     <div
       onClick={onClick}
+      style={style}
       className={`
         rounded-2xl border border-gray-200 bg-brand-50
         dark:border-gray-800 dark:bg-white/[0.03]

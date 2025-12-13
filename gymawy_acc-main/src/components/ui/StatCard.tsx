@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-export type StatIconColor = 'blue' | 'green' | 'orange' | 'purple' | 'pink' | 'red' | 'success' | 'warning' | 'error' | 'info';
+export type StatIconColor = 'blue' | 'green' | 'orange' | 'purple' | 'pink' | 'red' | 'success' | 'warning' | 'error' | 'info' | 'primary';
 
 export interface StatCardProps {
   title: string;
@@ -10,7 +10,13 @@ export interface StatCardProps {
   changeLabel?: string;
   icon?: React.ReactNode;
   iconColor?: StatIconColor;
+  /** @deprecated Use iconColor instead */
+  badgeColor?: StatIconColor;
   subtitle?: string;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
   className?: string;
 }
 
@@ -20,11 +26,18 @@ const StatCard: React.FC<StatCardProps> = ({
   change,
   changeLabel = 'مقارنة بالشهر الماضي',
   icon,
-  iconColor = 'blue',
+  iconColor,
+  badgeColor,
   subtitle,
+  trend,
   className = '',
 }) => {
-  const isPositive = change !== undefined && change >= 0;
+  // Support both iconColor and badgeColor (deprecated)
+  const effectiveIconColor = iconColor || badgeColor || 'blue';
+
+  // Support both change and trend
+  const effectiveChange = change ?? (trend ? trend.value : undefined);
+  const isPositive = trend ? trend.isPositive : (effectiveChange !== undefined && effectiveChange >= 0);
 
   // Icon background colors
   const iconColorClasses: Record<StatIconColor, string> = {
@@ -38,6 +51,7 @@ const StatCard: React.FC<StatCardProps> = ({
     warning: 'bg-warning-50 text-warning-500 dark:bg-warning-500/15',
     error: 'bg-error-50 text-error-500 dark:bg-error-500/15',
     info: 'bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15',
+    primary: 'bg-brand-50 text-brand-500 dark:bg-brand-500/15',
   };
 
   return (
@@ -63,7 +77,7 @@ const StatCard: React.FC<StatCardProps> = ({
             </h3>
 
             {/* Change Badge */}
-            {change !== undefined && (
+            {effectiveChange !== undefined && (
               <span
                 className={`
                   flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
@@ -79,13 +93,13 @@ const StatCard: React.FC<StatCardProps> = ({
                 ) : (
                   <TrendingDown className="h-3 w-3" />
                 )}
-                {Math.abs(change)}%
+                {Math.abs(effectiveChange)}%
               </span>
             )}
           </div>
 
           {/* Change Label */}
-          {change !== undefined && changeLabel && (
+          {effectiveChange !== undefined && changeLabel && (
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {changeLabel}
             </p>
@@ -104,7 +118,7 @@ const StatCard: React.FC<StatCardProps> = ({
           <div
             className={`
               flex h-12 w-12 items-center justify-center rounded-xl flex-shrink-0
-              ${iconColorClasses[iconColor]}
+              ${iconColorClasses[effectiveIconColor]}
             `}
           >
             {icon}

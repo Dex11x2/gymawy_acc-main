@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type BadgeVariant = 'primary' | 'success' | 'error' | 'warning' | 'info' | 'light' | 'dark';
+export type BadgeVariant = 'primary' | 'success' | 'error' | 'warning' | 'info' | 'light' | 'dark' | 'secondary';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 export interface BadgeProps {
@@ -29,6 +29,7 @@ const Badge: React.FC<BadgeProps> = ({
     info: 'bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15 dark:text-blue-light-500',
     light: 'bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-white/80',
     dark: 'bg-gray-500 text-white dark:bg-white/5 dark:text-white',
+    secondary: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   };
 
   // Solid variant classes
@@ -40,6 +41,7 @@ const Badge: React.FC<BadgeProps> = ({
     info: 'bg-blue-light-500 text-white',
     light: 'bg-gray-400 text-white dark:bg-white/5 dark:text-white/80',
     dark: 'bg-gray-700 text-white',
+    secondary: 'bg-gray-500 text-white',
   };
 
   // Size classes

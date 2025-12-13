@@ -7,7 +7,7 @@ import Modal from '../components/Modal';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Alert } from '../components/ui';
 import {
-  Users, Building2, UserCheck, TrendingUp, TrendingDown,
+  Users, Building2, UserCheck, TrendingUp,
   DollarSign, Wallet, ArrowRight, Calendar, Clock,
   UserPlus, Receipt, CreditCard, Banknote, BarChart3,
   PieChart, AlertCircle, Loader2

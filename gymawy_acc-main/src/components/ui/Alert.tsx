@@ -6,7 +6,8 @@ export type AlertType = 'success' | 'error' | 'warning' | 'info';
 export interface AlertProps {
   type?: AlertType;
   title?: string;
-  message: string;
+  message?: string;
+  children?: React.ReactNode;
   onClose?: () => void;
   showIcon?: boolean;
   className?: string;
@@ -16,6 +17,7 @@ const Alert: React.FC<AlertProps> = ({
   type = 'info',
   title,
   message,
+  children,
   onClose,
   showIcon = true,
   className = '',
@@ -72,7 +74,7 @@ const Alert: React.FC<AlertProps> = ({
               {title}
             </h4>
           )}
-          <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{message || children}</p>
         </div>
         {onClose && (
           <button

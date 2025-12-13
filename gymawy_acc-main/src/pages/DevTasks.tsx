@@ -207,6 +207,7 @@ const DevTasks: React.FC = () => {
           comments: [],
           tags: formData.tags,
           attachments: [],
+          modifications: [],
         };
         await addDevTask(taskToAdd);
         setToast({
@@ -462,7 +463,7 @@ const DevTasks: React.FC = () => {
       task.priority,
       task.status,
       task.testingStatus,
-      format(new Date(task.startDate), 'yyyy-MM-dd'),
+      task.startDate ? format(new Date(task.startDate), 'yyyy-MM-dd') : '',
       format(new Date(task.dueDate), 'yyyy-MM-dd'),
       task.deploymentReady ? (isRTL ? 'نعم' : 'Yes') : (isRTL ? 'لا' : 'No'),
       task.tags?.join(', ') || '',
