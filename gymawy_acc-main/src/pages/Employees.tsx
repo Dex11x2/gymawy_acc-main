@@ -14,8 +14,7 @@ import EmployeeAccountManager from "../components/EmployeeAccountManager";
 import { Card, StatCard, Badge, Button, Input, Table, Avatar, Checkbox } from '../components/ui';
 import {
   Users, UserCheck, Wallet, UserPlus, Plus, FileSpreadsheet, FileText,
-  ChevronDown, Edit2, Trash2, Eye, EyeOff, Briefcase, Shield,
-  Building2, Calendar, Mail, Phone
+  ChevronDown, Edit2, Trash2, Eye, EyeOff, Briefcase, Shield, Calendar
 } from 'lucide-react';
 
 const Employees: React.FC = () => {
@@ -452,7 +451,7 @@ const Employees: React.FC = () => {
                   <Table.Row key={employee.id}>
                     <Table.Cell>
                       <div className="flex items-center gap-3">
-                        <Avatar name={employee.name} size="medium" />
+                        <Avatar alt={employee.name} size="medium" />
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-gray-800 dark:text-white">
@@ -475,7 +474,6 @@ const Employees: React.FC = () => {
                     <Table.Cell>
                       <Badge
                         variant={employee.departmentId ? "primary" : "light"}
-                        mode="light"
                       >
                         {getDepartmentName(employee.departmentId)}
                       </Badge>
@@ -632,37 +630,21 @@ const Employees: React.FC = () => {
                 <h3 className="font-semibold text-gray-800 dark:text-white">معلومات الراتب</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Input
-                  type="number"
-                  label="الراتب الأساسي"
-                  value={formData.salary}
-                  onChange={(e) => setFormData({ ...formData, salary: e.target.value === '' ? '' : Number(e.target.value) })}
-                  placeholder="0"
-                  required
-                />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    عملة الراتب <span className="text-error-500">*</span>
-                  </label>
-                  <select
-                    value={formData.salaryCurrency}
-                    onChange={(e) => setFormData({ ...formData, salaryCurrency: e.target.value as any })}
-                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-                    required
-                  >
-                    <option value="EGP">جنيه مصري (EGP)</option>
-                    <option value="SAR">ريال سعودي (SAR)</option>
-                    <option value="USD">دولار أمريكي (USD)</option>
-                    <option value="AED">درهم إماراتي (AED)</option>
-                  </select>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     نوع الراتب <span className="text-error-500">*</span>
                   </label>
                   <select
                     value={formData.salaryType}
-                    onChange={(e) => setFormData({ ...formData, salaryType: e.target.value as any })}
+                    onChange={(e) => {
+                      const newType = e.target.value as 'fixed' | 'variable';
+                      setFormData({
+                        ...formData,
+                        salaryType: newType,
+                        // Reset salary to 0 when switching to variable
+                        salary: newType === 'variable' ? 0 : formData.salary
+                      });
+                    }}
                     className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                     required
                   >
@@ -670,6 +652,51 @@ const Employees: React.FC = () => {
                     <option value="variable">راتب متغير (حسب المهام)</option>
                   </select>
                 </div>
+                {formData.salaryType === 'fixed' ? (
+                  <>
+                    <Input
+                      type="number"
+                      label="الراتب الأساسي"
+                      value={formData.salary}
+                      onChange={(e) => setFormData({ ...formData, salary: e.target.value === '' ? '' : Number(e.target.value) })}
+                      placeholder="0"
+                      required
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        عملة الراتب <span className="text-error-500">*</span>
+                      </label>
+                      <select
+                        value={formData.salaryCurrency}
+                        onChange={(e) => setFormData({ ...formData, salaryCurrency: e.target.value as any })}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                        required
+                      >
+                        <option value="EGP">جنيه مصري (EGP)</option>
+                        <option value="SAR">ريال سعودي (SAR)</option>
+                        <option value="USD">دولار أمريكي (USD)</option>
+                        <option value="AED">درهم إماراتي (AED)</option>
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <div className="md:col-span-2">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-1">راتب متغير حسب المهام</h4>
+                          <p className="text-sm text-blue-600 dark:text-blue-300">
+                            راتب هذا الموظف يُحسب تلقائياً من إنجازاته في صفحة "رواتب الميديا".
+                            كل مهمة يكملها تُضاف لراتبه الشهري حسب الأسعار المحددة.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card.Body>
           </Card>
@@ -682,7 +709,7 @@ const Employees: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             placeholder={editingEmployee ? "اتركه فارغاً للإبقاء على القديمة" : "أدخل كلمة المرور"}
             required={!editingEmployee}
-            hint={editingEmployee ? "اتركه فارغاً للإبقاء على كلمة المرور الحالية" : undefined}
+            helperText={editingEmployee ? "اتركه فارغاً للإبقاء على كلمة المرور الحالية" : undefined}
           />
           <button
             type="button"
@@ -727,7 +754,8 @@ const Employees: React.FC = () => {
               <div className="space-y-3">
                 <Checkbox
                   checked={formData.isGeneralManager}
-                  onChange={(checked) => {
+                  onChange={(e) => {
+                    const checked = e.target.checked;
                     const currentEmployee = employees.find(emp => emp.email === user?.email);
                     const isSuperAdmin = user?.role === 'super_admin';
                     const isGeneralManager = currentEmployee?.isGeneralManager || false;
@@ -756,7 +784,8 @@ const Employees: React.FC = () => {
                 />
                 <Checkbox
                   checked={formData.isAdministrativeManager}
-                  onChange={(checked) => {
+                  onChange={(e) => {
+                    const checked = e.target.checked;
                     const currentEmployee = employees.find(emp => emp.email === user?.email);
                     const isSuperAdmin = user?.role === 'super_admin';
                     const isGeneralManager = currentEmployee?.isGeneralManager || false;
