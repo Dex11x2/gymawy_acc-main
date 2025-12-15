@@ -69,11 +69,17 @@ const Avatar: React.FC<AvatarProps> = ({
   // Text size for initials
   const initialsSizeClasses: Record<AvatarSize, string> = {
     xsmall: 'text-xs',
+    xs: 'text-xs',
     small: 'text-xs',
+    sm: 'text-xs',
     medium: 'text-sm',
+    md: 'text-sm',
     large: 'text-base',
+    lg: 'text-base',
     xlarge: 'text-lg',
+    xl: 'text-lg',
     xxlarge: 'text-xl',
+    '2xl': 'text-xl',
   };
 
   // Get initials from alt text if not provided

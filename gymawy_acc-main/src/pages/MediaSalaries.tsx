@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useDataStore } from '../store/dataStore';
 import { usePermissions } from '../hooks/usePermissions';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -15,7 +16,11 @@ import {
   X,
   Award,
   Calendar,
-  Settings
+  Settings,
+  DollarSign,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp
 } from 'lucide-react';
 
 type ContentType = 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
@@ -41,6 +46,8 @@ interface EmployeeAchievement {
     total: number;
   }[];
   totalAmount: number;
+  syncedToPayroll?: boolean;
+  syncedAt?: Date;
 }
 
 const CONTENT_TYPES = {
@@ -54,6 +61,7 @@ const CONTENT_TYPES = {
 
 const MediaSalaries: React.FC = () => {
   const { user } = useAuthStore();
+  const { payrolls, addPayroll, updatePayroll, loadPayrolls, employees, loadEmployees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
   const canViewMedia = canRead('salaries');
@@ -112,6 +120,12 @@ const MediaSalaries: React.FC = () => {
     year: new Date().getFullYear(),
     items: [] as { contentType: ContentType; quantity: number }[]
   });
+
+  // Load payrolls and employees on mount
+  useEffect(() => {
+    loadPayrolls();
+    loadEmployees();
+  }, [loadPayrolls, loadEmployees]);
 
   // Save to localStorage
   useEffect(() => {
@@ -285,9 +299,79 @@ const MediaSalaries: React.FC = () => {
     }
   };
 
+  // Sync achievement to payroll
+  const syncToPayroll = async (achievement: EmployeeAchievement) => {
+    try {
+      // Find existing payroll for this employee/month/year
+      const existingPayroll = payrolls.find(
+        p => p.employeeId === achievement.employeeId &&
+             p.month === achievement.month &&
+             p.year === achievement.year
+      );
+
+      // Find employee to get base salary
+      const employee = employees.find(e => e.id === achievement.employeeId);
+      const baseSalary = employee?.salary || 0;
+
+      if (existingPayroll) {
+        // Update existing payroll - add media achievements to bonuses
+        await updatePayroll(existingPayroll.id, {
+          bonuses: (existingPayroll.bonuses || 0) + achievement.totalAmount,
+          netSalary: existingPayroll.baseSalary + ((existingPayroll.bonuses || 0) + achievement.totalAmount) - (existingPayroll.deductions || 0),
+          notes: `${existingPayroll.notes || ''}\nمكافأة ميديا: ${achievement.totalAmount} ر.س`.trim()
+        });
+      } else {
+        // Create new payroll entry
+        await addPayroll({
+          employeeId: achievement.employeeId,
+          month: achievement.month,
+          year: achievement.year,
+          baseSalary: baseSalary,
+          bonuses: achievement.totalAmount,
+          deductions: 0,
+          netSalary: baseSalary + achievement.totalAmount,
+          currency: 'SAR',
+          type: 'variable',
+          notes: `مكافأة ميديا: ${achievement.totalAmount} ر.س`
+        });
+      }
+
+      // Mark achievement as synced
+      setAchievements(achievements.map(a =>
+        a.id === achievement.id
+          ? { ...a, syncedToPayroll: true, syncedAt: new Date() }
+          : a
+      ));
+
+      setToast({
+        message: 'تم إضافة الإنجازات للراتب الشهري بنجاح',
+        type: 'success',
+        isOpen: true
+      });
+
+      // Reload payrolls to reflect changes
+      await loadPayrolls();
+    } catch (error) {
+      console.error('Error syncing to payroll:', error);
+      setToast({
+        message: 'حدث خطأ أثناء إضافة الإنجازات للراتب',
+        type: 'error',
+        isOpen: true
+      });
+    }
+  };
+
   const filteredAchievements = achievements.filter(a =>
     a.month === selectedMonth && a.year === selectedYear
   );
+
+  // Calculate monthly summary for current filter
+  const monthlySummary = filteredAchievements.reduce((acc, achievement) => {
+    acc.totalAmount += achievement.totalAmount;
+    acc.syncedCount += achievement.syncedToPayroll ? 1 : 0;
+    acc.totalItems += achievement.items.reduce((sum, item) => sum + item.quantity, 0);
+    return acc;
+  }, { totalAmount: 0, syncedCount: 0, totalItems: 0 });
 
   // Permission Guard
   if (!canViewMedia) {
@@ -433,6 +517,59 @@ const MediaSalaries: React.FC = () => {
       {/* Achievements Tab */}
       {activeTab === 'achievements' && (
         <div className="space-y-6">
+          {/* Monthly Summary Cards */}
+          {filteredAchievements.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+                <Card.Body>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-700 dark:text-green-300">إجمالي الشهر</p>
+                      <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                        {monthlySummary.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                      </p>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+                <Card.Body>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">عدد المحتوى</p>
+                      <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                        {monthlySummary.totalItems} قطعة
+                      </p>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
+                <Card.Body>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                      <CheckCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-purple-700 dark:text-purple-300">تمت المزامنة</p>
+                      <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                        {monthlySummary.syncedCount} / {filteredAchievements.length}
+                      </p>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex gap-4 items-end">
               <div>
@@ -480,13 +617,14 @@ const MediaSalaries: React.FC = () => {
                       <Table.Head>الموظف</Table.Head>
                       <Table.Head>الشهر</Table.Head>
                       <Table.Head>الإجمالي</Table.Head>
+                      <Table.Head>الحالة</Table.Head>
                       <Table.Head>الإجراءات</Table.Head>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {filteredAchievements.length === 0 ? (
                       <Table.Row>
-                        <Table.Cell colSpan={4}>
+                        <Table.Cell colSpan={5}>
                           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                             لا توجد إنجازات لهذا الشهر
                           </div>
@@ -510,7 +648,31 @@ const MediaSalaries: React.FC = () => {
                             </span>
                           </Table.Cell>
                           <Table.Cell>
+                            {achievement.syncedToPayroll ? (
+                              <Badge variant="success">
+                                <CheckCircle className="w-3 h-3 ml-1" />
+                                تمت الإضافة للراتب
+                              </Badge>
+                            ) : (
+                              <Badge variant="warning">
+                                <AlertCircle className="w-3 h-3 ml-1" />
+                                في الانتظار
+                              </Badge>
+                            )}
+                          </Table.Cell>
+                          <Table.Cell>
                             <div className="flex gap-2">
+                              {!achievement.syncedToPayroll && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => syncToPayroll(achievement)}
+                                  className="text-success-600 hover:text-success-700"
+                                  title="إضافة للراتب الشهري"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
