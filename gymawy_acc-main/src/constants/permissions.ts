@@ -5,6 +5,7 @@ export const MODULES = {
   ATTENDANCE: 'attendance',
   ATTENDANCE_SYSTEM: 'attendance_system',
   ATTENDANCE_MANAGEMENT: 'attendance_management',
+  ATTENDANCE_MAP: 'attendance_map',
   LEAVE_REQUESTS: 'leave_requests',
   DEPARTMENTS: 'departments',
   EMPLOYEES: 'employees',
@@ -15,6 +16,7 @@ export const MODULES = {
   EXPENSES: 'expenses',
   CUSTODY: 'custody',
   TASKS: 'tasks',
+  DEV_TASKS: 'dev_tasks',
   CHAT: 'chat',
   POSTS: 'posts',
   REVIEWS: 'reviews',
@@ -23,6 +25,7 @@ export const MODULES = {
   OCCASIONS: 'occasions',
   COMPLAINTS: 'complaints',
   COMMUNICATION: 'communication',
+  INSTRUCTIONS: 'instructions',
   SUBSCRIPTIONS: 'subscriptions',
   PERMISSIONS: 'permissions',
 } as const;
@@ -100,6 +103,14 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
       { action: ACTIONS.EDIT, label: 'تعديل' },
       { action: ACTIONS.DELETE, label: 'حذف' },
       { action: ACTIONS.EXPORT, label: 'تصدير' },
+    ],
+  },
+  {
+    module: MODULES.ATTENDANCE_MAP,
+    label: 'تسجيل الحضور',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض' },
+      { action: ACTIONS.WRITE, label: 'تسجيل' },
     ],
   },
   {
@@ -215,6 +226,17 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
     ],
   },
   {
+    module: MODULES.DEV_TASKS,
+    label: 'مهام التطوير',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض' },
+      { action: ACTIONS.WRITE, label: 'إضافة' },
+      { action: ACTIONS.EDIT, label: 'تعديل' },
+      { action: ACTIONS.DELETE, label: 'حذف' },
+      { action: ACTIONS.COMMENT, label: 'تعليق' },
+    ],
+  },
+  {
     module: MODULES.CHAT,
     label: 'المحادثات',
     actions: [
@@ -278,6 +300,16 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
   },
   {
     module: MODULES.COMMUNICATION,
+    label: 'التواصل',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض' },
+      { action: ACTIONS.WRITE, label: 'إضافة' },
+      { action: ACTIONS.EDIT, label: 'تعديل' },
+      { action: ACTIONS.DELETE, label: 'حذف' },
+    ],
+  },
+  {
+    module: MODULES.INSTRUCTIONS,
     label: 'التعليمات',
     actions: [
       { action: ACTIONS.VIEW, label: 'عرض' },
@@ -329,16 +361,19 @@ export const DEFAULT_PERMISSIONS = {
     { module: MODULES.DASHBOARD, actions: [ACTIONS.VIEW] },
     { module: MODULES.ATTENDANCE, actions: [ACTIONS.VIEW, ACTIONS.WRITE] },
     { module: MODULES.ATTENDANCE_SYSTEM, actions: [ACTIONS.VIEW] },
+    { module: MODULES.ATTENDANCE_MAP, actions: [ACTIONS.VIEW, ACTIONS.WRITE] },
     { module: MODULES.LEAVE_REQUESTS, actions: [ACTIONS.VIEW, ACTIONS.WRITE] },
     { module: MODULES.EMPLOYEES, actions: [ACTIONS.VIEW] },
     { module: MODULES.SALARIES, actions: [ACTIONS.VIEW] },
     { module: MODULES.CUSTODY, actions: [ACTIONS.VIEW, ACTIONS.WRITE] },
     { module: MODULES.TASKS, actions: [ACTIONS.VIEW, ACTIONS.WRITE, ACTIONS.EDIT, ACTIONS.COMMENT] },
+    { module: MODULES.DEV_TASKS, actions: [ACTIONS.VIEW] },
     { module: MODULES.CHAT, actions: [ACTIONS.VIEW, ACTIONS.WRITE] },
     { module: MODULES.POSTS, actions: [ACTIONS.VIEW, ACTIONS.WRITE, ACTIONS.COMMENT, ACTIONS.LIKE] },
     { module: MODULES.REVIEWS, actions: [ACTIONS.VIEW] },
     { module: MODULES.COMPLAINTS, actions: [ACTIONS.VIEW, ACTIONS.WRITE] },
     { module: MODULES.COMMUNICATION, actions: [ACTIONS.VIEW] },
+    { module: MODULES.INSTRUCTIONS, actions: [ACTIONS.VIEW] },
     { module: MODULES.OCCASIONS, actions: [ACTIONS.VIEW] },
   ],
 };
