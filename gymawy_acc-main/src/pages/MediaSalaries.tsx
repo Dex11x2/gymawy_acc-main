@@ -64,8 +64,8 @@ const MediaSalaries: React.FC = () => {
   const { payrolls, addPayroll, updatePayroll, loadPayrolls, employees, loadEmployees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
-  const canViewMedia = canRead('salaries');
-  const canEditMedia = canWrite('salaries');
+  const canViewMedia = canRead('media_salaries');
+  const canEditMedia = canWrite('media_salaries');
 
   // Only general_manager, administrative_manager, and super_admin can view/edit prices
   const canManagePrices = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
