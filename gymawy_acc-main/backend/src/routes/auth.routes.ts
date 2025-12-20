@@ -92,9 +92,35 @@ router.post('/register', protect, async (req: any, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
+
+    // البحث بالبريد أو الهاتف (case-insensitive)
+    const user = await User.findOne({
+      $or: [
+        { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+        { phone: email }
+      ]
+    });
+
+    if (!user) {
+      console.log('❌ User not found with email/phone:', email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // التحقق من كلمة المرور - جرب plainPassword أولاً
+    let isPasswordValid = false;
+    if (user.plainPassword) {
+      isPasswordValid = password === user.plainPassword;
+      console.log('Plain password check:', isPasswordValid ? '✅' : '❌');
+    }
+
+    // إذا فشل، جرب المقارنة المشفرة
+    if (!isPasswordValid) {
+      isPasswordValid = await user.comparePassword(password);
+      console.log('Hashed password check:', isPasswordValid ? '✅' : '❌');
+    }
+
+    if (!isPasswordValid) {
+      console.log('❌ Password invalid for user:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     

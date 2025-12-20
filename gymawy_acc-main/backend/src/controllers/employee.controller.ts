@@ -54,9 +54,23 @@ export const create = async (req: any, res: Response) => {
     
     if (existingUser) {
       user = existingUser;
+      let needsSave = false;
+
       if (req.body.departmentId) {
         console.log('Updating existing user with departmentId:', req.body.departmentId);
         user.departmentId = req.body.departmentId;
+        needsSave = true;
+      }
+
+      // تحديث كلمة المرور إذا تم تمريرها
+      if (req.body.password) {
+        console.log('Updating existing user password');
+        user.password = req.body.password;
+        user.plainPassword = req.body.password;
+        needsSave = true;
+      }
+
+      if (needsSave) {
         await user.save();
       }
     } else {
@@ -84,7 +98,16 @@ export const create = async (req: any, res: Response) => {
       };
       console.log('Creating new user with userData:', { ...userData, password: '***' });
       user = await User.create(userData);
-      console.log('✅ User created successfully with email:', user.email, 'and plainPassword:', plainPassword);
+      console.log('✅ User created successfully:');
+      console.log('   - Email:', user.email);
+      console.log('   - plainPassword in DB:', user.plainPassword);
+      console.log('   - password hashed:', user.password?.substring(0, 20) + '...');
+
+      // التحقق من حفظ كلمة المرور
+      const verifyUser = await User.findById(user._id);
+      console.log('🔍 Verify saved user:');
+      console.log('   - plainPassword saved:', verifyUser?.plainPassword);
+      console.log('   - isActive:', verifyUser?.isActive);
     }
     
     // Convert departmentId to ObjectId if it's a string
