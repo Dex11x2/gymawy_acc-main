@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
 import { usePermissions } from '../hooks/usePermissions';
+import api from '../services/api';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
@@ -20,7 +21,8 @@ import {
   DollarSign,
   CheckCircle,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  User
 } from 'lucide-react';
 
 type ContentType = 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
@@ -64,26 +66,19 @@ const MediaSalaries: React.FC = () => {
   const { payrolls, addPayroll, updatePayroll, loadPayrolls, employees, loadEmployees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
-  const canViewMedia = canRead('media_salaries');
-  const canEditMedia = canWrite('media_salaries');
+  // الصلاحيات المنفصلة لإعدادات الأسعار وإنجازات الموظفين
+  const canViewPrices = canRead('media_salaries_prices');
+  const canEditPrices = canWrite('media_salaries_prices');
+  const canViewAchievements = canRead('media_salaries_achievements');
 
-  // Only general_manager, administrative_manager, and super_admin can view/edit prices
-  const canManagePrices = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+  // للتوافق مع النظام القديم - يمكن الوصول إذا كان لديه أي من الصلاحيتين
+  const canViewMedia = canViewPrices || canViewAchievements;
 
-  const [activeTab, setActiveTab] = useState<'prices' | 'achievements'>(canManagePrices ? 'prices' : 'achievements');
+  const [activeTab, setActiveTab] = useState<'prices' | 'achievements'>(canViewPrices ? 'prices' : 'achievements');
+  const [isLoadingPrices, setIsLoadingPrices] = useState(true);
 
-  // Prices State
-  const [prices, setPrices] = useState<ContentPrice[]>(() => {
-    const saved = localStorage.getItem('mediaPrices');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', type: 'short_video', nameAr: 'فيديو قصير', price: 50, currency: 'SAR' },
-      { id: '2', type: 'long_video', nameAr: 'فيديو طويل', price: 150, currency: 'SAR' },
-      { id: '3', type: 'vlog', nameAr: 'فلوج', price: 100, currency: 'SAR' },
-      { id: '4', type: 'podcast', nameAr: 'بودكاست', price: 200, currency: 'SAR' },
-      { id: '5', type: 'post_design', nameAr: 'تصميم بوست', price: 30, currency: 'SAR' },
-      { id: '6', type: 'thumbnail', nameAr: 'صورة مصغرة', price: 20, currency: 'SAR' }
-    ];
-  });
+  // Prices State - يتم جلبها من قاعدة البيانات
+  const [prices, setPrices] = useState<ContentPrice[]>([]);
 
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [editingPrice, setEditingPrice] = useState<ContentPrice | null>(null);
@@ -127,11 +122,31 @@ const MediaSalaries: React.FC = () => {
     loadEmployees();
   }, [loadPayrolls, loadEmployees]);
 
-  // Save to localStorage
+  // جلب الأسعار من قاعدة البيانات
   useEffect(() => {
-    localStorage.setItem('mediaPrices', JSON.stringify(prices));
-  }, [prices]);
+    const fetchPrices = async () => {
+      try {
+        setIsLoadingPrices(true);
+        const response = await api.get('/media-prices');
+        const fetchedPrices = response.data.map((p: any) => ({
+          id: p._id,
+          type: p.type,
+          nameAr: p.nameAr,
+          price: p.price,
+          currency: p.currency
+        }));
+        setPrices(fetchedPrices);
+      } catch (error) {
+        console.error('Error fetching prices:', error);
+        setToast({ message: 'حدث خطأ أثناء جلب الأسعار', type: 'error', isOpen: true });
+      } finally {
+        setIsLoadingPrices(false);
+      }
+    };
+    fetchPrices();
+  }, []);
 
+  // حفظ الإنجازات في localStorage (يمكن نقلها لاحقاً لقاعدة البيانات)
   useEffect(() => {
     localStorage.setItem('mediaAchievements', JSON.stringify(achievements));
   }, [achievements]);
@@ -147,7 +162,7 @@ const MediaSalaries: React.FC = () => {
 
   // Price Handlers
   const openAddPrice = () => {
-    if (!canEditMedia) {
+    if (!canEditPrices) {
       setToast({ message: 'ليس لديك صلاحية لتعديل الأسعار', type: 'error', isOpen: true });
       return;
     }
@@ -157,7 +172,7 @@ const MediaSalaries: React.FC = () => {
   };
 
   const openEditPrice = (price: ContentPrice) => {
-    if (!canEditMedia) {
+    if (!canEditPrices) {
       setToast({ message: 'ليس لديك صلاحية لتعديل الأسعار', type: 'error', isOpen: true });
       return;
     }
@@ -166,32 +181,51 @@ const MediaSalaries: React.FC = () => {
     setShowPriceModal(true);
   };
 
-  const handlePriceSubmit = (e: React.FormEvent) => {
+  const handlePriceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingPrice) {
-      setPrices(prices.map(p =>
-        p.id === editingPrice.id
-          ? { ...p, type: priceFormData.type, price: Number(priceFormData.price), currency: priceFormData.currency, nameAr: CONTENT_TYPES[priceFormData.type] }
-          : p
-      ));
-      setToast({ message: 'تم تحديث السعر بنجاح', type: 'success', isOpen: true });
-    } else {
-      const newPrice: ContentPrice = {
-        id: Date.now().toString(),
-        type: priceFormData.type,
-        nameAr: CONTENT_TYPES[priceFormData.type],
-        price: Number(priceFormData.price),
-        currency: priceFormData.currency
-      };
-      setPrices([...prices, newPrice]);
-      setToast({ message: 'تم إضافة السعر بنجاح', type: 'success', isOpen: true });
+    try {
+      if (editingPrice) {
+        // تحديث السعر في قاعدة البيانات
+        await api.put(`/media-prices/${editingPrice.id}`, {
+          type: priceFormData.type,
+          nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0],
+          price: Number(priceFormData.price),
+          currency: priceFormData.currency
+        });
+        setPrices(prices.map(p =>
+          p.id === editingPrice.id
+            ? { ...p, type: priceFormData.type, price: Number(priceFormData.price), currency: priceFormData.currency, nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0] }
+            : p
+        ));
+        setToast({ message: 'تم تحديث السعر بنجاح', type: 'success', isOpen: true });
+      } else {
+        // إضافة سعر جديد
+        const response = await api.post('/media-prices', {
+          type: priceFormData.type,
+          nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0],
+          price: Number(priceFormData.price),
+          currency: priceFormData.currency
+        });
+        const newPrice: ContentPrice = {
+          id: response.data._id,
+          type: priceFormData.type,
+          nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0],
+          price: Number(priceFormData.price),
+          currency: priceFormData.currency
+        };
+        setPrices([...prices, newPrice]);
+        setToast({ message: 'تم إضافة السعر بنجاح', type: 'success', isOpen: true });
+      }
+      setShowPriceModal(false);
+    } catch (error: any) {
+      console.error('Error saving price:', error);
+      setToast({ message: error.response?.data?.message || 'حدث خطأ أثناء حفظ السعر', type: 'error', isOpen: true });
     }
-    setShowPriceModal(false);
   };
 
   const handleDeletePrice = (id: string) => {
-    if (!canEditMedia) {
+    if (!canEditPrices) {
       setToast({ message: 'ليس لديك صلاحية لحذف الأسعار', type: 'error', isOpen: true });
       return;
     }
@@ -406,7 +440,7 @@ const MediaSalaries: React.FC = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex space-x-8 space-x-reverse">
-          {canManagePrices && (
+          {canViewPrices && (
             <button
               onClick={() => setActiveTab('prices')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -419,26 +453,28 @@ const MediaSalaries: React.FC = () => {
               إعدادات الأسعار
             </button>
           )}
-          <button
-            onClick={() => setActiveTab('achievements')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'achievements'
-                ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
-            }`}
-          >
-            <Award className="w-4 h-4 inline ml-2" />
-            إنجازات الموظفين
-          </button>
+          {canViewAchievements && (
+            <button
+              onClick={() => setActiveTab('achievements')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'achievements'
+                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
+              }`}
+            >
+              <Award className="w-4 h-4 inline ml-2" />
+              إنجازات الموظفين
+            </button>
+          )}
         </nav>
       </div>
 
       {/* Prices Tab */}
-      {activeTab === 'prices' && canManagePrices && (
+      {activeTab === 'prices' && canViewPrices && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-white">أسعار أنواع المحتوى</h2>
-            {canEditMedia && canManagePrices && (
+            {canEditPrices && (
               <Button onClick={openAddPrice}>
                 <Plus className="w-4 h-4" />
                 إضافة سعر
@@ -455,15 +491,15 @@ const MediaSalaries: React.FC = () => {
                       <Table.Head>نوع المحتوى</Table.Head>
                       <Table.Head>السعر</Table.Head>
                       <Table.Head>العملة</Table.Head>
-                      {canManagePrices && <Table.Head>الإجراءات</Table.Head>}
+                      {canEditPrices && <Table.Head>الإجراءات</Table.Head>}
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {prices.length === 0 ? (
                       <Table.Row>
-                        <Table.Cell colSpan={canManagePrices ? 4 : 3}>
+                        <Table.Cell colSpan={canEditPrices ? 4 : 3}>
                           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                            لا توجد أسعار محددة
+                            {isLoadingPrices ? 'جاري تحميل الأسعار...' : 'لا توجد أسعار محددة'}
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -481,7 +517,7 @@ const MediaSalaries: React.FC = () => {
                           <Table.Cell>
                             <Badge variant="info">{getCurrencySymbol(price.currency)}</Badge>
                           </Table.Cell>
-                          {canManagePrices && (
+                          {canEditPrices && (
                             <Table.Cell>
                               <div className="flex gap-2">
                                 <Button
@@ -699,6 +735,87 @@ const MediaSalaries: React.FC = () => {
               </div>
             </Card.Body>
           </Card>
+
+          {/* سجل الإنجازات التفصيلي لكل موظف */}
+          {filteredAchievements.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                <User className="w-5 h-5" />
+                سجل تفصيلي حسب الموظف
+              </h3>
+
+              {/* تجميع الإنجازات حسب الموظف */}
+              {Object.entries(
+                filteredAchievements.reduce((acc, achievement) => {
+                  if (!acc[achievement.employeeId]) {
+                    acc[achievement.employeeId] = {
+                      employeeName: achievement.employeeName,
+                      achievements: [],
+                      totalAmount: 0,
+                      totalItems: 0
+                    };
+                  }
+                  acc[achievement.employeeId].achievements.push(achievement);
+                  acc[achievement.employeeId].totalAmount += achievement.totalAmount;
+                  acc[achievement.employeeId].totalItems += achievement.items.reduce((sum, item) => sum + item.quantity, 0);
+                  return acc;
+                }, {} as Record<string, { employeeName: string; achievements: EmployeeAchievement[]; totalAmount: number; totalItems: number }>)
+              ).map(([employeeId, data]) => (
+                <Card key={employeeId}>
+                  <Card.Body>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{data.employeeName}</h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{data.achievements.length} سجل إنجازات</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="text-center">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي المحتوى</p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{data.totalItems} قطعة</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي الراتب</p>
+                          <p className="text-lg font-bold text-success-600 dark:text-success-400">{data.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* تفاصيل كل سجل إنجازات */}
+                    <div className="space-y-3">
+                      {data.achievements.map((achievement) => (
+                        <div key={achievement.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {new Date(achievement.year, achievement.month - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+                            </span>
+                            <span className="text-sm font-bold text-success-600 dark:text-success-400">
+                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                            {achievement.items.map((item, idx) => (
+                              <div key={idx} className="bg-white dark:bg-gray-700 rounded px-2 py-1 text-xs">
+                                <span className="text-gray-600 dark:text-gray-400">{CONTENT_TYPES[item.contentType].split(' (')[0]}</span>
+                                <div className="flex justify-between">
+                                  <span className="font-medium">{item.quantity}×</span>
+                                  <span className="text-success-600 dark:text-success-400">{item.total.toFixed(0)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card.Body>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

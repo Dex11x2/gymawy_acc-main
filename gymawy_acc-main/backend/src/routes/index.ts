@@ -82,6 +82,9 @@ router.use('/salaries', salaryRoutes);
 import adsFundingRoutes from './adsFunding.routes';
 router.use('/ads-funding', adsFundingRoutes);
 
+import mediaPriceRoutes from './mediaPrice.routes';
+router.use('/media-prices', mediaPriceRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

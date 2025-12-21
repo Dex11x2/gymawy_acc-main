@@ -12,6 +12,8 @@ export const MODULES = {
   BRANCHES: 'branches',
   SALARIES: 'salaries',
   MEDIA_SALARIES: 'media_salaries',
+  MEDIA_SALARIES_PRICES: 'media_salaries_prices',
+  MEDIA_SALARIES_ACHIEVEMENTS: 'media_salaries_achievements',
   REVENUES: 'revenues',
   EXPENSES: 'expenses',
   CUSTODY: 'custody',
@@ -170,12 +172,31 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
   },
   {
     module: MODULES.MEDIA_SALARIES,
-    label: 'رواتب الميديا',
+    label: 'رواتب الميديا (عام)',
     actions: [
       { action: ACTIONS.VIEW, label: 'عرض' },
       { action: ACTIONS.WRITE, label: 'إضافة' },
       { action: ACTIONS.EDIT, label: 'تعديل' },
       { action: ACTIONS.DELETE, label: 'حذف' },
+      { action: ACTIONS.EXPORT, label: 'تصدير' },
+    ],
+  },
+  {
+    module: MODULES.MEDIA_SALARIES_PRICES,
+    label: 'إعدادات أسعار المحتوى',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض الأسعار' },
+      { action: ACTIONS.EDIT, label: 'تعديل الأسعار' },
+    ],
+  },
+  {
+    module: MODULES.MEDIA_SALARIES_ACHIEVEMENTS,
+    label: 'إنجازات الموظفين',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض الإنجازات' },
+      { action: ACTIONS.WRITE, label: 'إضافة إنجاز' },
+      { action: ACTIONS.EDIT, label: 'تعديل إنجاز' },
+      { action: ACTIONS.DELETE, label: 'حذف إنجاز' },
       { action: ACTIONS.EXPORT, label: 'تصدير' },
     ],
   },
