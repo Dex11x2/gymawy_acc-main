@@ -14,7 +14,8 @@
     "create-admin": "ts-node src/scripts/createSuperAdmin.ts",
     "update-roles": "ts-node src/scripts/updateEmployeeRoles.ts",
     "seed:permissions": "ts-node src/scripts/seedRolesAndPermissions.ts",
-    "add:ads-funding": "ts-node src/scripts/addAdsFundingPage.ts"
+    "add:ads-funding": "ts-node src/scripts/addAdsFundingPage.ts",
+    "add:media-salaries-pages": "ts-node src/scripts/addMediaSalariesPages.ts"
   },
   "keywords": [
     "accounting",
