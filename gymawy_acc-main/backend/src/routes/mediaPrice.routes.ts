@@ -13,7 +13,13 @@ router.get('/', protect, async (req: any, res) => {
 
     // If no prices exist, create defaults
     if (prices.length === 0) {
-      const defaultPrices = [
+      const defaultPrices: Array<{
+        type: 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
+        nameAr: string;
+        price: number;
+        currency: 'SAR' | 'USD' | 'EGP';
+        companyId: any;
+      }> = [
         { type: 'short_video', nameAr: 'فيديو قصير', price: 50, currency: 'SAR', companyId },
         { type: 'long_video', nameAr: 'فيديو طويل', price: 150, currency: 'SAR', companyId },
         { type: 'vlog', nameAr: 'فلوج', price: 200, currency: 'SAR', companyId },
@@ -22,7 +28,8 @@ router.get('/', protect, async (req: any, res) => {
         { type: 'thumbnail', nameAr: 'صورة مصغرة', price: 20, currency: 'SAR', companyId },
       ];
 
-      prices = await MediaPrice.insertMany(defaultPrices);
+      await MediaPrice.insertMany(defaultPrices);
+      prices = await MediaPrice.find({ companyId }).sort({ type: 1 });
       console.log('✅ Default media prices created');
     }
 
