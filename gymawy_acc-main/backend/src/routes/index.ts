@@ -85,6 +85,9 @@ router.use('/ads-funding', adsFundingRoutes);
 import mediaPriceRoutes from './mediaPrice.routes';
 router.use('/media-prices', mediaPriceRoutes);
 
+import mediaAchievementRoutes from './mediaAchievement.routes';
+router.use('/media-achievements', mediaAchievementRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

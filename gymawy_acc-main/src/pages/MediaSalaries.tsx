@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
 import { usePermissions } from '../hooks/usePermissions';
@@ -22,7 +22,9 @@ import {
   CheckCircle,
   AlertCircle,
   TrendingUp,
-  User
+  User,
+  Users,
+  RefreshCw
 } from 'lucide-react';
 
 type ContentType = 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
@@ -33,6 +35,15 @@ interface ContentPrice {
   nameAr: string;
   price: number;
   currency: 'SAR' | 'USD' | 'EGP';
+}
+
+interface EmployeeWithPrices {
+  employee: {
+    _id: string;
+    name: string;
+    position?: string;
+  };
+  prices: ContentPrice[];
 }
 
 interface EmployeeAchievement {
@@ -63,7 +74,7 @@ const CONTENT_TYPES = {
 
 const MediaSalaries: React.FC = () => {
   const { user } = useAuthStore();
-  const { payrolls, addPayroll, updatePayroll, loadPayrolls, employees, loadEmployees } = useDataStore();
+  const { payrolls, loadPayrolls, employees, loadEmployees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
   // الصلاحيات المنفصلة لإعدادات الأسعار وإنجازات الموظفين
@@ -75,19 +86,20 @@ const MediaSalaries: React.FC = () => {
   const canViewMedia = canViewPrices || canViewAchievements;
 
   const [activeTab, setActiveTab] = useState<'prices' | 'achievements'>(canViewPrices ? 'prices' : 'achievements');
-  const [isLoadingPrices, setIsLoadingPrices] = useState(true);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(false);
+  const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
 
-  // Prices State - يتم جلبها من قاعدة البيانات
-  const [prices, setPrices] = useState<ContentPrice[]>([]);
+  // State لاختيار الموظف في تاب الأسعار
+  const [selectedEmployeeForPrices, setSelectedEmployeeForPrices] = useState<string>('');
+  const [employeesWithPrices, setEmployeesWithPrices] = useState<EmployeeWithPrices[]>([]);
+  const [currentEmployeePrices, setCurrentEmployeePrices] = useState<ContentPrice[]>([]);
 
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [editingPrice, setEditingPrice] = useState<ContentPrice | null>(null);
 
-  // Achievements State
-  const [achievements, setAchievements] = useState<EmployeeAchievement[]>(() => {
-    const saved = localStorage.getItem('mediaAchievements');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Achievements State - من قاعدة البيانات
+  const [achievements, setAchievements] = useState<EmployeeAchievement[]>([]);
+  const [selectedEmployeeForAchievement, setSelectedEmployeeForAchievement] = useState<string>('');
 
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [editingAchievement, setEditingAchievement] = useState<EmployeeAchievement | null>(null);
@@ -109,47 +121,125 @@ const MediaSalaries: React.FC = () => {
   });
 
   const [achievementFormData, setAchievementFormData] = useState({
-    employeeId: user?.id || '',
-    employeeName: user?.name || '',
+    employeeId: '',
+    employeeName: '',
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     items: [] as { contentType: ContentType; quantity: number }[]
   });
 
-  // Load payrolls and employees on mount
+  // Load employees on mount
   useEffect(() => {
     loadPayrolls();
     loadEmployees();
   }, [loadPayrolls, loadEmployees]);
 
-  // جلب الأسعار من قاعدة البيانات
-  useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        setIsLoadingPrices(true);
-        const response = await api.get('/media-prices');
-        const fetchedPrices = response.data.map((p: any) => ({
+  // جلب جميع الموظفين مع أسعارهم
+  const fetchAllEmployeesWithPrices = useCallback(async () => {
+    try {
+      setIsLoadingPrices(true);
+      const response = await api.get('/media-prices/all-employees');
+      const data = response.data.map((item: any) => ({
+        employee: item.employee,
+        prices: item.prices.map((p: any) => ({
           id: p._id,
           type: p.type,
           nameAr: p.nameAr,
           price: p.price,
           currency: p.currency
-        }));
-        setPrices(fetchedPrices);
-      } catch (error) {
-        console.error('Error fetching prices:', error);
-        setToast({ message: 'حدث خطأ أثناء جلب الأسعار', type: 'error', isOpen: true });
-      } finally {
-        setIsLoadingPrices(false);
+        }))
+      }));
+      setEmployeesWithPrices(data);
+
+      // إذا لم يكن هناك موظف مختار، اختر الأول
+      if (!selectedEmployeeForPrices && data.length > 0) {
+        setSelectedEmployeeForPrices(data[0].employee._id);
+        setCurrentEmployeePrices(data[0].prices);
       }
-    };
-    fetchPrices();
+    } catch (error) {
+      console.error('Error fetching employees with prices:', error);
+      setToast({ message: 'حدث خطأ أثناء جلب بيانات الموظفين', type: 'error', isOpen: true });
+    } finally {
+      setIsLoadingPrices(false);
+    }
+  }, [selectedEmployeeForPrices]);
+
+  // جلب أسعار موظف معين
+  const fetchEmployeePrices = useCallback(async (employeeId: string) => {
+    if (!employeeId) return;
+    try {
+      setIsLoadingPrices(true);
+      const response = await api.get(`/media-prices/employee/${employeeId}`);
+      const fetchedPrices = response.data.map((p: any) => ({
+        id: p._id,
+        type: p.type,
+        nameAr: p.nameAr,
+        price: p.price,
+        currency: p.currency
+      }));
+      setCurrentEmployeePrices(fetchedPrices);
+    } catch (error) {
+      console.error('Error fetching employee prices:', error);
+      setToast({ message: 'حدث خطأ أثناء جلب أسعار الموظف', type: 'error', isOpen: true });
+    } finally {
+      setIsLoadingPrices(false);
+    }
   }, []);
 
-  // حفظ الإنجازات في localStorage (يمكن نقلها لاحقاً لقاعدة البيانات)
+  // جلب الإنجازات من قاعدة البيانات
+  const fetchAchievements = useCallback(async () => {
+    try {
+      setIsLoadingAchievements(true);
+      const response = await api.get('/media-achievements', {
+        params: { month: selectedMonth, year: selectedYear }
+      });
+      const data = response.data.map((a: any) => ({
+        id: a._id,
+        employeeId: a.employeeId?._id || a.employeeId,
+        employeeName: a.employeeId?.name || 'غير معروف',
+        month: a.month,
+        year: a.year,
+        items: a.items,
+        totalAmount: a.totalAmount,
+        syncedToPayroll: a.syncedToPayroll,
+        syncedAt: a.syncedAt
+      }));
+      setAchievements(data);
+    } catch (error) {
+      console.error('Error fetching achievements:', error);
+      setToast({ message: 'حدث خطأ أثناء جلب الإنجازات', type: 'error', isOpen: true });
+    } finally {
+      setIsLoadingAchievements(false);
+    }
+  }, [selectedMonth, selectedYear]);
+
+  // جلب البيانات عند تغيير التاب
   useEffect(() => {
-    localStorage.setItem('mediaAchievements', JSON.stringify(achievements));
-  }, [achievements]);
+    if (activeTab === 'prices' && canViewPrices) {
+      fetchAllEmployeesWithPrices();
+    } else if (activeTab === 'achievements' && canViewAchievements) {
+      fetchAchievements();
+    }
+  }, [activeTab, canViewPrices, canViewAchievements, fetchAllEmployeesWithPrices, fetchAchievements]);
+
+  // تحديث الأسعار عند تغيير الموظف المختار
+  useEffect(() => {
+    if (selectedEmployeeForPrices) {
+      const employeeData = employeesWithPrices.find(e => e.employee._id === selectedEmployeeForPrices);
+      if (employeeData) {
+        setCurrentEmployeePrices(employeeData.prices);
+      } else {
+        fetchEmployeePrices(selectedEmployeeForPrices);
+      }
+    }
+  }, [selectedEmployeeForPrices, employeesWithPrices, fetchEmployeePrices]);
+
+  // جلب الإنجازات عند تغيير الشهر/السنة
+  useEffect(() => {
+    if (activeTab === 'achievements') {
+      fetchAchievements();
+    }
+  }, [selectedMonth, selectedYear, activeTab, fetchAchievements]);
 
   const getCurrencySymbol = (currency: string) => {
     const symbols: Record<string, string> = {
@@ -161,16 +251,6 @@ const MediaSalaries: React.FC = () => {
   };
 
   // Price Handlers
-  const openAddPrice = () => {
-    if (!canEditPrices) {
-      setToast({ message: 'ليس لديك صلاحية لتعديل الأسعار', type: 'error', isOpen: true });
-      return;
-    }
-    setEditingPrice(null);
-    setPriceFormData({ type: 'short_video', price: '', currency: 'SAR' });
-    setShowPriceModal(true);
-  };
-
   const openEditPrice = (price: ContentPrice) => {
     if (!canEditPrices) {
       setToast({ message: 'ليس لديك صلاحية لتعديل الأسعار', type: 'error', isOpen: true });
@@ -184,39 +264,41 @@ const MediaSalaries: React.FC = () => {
   const handlePriceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!selectedEmployeeForPrices || !editingPrice) {
+      setToast({ message: 'يرجى اختيار موظف والسعر المراد تعديله', type: 'error', isOpen: true });
+      return;
+    }
+
     try {
-      if (editingPrice) {
-        // تحديث السعر في قاعدة البيانات
-        await api.put(`/media-prices/${editingPrice.id}`, {
-          type: priceFormData.type,
-          nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0],
-          price: Number(priceFormData.price),
-          currency: priceFormData.currency
-        });
-        setPrices(prices.map(p =>
-          p.id === editingPrice.id
-            ? { ...p, type: priceFormData.type, price: Number(priceFormData.price), currency: priceFormData.currency, nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0] }
-            : p
-        ));
-        setToast({ message: 'تم تحديث السعر بنجاح', type: 'success', isOpen: true });
-      } else {
-        // إضافة سعر جديد
-        const response = await api.post('/media-prices', {
-          type: priceFormData.type,
-          nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0],
-          price: Number(priceFormData.price),
-          currency: priceFormData.currency
-        });
-        const newPrice: ContentPrice = {
-          id: response.data._id,
-          type: priceFormData.type,
-          nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0],
-          price: Number(priceFormData.price),
-          currency: priceFormData.currency
-        };
-        setPrices([...prices, newPrice]);
-        setToast({ message: 'تم إضافة السعر بنجاح', type: 'success', isOpen: true });
-      }
+      // تحديث السعر في قاعدة البيانات
+      await api.put(`/media-prices/employee/${selectedEmployeeForPrices}/${editingPrice.id}`, {
+        price: Number(priceFormData.price),
+        currency: priceFormData.currency,
+        nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0]
+      });
+
+      // تحديث الـ state المحلي
+      setCurrentEmployeePrices(currentEmployeePrices.map(p =>
+        p.id === editingPrice.id
+          ? { ...p, price: Number(priceFormData.price), currency: priceFormData.currency }
+          : p
+      ));
+
+      // تحديث employeesWithPrices
+      setEmployeesWithPrices(employeesWithPrices.map(e =>
+        e.employee._id === selectedEmployeeForPrices
+          ? {
+              ...e,
+              prices: e.prices.map(p =>
+                p.id === editingPrice.id
+                  ? { ...p, price: Number(priceFormData.price), currency: priceFormData.currency }
+                  : p
+              )
+            }
+          : e
+      ));
+
+      setToast({ message: 'تم تحديث السعر بنجاح', type: 'success', isOpen: true });
       setShowPriceModal(false);
     } catch (error: any) {
       console.error('Error saving price:', error);
@@ -224,31 +306,28 @@ const MediaSalaries: React.FC = () => {
     }
   };
 
-  const handleDeletePrice = (id: string) => {
-    if (!canEditPrices) {
-      setToast({ message: 'ليس لديك صلاحية لحذف الأسعار', type: 'error', isOpen: true });
-      return;
-    }
-    setDeleteId(id);
-    setDeleteType('price');
-    setShowDeleteDialog(true);
-  };
-
   // Achievement Handlers
   const openAddAchievement = () => {
+    const firstEmployee = employees[0];
     setEditingAchievement(null);
+    setSelectedEmployeeForAchievement(firstEmployee?.id || '');
     setAchievementFormData({
-      employeeId: user?.id || '',
-      employeeName: user?.name || '',
-      month: new Date().getMonth() + 1,
-      year: new Date().getFullYear(),
+      employeeId: firstEmployee?.id || '',
+      employeeName: firstEmployee?.name || '',
+      month: selectedMonth,
+      year: selectedYear,
       items: []
     });
     setShowAchievementModal(true);
   };
 
   const openEditAchievement = (achievement: EmployeeAchievement) => {
+    if (achievement.syncedToPayroll) {
+      setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
+      return;
+    }
     setEditingAchievement(achievement);
+    setSelectedEmployeeForAchievement(achievement.employeeId);
     setAchievementFormData({
       employeeId: achievement.employeeId,
       employeeName: achievement.employeeName,
@@ -258,6 +337,30 @@ const MediaSalaries: React.FC = () => {
     });
     setShowAchievementModal(true);
   };
+
+  // تحميل أسعار الموظف المختار للإنجاز
+  const [selectedEmployeeAchievementPrices, setSelectedEmployeeAchievementPrices] = useState<ContentPrice[]>([]);
+
+  useEffect(() => {
+    const loadPricesForAchievement = async () => {
+      if (selectedEmployeeForAchievement && showAchievementModal) {
+        try {
+          const response = await api.get(`/media-prices/employee/${selectedEmployeeForAchievement}`);
+          const fetchedPrices = response.data.map((p: any) => ({
+            id: p._id,
+            type: p.type,
+            nameAr: p.nameAr,
+            price: p.price,
+            currency: p.currency
+          }));
+          setSelectedEmployeeAchievementPrices(fetchedPrices);
+        } catch (error) {
+          console.error('Error fetching prices for achievement:', error);
+        }
+      }
+    };
+    loadPricesForAchievement();
+  }, [selectedEmployeeForAchievement, showAchievementModal]);
 
   const addAchievementItem = () => {
     setAchievementFormData({
@@ -279,11 +382,31 @@ const MediaSalaries: React.FC = () => {
     setAchievementFormData({ ...achievementFormData, items: newItems });
   };
 
-  const handleAchievementSubmit = (e: React.FormEvent) => {
+  const handleEmployeeChangeForAchievement = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    setSelectedEmployeeForAchievement(employeeId);
+    setAchievementFormData({
+      ...achievementFormData,
+      employeeId,
+      employeeName: employee?.name || ''
+    });
+  };
+
+  const handleAchievementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!achievementFormData.employeeId) {
+      setToast({ message: 'يرجى اختيار الموظف', type: 'error', isOpen: true });
+      return;
+    }
+
+    if (achievementFormData.items.length === 0) {
+      setToast({ message: 'يرجى إضافة إنجازات', type: 'error', isOpen: true });
+      return;
+    }
+
     const itemsWithPrices = achievementFormData.items.map(item => {
-      const price = prices.find(p => p.type === item.contentType)?.price || 0;
+      const price = selectedEmployeeAchievementPrices.find(p => p.type === item.contentType)?.price || 0;
       return {
         contentType: item.contentType,
         quantity: item.quantity,
@@ -292,85 +415,67 @@ const MediaSalaries: React.FC = () => {
       };
     });
 
-    const totalAmount = itemsWithPrices.reduce((sum, item) => sum + item.total, 0);
+    try {
+      if (editingAchievement) {
+        // تحديث إنجاز موجود
+        await api.put(`/media-achievements/${editingAchievement.id}`, {
+          items: itemsWithPrices
+        });
+        setToast({ message: 'تم تحديث الإنجازات بنجاح', type: 'success', isOpen: true });
+      } else {
+        // إضافة إنجاز جديد
+        await api.post('/media-achievements', {
+          employeeId: achievementFormData.employeeId,
+          month: achievementFormData.month,
+          year: achievementFormData.year,
+          items: itemsWithPrices
+        });
+        setToast({ message: 'تم إضافة الإنجازات بنجاح', type: 'success', isOpen: true });
+      }
 
-    if (editingAchievement) {
-      setAchievements(achievements.map(a =>
-        a.id === editingAchievement.id
-          ? { ...a, ...achievementFormData, items: itemsWithPrices, totalAmount }
-          : a
-      ));
-      setToast({ message: 'تم تحديث الإنجازات بنجاح', type: 'success', isOpen: true });
-    } else {
-      const newAchievement: EmployeeAchievement = {
-        id: Date.now().toString(),
-        ...achievementFormData,
-        items: itemsWithPrices,
-        totalAmount
-      };
-      setAchievements([...achievements, newAchievement]);
-      setToast({ message: 'تم إضافة الإنجازات بنجاح', type: 'success', isOpen: true });
+      setShowAchievementModal(false);
+      fetchAchievements(); // إعادة تحميل الإنجازات
+    } catch (error: any) {
+      console.error('Error saving achievement:', error);
+      const message = error.response?.data?.message || 'حدث خطأ أثناء حفظ الإنجازات';
+      setToast({ message, type: 'error', isOpen: true });
     }
-    setShowAchievementModal(false);
   };
 
   const handleDeleteAchievement = (id: string) => {
+    const achievement = achievements.find(a => a.id === id);
+    if (achievement?.syncedToPayroll) {
+      setToast({ message: 'لا يمكن حذف إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
+      return;
+    }
     setDeleteId(id);
     setDeleteType('achievement');
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
-    if (deleteId) {
-      if (deleteType === 'price') {
-        setPrices(prices.filter(p => p.id !== deleteId));
-        setToast({ message: 'تم حذف السعر بنجاح', type: 'success', isOpen: true });
-      } else {
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      if (deleteType === 'achievement') {
+        await api.delete(`/media-achievements/${deleteId}`);
         setAchievements(achievements.filter(a => a.id !== deleteId));
         setToast({ message: 'تم حذف الإنجازات بنجاح', type: 'success', isOpen: true });
       }
       setDeleteId(null);
+      setShowDeleteDialog(false);
+    } catch (error: any) {
+      console.error('Error deleting:', error);
+      setToast({ message: error.response?.data?.message || 'حدث خطأ أثناء الحذف', type: 'error', isOpen: true });
     }
   };
 
   // Sync achievement to payroll
   const syncToPayroll = async (achievement: EmployeeAchievement) => {
     try {
-      // Find existing payroll for this employee/month/year
-      const existingPayroll = payrolls.find(
-        p => p.employeeId === achievement.employeeId &&
-             p.month === achievement.month &&
-             p.year === achievement.year
-      );
+      await api.post(`/media-achievements/${achievement.id}/sync-payroll`);
 
-      // Find employee to get base salary
-      const employee = employees.find(e => e.id === achievement.employeeId);
-      const baseSalary = employee?.salary || 0;
-
-      if (existingPayroll) {
-        // Update existing payroll - add media achievements to bonuses
-        await updatePayroll(existingPayroll.id, {
-          bonuses: (existingPayroll.bonuses || 0) + achievement.totalAmount,
-          netSalary: existingPayroll.baseSalary + ((existingPayroll.bonuses || 0) + achievement.totalAmount) - (existingPayroll.deductions || 0),
-          notes: `${existingPayroll.notes || ''}\nمكافأة ميديا: ${achievement.totalAmount} ر.س`.trim()
-        });
-      } else {
-        // Create new payroll entry
-        await addPayroll({
-          employeeId: achievement.employeeId,
-          month: achievement.month,
-          year: achievement.year,
-          baseSalary: baseSalary,
-          bonuses: achievement.totalAmount,
-          deductions: 0,
-          netSalary: baseSalary + achievement.totalAmount,
-          currency: 'SAR',
-          type: 'variable',
-          notes: `مكافأة ميديا: ${achievement.totalAmount} ر.س`
-        });
-      }
-
-      // Mark achievement as synced
+      // تحديث الـ state المحلي
       setAchievements(achievements.map(a =>
         a.id === achievement.id
           ? { ...a, syncedToPayroll: true, syncedAt: new Date() }
@@ -385,19 +490,17 @@ const MediaSalaries: React.FC = () => {
 
       // Reload payrolls to reflect changes
       await loadPayrolls();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error syncing to payroll:', error);
       setToast({
-        message: 'حدث خطأ أثناء إضافة الإنجازات للراتب',
+        message: error.response?.data?.message || 'حدث خطأ أثناء إضافة الإنجازات للراتب',
         type: 'error',
         isOpen: true
       });
     }
   };
 
-  const filteredAchievements = achievements.filter(a =>
-    a.month === selectedMonth && a.year === selectedYear
-  );
+  const filteredAchievements = achievements;
 
   // Calculate monthly summary for current filter
   const monthlySummary = filteredAchievements.reduce((acc, achievement) => {
@@ -433,7 +536,7 @@ const MediaSalaries: React.FC = () => {
             </div>
             رواتب الميديا
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة أسعار المحتوى وتسجيل إنجازات الموظفين</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة أسعار المحتوى لكل موظف وتسجيل إنجازاتهم</p>
         </div>
       </div>
 
@@ -450,7 +553,7 @@ const MediaSalaries: React.FC = () => {
               }`}
             >
               <Settings className="w-4 h-4 inline ml-2" />
-              إعدادات الأسعار
+              أسعار الموظفين
             </button>
           )}
           {canViewAchievements && (
@@ -472,81 +575,166 @@ const MediaSalaries: React.FC = () => {
       {/* Prices Tab */}
       {activeTab === 'prices' && canViewPrices && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">أسعار أنواع المحتوى</h2>
-            {canEditPrices && (
-              <Button onClick={openAddPrice}>
-                <Plus className="w-4 h-4" />
-                إضافة سعر
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">أسعار أنواع المحتوى</h2>
+              <Button variant="ghost" size="sm" onClick={fetchAllEmployeesWithPrices} disabled={isLoadingPrices}>
+                <RefreshCw className={`w-4 h-4 ${isLoadingPrices ? 'animate-spin' : ''}`} />
               </Button>
-            )}
+            </div>
+
+            {/* اختيار الموظف */}
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-gray-500" />
+              <select
+                value={selectedEmployeeForPrices}
+                onChange={(e) => setSelectedEmployeeForPrices(e.target.value)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-w-[200px]"
+              >
+                <option value="">اختر موظف...</option>
+                {employeesWithPrices.map(item => (
+                  <option key={item.employee._id} value={item.employee._id}>
+                    {item.employee.name} {item.employee.position ? `- ${item.employee.position}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <Card>
-            <Card.Body className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.Head>نوع المحتوى</Table.Head>
-                      <Table.Head>السعر</Table.Head>
-                      <Table.Head>العملة</Table.Head>
-                      {canEditPrices && <Table.Head>الإجراءات</Table.Head>}
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {prices.length === 0 ? (
+          {selectedEmployeeForPrices ? (
+            <Card>
+              <Card.Body className="p-0">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        {employeesWithPrices.find(e => e.employee._id === selectedEmployeeForPrices)?.employee.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {employeesWithPrices.find(e => e.employee._id === selectedEmployeeForPrices)?.employee.position || 'لا يوجد منصب'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <Table.Header>
                       <Table.Row>
-                        <Table.Cell colSpan={canEditPrices ? 4 : 3}>
-                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                            {isLoadingPrices ? 'جاري تحميل الأسعار...' : 'لا توجد أسعار محددة'}
-                          </div>
-                        </Table.Cell>
+                        <Table.Head>نوع المحتوى</Table.Head>
+                        <Table.Head>السعر</Table.Head>
+                        <Table.Head>العملة</Table.Head>
+                        {canEditPrices && <Table.Head>الإجراءات</Table.Head>}
                       </Table.Row>
-                    ) : (
-                      prices.map(price => (
-                        <Table.Row key={price.id}>
-                          <Table.Cell>
-                            <span className="font-medium text-gray-900 dark:text-white">{price.nameAr}</span>
+                    </Table.Header>
+                    <Table.Body>
+                      {currentEmployeePrices.length === 0 ? (
+                        <Table.Row>
+                          <Table.Cell colSpan={canEditPrices ? 4 : 3}>
+                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                              {isLoadingPrices ? 'جاري تحميل الأسعار...' : 'لا توجد أسعار محددة لهذا الموظف'}
+                            </div>
                           </Table.Cell>
-                          <Table.Cell>
-                            <span className="text-success-600 dark:text-success-400 font-semibold">
-                              {price.price.toFixed(2)}
-                            </span>
-                          </Table.Cell>
-                          <Table.Cell>
-                            <Badge variant="info">{getCurrencySymbol(price.currency)}</Badge>
-                          </Table.Cell>
-                          {canEditPrices && (
-                            <Table.Cell>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => openEditPrice(price)}
-                                  className="text-brand-600 hover:text-brand-700"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeletePrice(price.id)}
-                                  className="text-error-600 hover:text-error-700"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </Table.Cell>
-                          )}
                         </Table.Row>
-                      ))
-                    )}
-                  </Table.Body>
-                </Table>
+                      ) : (
+                        currentEmployeePrices.map(price => (
+                          <Table.Row key={price.id}>
+                            <Table.Cell>
+                              <span className="font-medium text-gray-900 dark:text-white">{price.nameAr}</span>
+                            </Table.Cell>
+                            <Table.Cell>
+                              <span className="text-success-600 dark:text-success-400 font-semibold">
+                                {price.price.toFixed(2)}
+                              </span>
+                            </Table.Cell>
+                            <Table.Cell>
+                              <Badge variant="info">{getCurrencySymbol(price.currency)}</Badge>
+                            </Table.Cell>
+                            {canEditPrices && (
+                              <Table.Cell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openEditPrice(price)}
+                                    className="text-brand-600 hover:text-brand-700"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </Table.Cell>
+                            )}
+                          </Table.Row>
+                        ))
+                      )}
+                    </Table.Body>
+                  </Table>
+                </div>
+              </Card.Body>
+            </Card>
+          ) : (
+            <Card>
+              <Card.Body>
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">اختر موظف لعرض وتعديل أسعاره</p>
+                  <p className="text-sm mt-2">كل موظف له أسعار مستقلة لأنواع المحتوى المختلفة</p>
+                </div>
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* عرض كل الموظفين مع ملخص أسعارهم */}
+          {employeesWithPrices.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                ملخص أسعار جميع الموظفين
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {employeesWithPrices.map(({ employee, prices }) => (
+                  <Card
+                    key={employee._id}
+                    className={`cursor-pointer transition-all ${
+                      selectedEmployeeForPrices === employee._id
+                        ? 'ring-2 ring-brand-500'
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => setSelectedEmployeeForPrices(employee._id)}
+                  >
+                    <Card.Body>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{employee.name}</h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{employee.position || '-'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {prices.slice(0, 4).map(p => (
+                          <div key={p.id} className="flex justify-between bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1">
+                            <span className="text-gray-600 dark:text-gray-400 truncate">{p.nameAr}</span>
+                            <span className="text-success-600 dark:text-success-400 font-medium">
+                              {p.price} {getCurrencySymbol(p.currency)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {prices.length > 4 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                          +{prices.length - 4} أنواع أخرى
+                        </p>
+                      )}
+                    </Card.Body>
+                  </Card>
+                ))}
               </div>
-            </Card.Body>
-          </Card>
+            </div>
+          )}
         </div>
       )}
 
@@ -636,6 +824,9 @@ const MediaSalaries: React.FC = () => {
                   ))}
                 </select>
               </div>
+              <Button variant="ghost" size="sm" onClick={fetchAchievements} disabled={isLoadingAchievements}>
+                <RefreshCw className={`w-4 h-4 ${isLoadingAchievements ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
 
             <Button onClick={openAddAchievement}>
@@ -652,15 +843,25 @@ const MediaSalaries: React.FC = () => {
                     <Table.Row>
                       <Table.Head>الموظف</Table.Head>
                       <Table.Head>الشهر</Table.Head>
+                      <Table.Head>عدد المحتوى</Table.Head>
                       <Table.Head>الإجمالي</Table.Head>
                       <Table.Head>الحالة</Table.Head>
                       <Table.Head>الإجراءات</Table.Head>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
-                    {filteredAchievements.length === 0 ? (
+                    {isLoadingAchievements ? (
                       <Table.Row>
-                        <Table.Cell colSpan={5}>
+                        <Table.Cell colSpan={6}>
+                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                            جاري التحميل...
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    ) : filteredAchievements.length === 0 ? (
+                      <Table.Row>
+                        <Table.Cell colSpan={6}>
                           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                             لا توجد إنجازات لهذا الشهر
                           </div>
@@ -670,13 +871,23 @@ const MediaSalaries: React.FC = () => {
                       filteredAchievements.map(achievement => (
                         <Table.Row key={achievement.id}>
                           <Table.Cell>
-                            <span className="font-medium text-gray-900 dark:text-white">{achievement.employeeName}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 rounded-full flex items-center justify-center">
+                                <User className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                              </div>
+                              <span className="font-medium text-gray-900 dark:text-white">{achievement.employeeName}</span>
+                            </div>
                           </Table.Cell>
                           <Table.Cell>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-gray-400" />
                               {new Date(achievement.year, achievement.month - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
                             </div>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {achievement.items.reduce((sum, item) => sum + item.quantity, 0)} قطعة
+                            </span>
                           </Table.Cell>
                           <Table.Cell>
                             <span className="text-success-600 dark:text-success-400 font-bold">
@@ -714,6 +925,7 @@ const MediaSalaries: React.FC = () => {
                                 size="sm"
                                 onClick={() => openEditAchievement(achievement)}
                                 className="text-brand-600 hover:text-brand-700"
+                                disabled={achievement.syncedToPayroll}
                               >
                                 <Edit2 className="w-4 h-4" />
                               </Button>
@@ -722,6 +934,7 @@ const MediaSalaries: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleDeleteAchievement(achievement.id)}
                                 className="text-error-600 hover:text-error-700"
+                                disabled={achievement.syncedToPayroll}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -790,9 +1003,14 @@ const MediaSalaries: React.FC = () => {
                       {data.achievements.map((achievement) => (
                         <div key={achievement.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {new Date(achievement.year, achievement.month - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {new Date(achievement.year, achievement.month - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+                              </span>
+                              {achievement.syncedToPayroll && (
+                                <Badge variant="success" className="text-xs">مزامن</Badge>
+                              )}
+                            </div>
                             <span className="text-sm font-bold text-success-600 dark:text-success-400">
                               {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
                             </span>
@@ -823,22 +1041,18 @@ const MediaSalaries: React.FC = () => {
       <Modal
         isOpen={showPriceModal}
         onClose={() => setShowPriceModal(false)}
-        title={editingPrice ? 'تعديل السعر' : 'إضافة سعر جديد'}
+        title="تعديل السعر"
         size="md"
       >
         <form onSubmit={handlePriceSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نوع المحتوى</label>
-            <select
-              value={priceFormData.type}
-              onChange={(e) => setPriceFormData({ ...priceFormData, type: e.target.value as ContentType })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-              required
-            >
-              {Object.entries(CONTENT_TYPES).map(([key, value]) => (
-                <option key={key} value={key}>{value}</option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={editingPrice ? CONTENT_TYPES[editingPrice.type] : ''}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              disabled
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -871,7 +1085,7 @@ const MediaSalaries: React.FC = () => {
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1">
               <Save className="w-4 h-4" />
-              {editingPrice ? 'تحديث' : 'إضافة'}
+              تحديث
             </Button>
             <Button type="button" variant="outline" onClick={() => setShowPriceModal(false)} className="flex-1">
               <X className="w-4 h-4" />
@@ -889,6 +1103,32 @@ const MediaSalaries: React.FC = () => {
         size="lg"
       >
         <form onSubmit={handleAchievementSubmit} className="space-y-4">
+          {/* اختيار الموظف */}
+          {!editingAchievement && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الموظف</label>
+              <select
+                value={selectedEmployeeForAchievement}
+                onChange={(e) => handleEmployeeChangeForAchievement(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                required
+              >
+                <option value="">اختر موظف...</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.name} {emp.position ? `- ${emp.position}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {editingAchievement && (
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">الموظف: <span className="font-semibold text-gray-900 dark:text-white">{achievementFormData.employeeName}</span></p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
@@ -897,6 +1137,7 @@ const MediaSalaries: React.FC = () => {
                 onChange={(e) => setAchievementFormData({ ...achievementFormData, month: Number(e.target.value) })}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 required
+                disabled={!!editingAchievement}
               >
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>
@@ -912,6 +1153,7 @@ const MediaSalaries: React.FC = () => {
                 onChange={(e) => setAchievementFormData({ ...achievementFormData, year: Number(e.target.value) })}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 required
+                disabled={!!editingAchievement}
               >
                 {Array.from({ length: 5 }, (_, i) => (
                   <option key={i} value={2024 + i}>
@@ -931,62 +1173,89 @@ const MediaSalaries: React.FC = () => {
               </Button>
             </div>
 
-            {achievementFormData.items.map((item, index) => (
-              <div key={index} className="flex gap-3 items-end p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">نوع المحتوى</label>
-                  <select
-                    value={item.contentType}
-                    onChange={(e) => updateAchievementItem(index, 'contentType', e.target.value as ContentType)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    required
+            {achievementFormData.items.map((item, index) => {
+              const itemPrice = selectedEmployeeAchievementPrices.find(p => p.type === item.contentType)?.price || 0;
+              return (
+                <div key={index} className="flex gap-3 items-end p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">نوع المحتوى</label>
+                    <select
+                      value={item.contentType}
+                      onChange={(e) => updateAchievementItem(index, 'contentType', e.target.value as ContentType)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      required
+                    >
+                      {Object.entries(CONTENT_TYPES).map(([key, value]) => (
+                        <option key={key} value={key}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-24">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">العدد</label>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => updateAchievementItem(index, 'quantity', Number(e.target.value))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div className="w-24">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">السعر</label>
+                    <input
+                      type="text"
+                      value={itemPrice}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      disabled
+                    />
+                  </div>
+                  <div className="w-24">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">الإجمالي</label>
+                    <input
+                      type="text"
+                      value={(item.quantity * itemPrice).toFixed(2)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold"
+                      disabled
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeAchievementItem(index)}
+                    className="text-error-600 hover:text-error-700 mb-0.5"
                   >
-                    {Object.entries(CONTENT_TYPES).map(([key, value]) => (
-                      <option key={key} value={key}>{value}</option>
-                    ))}
-                  </select>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-                <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">العدد</label>
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => updateAchievementItem(index, 'quantity', Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    min="0"
-                    required
-                  />
-                </div>
-                <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">السعر</label>
-                  <input
-                    type="text"
-                    value={prices.find(p => p.type === item.contentType)?.price || 0}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                    disabled
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeAchievementItem(index)}
-                  className="text-error-600 hover:text-error-700 mb-0.5"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
 
             {achievementFormData.items.length === 0 && (
               <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
                 اضغط "إضافة عنصر" لبدء تسجيل الإنجازات
               </div>
             )}
+
+            {/* إجمالي الإنجازات */}
+            {achievementFormData.items.length > 0 && (
+              <div className="flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="text-left">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي المبلغ</p>
+                  <p className="text-xl font-bold text-success-600 dark:text-success-400">
+                    {achievementFormData.items.reduce((sum, item) => {
+                      const price = selectedEmployeeAchievementPrices.find(p => p.type === item.contentType)?.price || 0;
+                      return sum + (item.quantity * price);
+                    }, 0).toFixed(2)} {getCurrencySymbol('SAR')}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={achievementFormData.items.length === 0}>
+            <Button type="submit" className="flex-1" disabled={achievementFormData.items.length === 0 || !selectedEmployeeForAchievement}>
               <Save className="w-4 h-4" />
               {editingAchievement ? 'تحديث' : 'إضافة'}
             </Button>

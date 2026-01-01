@@ -4,7 +4,10 @@ import Revenue from '../models/Revenue';
 export const getAll = async (req: any, res: Response) => {
   try {
     const filter = req.user?.role === 'super_admin' ? {} : { companyId: req.user?.companyId };
-    const revenues = await Revenue.find(filter).populate('departmentId createdBy');
+    // ترتيب بالأحدث أولاً
+    const revenues = await Revenue.find(filter)
+      .populate('departmentId createdBy')
+      .sort({ date: -1, createdAt: -1 });
     res.json(revenues);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

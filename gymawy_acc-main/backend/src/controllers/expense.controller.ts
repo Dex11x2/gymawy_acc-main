@@ -4,7 +4,10 @@ import Expense from '../models/Expense';
 export const getAll = async (req: any, res: Response) => {
   try {
     const filter = req.user?.role === 'super_admin' ? {} : { companyId: req.user?.companyId };
-    const expenses = await Expense.find(filter).populate('departmentId createdBy');
+    // ترتيب بالأحدث أولاً
+    const expenses = await Expense.find(filter)
+      .populate('departmentId createdBy')
+      .sort({ date: -1, createdAt: -1 });
     res.json(expenses);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

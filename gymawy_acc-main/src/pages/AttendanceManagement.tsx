@@ -507,7 +507,7 @@ const AttendanceManagement: React.FC = () => {
               <input
                 type="time"
                 name="checkIn"
-                defaultValue={editingRecord?.checkIn ? new Date(editingRecord.checkIn).toTimeString().slice(0, 5) : ''}
+                defaultValue={editingRecord?.checkIn ? new Date(editingRecord.checkIn).toISOString().slice(11, 16) : ''}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
@@ -516,7 +516,7 @@ const AttendanceManagement: React.FC = () => {
               <input
                 type="time"
                 name="checkOut"
-                defaultValue={editingRecord?.checkOut ? new Date(editingRecord.checkOut).toTimeString().slice(0, 5) : ''}
+                defaultValue={editingRecord?.checkOut ? new Date(editingRecord.checkOut).toISOString().slice(11, 16) : ''}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
