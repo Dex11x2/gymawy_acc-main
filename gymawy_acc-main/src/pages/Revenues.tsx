@@ -58,9 +58,10 @@ const Revenues: React.FC = () => {
     }
   };
 
+  // استخدام UTC لتجنب مشاكل التوقيت المحلي
   const filteredRevenues = revenues.filter(r => {
     const revenueDate = new Date(r.date);
-    return revenueDate.getMonth() + 1 === selectedMonth && revenueDate.getFullYear() === selectedYear;
+    return revenueDate.getUTCMonth() + 1 === selectedMonth && revenueDate.getUTCFullYear() === selectedYear;
   });
 
   const revenuesByCurrency = {

@@ -52,15 +52,16 @@ const Expenses: React.FC = () => {
   };
 
   // Filter expenses: operational expenses for selected month, capital expenses for all time
+  // استخدام UTC لتجنب مشاكل التوقيت المحلي
   const filteredExpenses = expenses.filter(e => {
     const expenseDate = new Date(e.date);
     if (e.type === 'capital') {
       // Capital (foundational) expenses are cumulative, show all up to selected date
-      return expenseDate.getFullYear() <= selectedYear &&
-             (expenseDate.getFullYear() < selectedYear || expenseDate.getMonth() + 1 <= selectedMonth);
+      return expenseDate.getUTCFullYear() <= selectedYear &&
+             (expenseDate.getUTCFullYear() < selectedYear || expenseDate.getUTCMonth() + 1 <= selectedMonth);
     }
     // Operational expenses only for selected month
-    return expenseDate.getMonth() + 1 === selectedMonth && expenseDate.getFullYear() === selectedYear;
+    return expenseDate.getUTCMonth() + 1 === selectedMonth && expenseDate.getUTCFullYear() === selectedYear;
   });
 
   const expensesByCurrency = {

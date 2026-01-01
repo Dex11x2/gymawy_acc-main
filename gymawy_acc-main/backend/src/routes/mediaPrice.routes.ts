@@ -20,35 +20,7 @@ const DEFAULT_PRICES: Array<{
   { type: 'thumbnail', nameAr: 'صورة مصغرة', price: 20, currency: 'SAR' },
 ];
 
-// جلب أسعار موظف معين
-router.get('/employee/:employeeId', protect, async (req: any, res) => {
-  try {
-    const { employeeId } = req.params;
-    const companyId = req.user?.companyId || null;
-
-    let prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
-
-    // إذا لم توجد أسعار للموظف، إنشاء أسعار افتراضية
-    if (prices.length === 0) {
-      const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
-        ...p,
-        employeeId,
-        companyId
-      }));
-
-      await MediaPrice.insertMany(defaultPricesWithEmployee);
-      prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
-      console.log(`✅ Default media prices created for employee: ${employeeId}`);
-    }
-
-    res.json(prices);
-  } catch (error: any) {
-    console.error('Error fetching employee media prices:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// جلب كل الموظفين مع أسعارهم (للإدارة)
+// جلب كل الموظفين مع أسعارهم (للإدارة) - يجب أن يكون قبل /employee/:employeeId
 router.get('/all-employees', protect, async (req: any, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -85,6 +57,34 @@ router.get('/all-employees', protect, async (req: any, res) => {
     res.json(employeesWithPrices);
   } catch (error: any) {
     console.error('Error fetching all employees prices:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// جلب أسعار موظف معين
+router.get('/employee/:employeeId', protect, async (req: any, res) => {
+  try {
+    const { employeeId } = req.params;
+    const companyId = req.user?.companyId || null;
+
+    let prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
+
+    // إذا لم توجد أسعار للموظف، إنشاء أسعار افتراضية
+    if (prices.length === 0) {
+      const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
+        ...p,
+        employeeId,
+        companyId
+      }));
+
+      await MediaPrice.insertMany(defaultPricesWithEmployee);
+      prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
+      console.log(`✅ Default media prices created for employee: ${employeeId}`);
+    }
+
+    res.json(prices);
+  } catch (error: any) {
+    console.error('Error fetching employee media prices:', error);
     res.status(500).json({ message: error.message });
   }
 });
