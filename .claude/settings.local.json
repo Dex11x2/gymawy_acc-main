@@ -5,7 +5,8 @@
       "Bash(npm install)",
       "Bash(npm run dev:*)",
       "Bash(npx tsc:*)",
-      "Bash(mongo:*)"
+      "Bash(mongo:*)",
+      "Bash(git add:*)"
     ]
   }
 }

@@ -36,23 +36,39 @@ router.get('/all-employees', protect, async (req: any, res) => {
     // جلب أسعار كل موظف
     const employeesWithPrices = await Promise.all(
       employees.map(async (emp) => {
-        let prices = await MediaPrice.find({ employeeId: emp._id }).sort({ type: 1 });
+        try {
+          let prices = await MediaPrice.find({ employeeId: emp._id }).sort({ type: 1 });
 
-        // إنشاء أسعار افتراضية إذا لم توجد
-        if (prices.length === 0) {
-          const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
-            ...p,
-            employeeId: emp._id,
-            companyId
-          }));
-          await MediaPrice.insertMany(defaultPricesWithEmployee);
-          prices = await MediaPrice.find({ employeeId: emp._id }).sort({ type: 1 });
+          // إنشاء أسعار افتراضية إذا لم توجد
+          if (prices.length === 0) {
+            const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
+              ...p,
+              employeeId: emp._id,
+              companyId
+            }));
+            // استخدام insertMany مع ordered: false لتجاهل الأخطاء المكررة
+            try {
+              await MediaPrice.insertMany(defaultPricesWithEmployee, { ordered: false });
+            } catch (insertError: any) {
+              // تجاهل أخطاء duplicate key
+              if (insertError.code !== 11000) {
+                console.error('Insert error:', insertError);
+              }
+            }
+            prices = await MediaPrice.find({ employeeId: emp._id }).sort({ type: 1 });
+          }
+
+          return {
+            employee: emp,
+            prices
+          };
+        } catch (empError: any) {
+          console.error(`Error processing employee ${emp._id}:`, empError);
+          return {
+            employee: emp,
+            prices: []
+          };
         }
-
-        return {
-          employee: emp,
-          prices
-        };
       })
     );
 
@@ -79,7 +95,14 @@ router.get('/employee/:employeeId', protect, async (req: any, res) => {
         companyId
       }));
 
-      await MediaPrice.insertMany(defaultPricesWithEmployee);
+      try {
+        await MediaPrice.insertMany(defaultPricesWithEmployee, { ordered: false });
+      } catch (insertError: any) {
+        // تجاهل أخطاء duplicate key
+        if (insertError.code !== 11000) {
+          console.error('Insert error:', insertError);
+        }
+      }
       prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
       console.log(`✅ Default media prices created for employee: ${employeeId}`);
     }
