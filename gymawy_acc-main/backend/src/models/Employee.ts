@@ -10,6 +10,7 @@ export interface IEmployee extends Document {
   position: string;
   salary: number;
   salaryCurrency: 'EGP' | 'SAR' | 'USD' | 'AED';
+  salaryType: 'fixed' | 'variable'; // ثابت أو متغير (ميديا)
   hireDate: Date;
   isGeneralManager: boolean;
   isAdministrativeManager: boolean;
@@ -37,6 +38,7 @@ const EmployeeSchema = new Schema({
   position: { type: String, required: true },
   salary: { type: Number, required: true },
   salaryCurrency: { type: String, enum: ['EGP', 'SAR', 'USD', 'AED'], default: 'EGP' },
+  salaryType: { type: String, enum: ['fixed', 'variable'], default: 'fixed' }, // ثابت أو متغير
   hireDate: { type: Date, default: Date.now },
   isGeneralManager: { type: Boolean, default: false },
   isAdministrativeManager: { type: Boolean, default: false },

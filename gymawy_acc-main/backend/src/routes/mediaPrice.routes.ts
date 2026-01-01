@@ -21,14 +21,16 @@ const DEFAULT_PRICES: Array<{
 ];
 
 // جلب كل الموظفين مع أسعارهم (للإدارة) - يجب أن يكون قبل /employee/:employeeId
+// يعرض فقط الموظفين ذوي الراتب المتغير (ميديا)
 router.get('/all-employees', protect, async (req: any, res) => {
   try {
     const companyId = req.user?.companyId;
 
-    // جلب الموظفين النشطين
+    // جلب الموظفين النشطين ذوي الراتب المتغير فقط
     const employees = await Employee.find({
       companyId,
-      isActive: true
+      isActive: true,
+      salaryType: 'variable' // فقط الرواتب المتغيرة
     }).select('_id name position');
 
     // جلب أسعار كل موظف
