@@ -74,18 +74,31 @@ const CONTENT_TYPES = {
 
 const MediaSalaries: React.FC = () => {
   const { user } = useAuthStore();
-  const { payrolls, loadPayrolls } = useDataStore();
+  const { payrolls, loadPayrolls, employees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
   // الصلاحيات المنفصلة لإعدادات الأسعار وإنجازات الموظفين
   const canViewPrices = canRead('media_salaries_prices');
   const canEditPrices = canWrite('media_salaries_prices');
   const canViewAchievements = canRead('media_salaries_achievements');
+  const canEditAchievements = canWrite('media_salaries_achievements');
 
-  // للتوافق مع النظام القديم - يمكن الوصول إذا كان لديه أي من الصلاحيتين
-  const canViewMedia = canViewPrices || canViewAchievements;
+  // التحقق من إذا كان الموظف الحالي من نوع الراتب المتغير
+  const currentEmployee = employees.find((e: any) => e.userId === user?.id || e.userId?._id === user?.id);
+  const isVariableSalaryEmployee = currentEmployee?.salaryType === 'variable';
 
-  const [activeTab, setActiveTab] = useState<'prices' | 'achievements'>(canViewPrices ? 'prices' : 'achievements');
+  // للتوافق مع النظام القديم - يمكن الوصول إذا كان لديه أي من الصلاحيتين أو موظف ميديا
+  const canViewMedia = canViewPrices || canViewAchievements || isVariableSalaryEmployee;
+
+  // تحديد التاب الافتراضي
+  const getDefaultTab = () => {
+    if (canViewPrices) return 'prices';
+    if (canViewAchievements) return 'achievements';
+    if (isVariableSalaryEmployee) return 'my-achievements';
+    return 'prices';
+  };
+
+  const [activeTab, setActiveTab] = useState<'prices' | 'achievements' | 'my-achievements'>(getDefaultTab());
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
 
@@ -99,10 +112,13 @@ const MediaSalaries: React.FC = () => {
 
   // Achievements State - من قاعدة البيانات
   const [achievements, setAchievements] = useState<EmployeeAchievement[]>([]);
+  const [myAchievements, setMyAchievements] = useState<EmployeeAchievement[]>([]);
+  const [isLoadingMyAchievements, setIsLoadingMyAchievements] = useState(false);
   const [selectedEmployeeForAchievement, setSelectedEmployeeForAchievement] = useState<string>('');
 
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [editingAchievement, setEditingAchievement] = useState<EmployeeAchievement | null>(null);
+  const [isMyAchievementMode, setIsMyAchievementMode] = useState(false); // للتفرقة بين إنجازاتي وإنجازات الموظفين
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -212,6 +228,33 @@ const MediaSalaries: React.FC = () => {
     }
   }, [selectedMonth, selectedYear]);
 
+  // جلب إنجازاتي (للموظف الحالي فقط)
+  const fetchMyAchievements = useCallback(async () => {
+    try {
+      setIsLoadingMyAchievements(true);
+      const response = await api.get('/media-achievements/my-achievements', {
+        params: { month: selectedMonth, year: selectedYear }
+      });
+      const data = response.data.map((a: any) => ({
+        id: a._id,
+        employeeId: a.employeeId?._id || a.employeeId,
+        employeeName: a.employeeId?.name || 'غير معروف',
+        month: a.month,
+        year: a.year,
+        items: a.items,
+        totalAmount: a.totalAmount,
+        syncedToPayroll: a.syncedToPayroll,
+        syncedAt: a.syncedAt
+      }));
+      setMyAchievements(data);
+    } catch (error) {
+      console.error('Error fetching my achievements:', error);
+      setToast({ message: 'حدث خطأ أثناء جلب إنجازاتك', type: 'error', isOpen: true });
+    } finally {
+      setIsLoadingMyAchievements(false);
+    }
+  }, [selectedMonth, selectedYear]);
+
   // جلب البيانات عند تغيير التاب
   useEffect(() => {
     if (activeTab === 'prices' && canViewPrices) {
@@ -222,8 +265,10 @@ const MediaSalaries: React.FC = () => {
       if (employeesWithPrices.length === 0) {
         fetchAllEmployeesWithPrices();
       }
+    } else if (activeTab === 'my-achievements' && isVariableSalaryEmployee) {
+      fetchMyAchievements();
     }
-  }, [activeTab, canViewPrices, canViewAchievements, fetchAllEmployeesWithPrices, fetchAchievements, employeesWithPrices.length]);
+  }, [activeTab, canViewPrices, canViewAchievements, isVariableSalaryEmployee, fetchAllEmployeesWithPrices, fetchAchievements, fetchMyAchievements, employeesWithPrices.length]);
 
   // تحديث الأسعار عند تغيير الموظف المختار
   useEffect(() => {
@@ -319,6 +364,7 @@ const MediaSalaries: React.FC = () => {
 
   const openAddAchievement = () => {
     const firstEmployee = variableSalaryEmployees[0];
+    setIsMyAchievementMode(false);
     setEditingAchievement(null);
     setSelectedEmployeeForAchievement(firstEmployee?.id || '');
     setAchievementFormData({
@@ -336,6 +382,45 @@ const MediaSalaries: React.FC = () => {
       setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
       return;
     }
+    setIsMyAchievementMode(false);
+    setEditingAchievement(achievement);
+    setSelectedEmployeeForAchievement(achievement.employeeId);
+    setAchievementFormData({
+      employeeId: achievement.employeeId,
+      employeeName: achievement.employeeName,
+      month: achievement.month,
+      year: achievement.year,
+      items: achievement.items.map(item => ({ contentType: item.contentType, quantity: item.quantity }))
+    });
+    setShowAchievementModal(true);
+  };
+
+  // فتح مودال إضافة إنجازاتي (للموظف نفسه)
+  const openAddMyAchievement = () => {
+    if (!currentEmployee) {
+      setToast({ message: 'لم يتم العثور على بيانات الموظف', type: 'error', isOpen: true });
+      return;
+    }
+    setIsMyAchievementMode(true);
+    setEditingAchievement(null);
+    setSelectedEmployeeForAchievement(currentEmployee.id);
+    setAchievementFormData({
+      employeeId: currentEmployee.id,
+      employeeName: currentEmployee.name,
+      month: selectedMonth,
+      year: selectedYear,
+      items: []
+    });
+    setShowAchievementModal(true);
+  };
+
+  // فتح مودال تعديل إنجازاتي (للموظف نفسه)
+  const openEditMyAchievement = (achievement: EmployeeAchievement) => {
+    if (achievement.syncedToPayroll) {
+      setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب. تواصل مع الإدارة.', type: 'warning', isOpen: true });
+      return;
+    }
+    setIsMyAchievementMode(true);
     setEditingAchievement(achievement);
     setSelectedEmployeeForAchievement(achievement.employeeId);
     setAchievementFormData({
@@ -405,7 +490,7 @@ const MediaSalaries: React.FC = () => {
   const handleAchievementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!achievementFormData.employeeId) {
+    if (!isMyAchievementMode && !achievementFormData.employeeId) {
       setToast({ message: 'يرجى اختيار الموظف', type: 'error', isOpen: true });
       return;
     }
@@ -426,25 +511,42 @@ const MediaSalaries: React.FC = () => {
     });
 
     try {
-      if (editingAchievement) {
-        // تحديث إنجاز موجود
-        await api.put(`/media-achievements/${editingAchievement.id}`, {
-          items: itemsWithPrices
-        });
-        setToast({ message: 'تم تحديث الإنجازات بنجاح', type: 'success', isOpen: true });
+      if (isMyAchievementMode) {
+        // وضع إنجازاتي - الموظف يضيف/يعدل لنفسه
+        if (editingAchievement) {
+          await api.put(`/media-achievements/my-achievements/${editingAchievement.id}`, {
+            items: itemsWithPrices
+          });
+          setToast({ message: 'تم تحديث إنجازاتك بنجاح', type: 'success', isOpen: true });
+        } else {
+          await api.post('/media-achievements/my-achievements', {
+            month: achievementFormData.month,
+            year: achievementFormData.year,
+            items: itemsWithPrices
+          });
+          setToast({ message: 'تم إضافة إنجازاتك بنجاح', type: 'success', isOpen: true });
+        }
+        setShowAchievementModal(false);
+        fetchMyAchievements(); // إعادة تحميل إنجازاتي
       } else {
-        // إضافة إنجاز جديد
-        await api.post('/media-achievements', {
-          employeeId: achievementFormData.employeeId,
-          month: achievementFormData.month,
-          year: achievementFormData.year,
-          items: itemsWithPrices
-        });
-        setToast({ message: 'تم إضافة الإنجازات بنجاح', type: 'success', isOpen: true });
+        // وضع الإدارة - المدير يضيف/يعدل للموظفين
+        if (editingAchievement) {
+          await api.put(`/media-achievements/${editingAchievement.id}`, {
+            items: itemsWithPrices
+          });
+          setToast({ message: 'تم تحديث الإنجازات بنجاح', type: 'success', isOpen: true });
+        } else {
+          await api.post('/media-achievements', {
+            employeeId: achievementFormData.employeeId,
+            month: achievementFormData.month,
+            year: achievementFormData.year,
+            items: itemsWithPrices
+          });
+          setToast({ message: 'تم إضافة الإنجازات بنجاح', type: 'success', isOpen: true });
+        }
+        setShowAchievementModal(false);
+        fetchAchievements(); // إعادة تحميل الإنجازات
       }
-
-      setShowAchievementModal(false);
-      fetchAchievements(); // إعادة تحميل الإنجازات
     } catch (error: any) {
       console.error('Error saving achievement:', error);
       const message = error.response?.data?.message || 'حدث خطأ أثناء حفظ الإنجازات';
@@ -577,6 +679,19 @@ const MediaSalaries: React.FC = () => {
             >
               <Award className="w-4 h-4 inline ml-2" />
               إنجازات الموظفين
+            </button>
+          )}
+          {isVariableSalaryEmployee && (
+            <button
+              onClick={() => setActiveTab('my-achievements')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'my-achievements'
+                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
+              }`}
+            >
+              <User className="w-4 h-4 inline ml-2" />
+              إنجازاتي
             </button>
           )}
         </nav>
@@ -1047,6 +1162,230 @@ const MediaSalaries: React.FC = () => {
         </div>
       )}
 
+      {/* My Achievements Tab - للموظف نفسه */}
+      {activeTab === 'my-achievements' && isVariableSalaryEmployee && (
+        <div className="space-y-6">
+          {/* إحصائيات إنجازاتي */}
+          {myAchievements.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+                <Card.Body>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-700 dark:text-green-300">إجمالي إنجازاتي</p>
+                      <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                        {myAchievements.reduce((sum, a) => sum + a.totalAmount, 0).toFixed(2)} {getCurrencySymbol('SAR')}
+                      </p>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+                <Card.Body>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">عدد المحتوى</p>
+                      <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                        {myAchievements.reduce((sum, a) => sum + a.items.reduce((s, i) => s + i.quantity, 0), 0)} قطعة
+                      </p>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
+                <Card.Body>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                      <CheckCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-purple-700 dark:text-purple-300">حالة المزامنة</p>
+                      <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                        {myAchievements.filter(a => a.syncedToPayroll).length} / {myAchievements.length}
+                      </p>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {new Date(2024, i).toLocaleDateString('ar-EG', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السنة</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <option key={i} value={2024 + i}>
+                      {2024 + i}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button variant="ghost" size="sm" onClick={fetchMyAchievements} disabled={isLoadingMyAchievements}>
+                <RefreshCw className={`w-4 h-4 ${isLoadingMyAchievements ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+
+            <Button onClick={openAddMyAchievement}>
+              <Plus className="w-4 h-4" />
+              إضافة إنجازاتي
+            </Button>
+          </div>
+
+          <Card>
+            <Card.Body className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.Head>الشهر</Table.Head>
+                      <Table.Head>عدد المحتوى</Table.Head>
+                      <Table.Head>الإجمالي</Table.Head>
+                      <Table.Head>الحالة</Table.Head>
+                      <Table.Head>الإجراءات</Table.Head>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {isLoadingMyAchievements ? (
+                      <Table.Row>
+                        <Table.Cell colSpan={5}>
+                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                            جاري التحميل...
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    ) : myAchievements.length === 0 ? (
+                      <Table.Row>
+                        <Table.Cell colSpan={5}>
+                          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                            لا توجد إنجازات لهذا الشهر. أضف إنجازاتك الآن!
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    ) : (
+                      myAchievements.map(achievement => (
+                        <Table.Row key={achievement.id}>
+                          <Table.Cell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              {new Date(achievement.year, achievement.month - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+                            </div>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {achievement.items.reduce((sum, item) => sum + item.quantity, 0)} قطعة
+                            </span>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <span className="text-success-600 dark:text-success-400 font-bold">
+                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                            </span>
+                          </Table.Cell>
+                          <Table.Cell>
+                            {achievement.syncedToPayroll ? (
+                              <Badge variant="success">
+                                <CheckCircle className="w-3 h-3 ml-1" />
+                                تمت الإضافة للراتب
+                              </Badge>
+                            ) : (
+                              <Badge variant="warning">
+                                <AlertCircle className="w-3 h-3 ml-1" />
+                                في انتظار المراجعة
+                              </Badge>
+                            )}
+                          </Table.Cell>
+                          <Table.Cell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditMyAchievement(achievement)}
+                                className="text-brand-600 hover:text-brand-700"
+                                disabled={achievement.syncedToPayroll}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </Table.Cell>
+                        </Table.Row>
+                      ))
+                    )}
+                  </Table.Body>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+
+          {/* تفاصيل إنجازاتي */}
+          {myAchievements.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                <Award className="w-5 h-5" />
+                تفاصيل إنجازاتي
+              </h3>
+
+              {myAchievements.map((achievement) => (
+                <Card key={achievement.id}>
+                  <Card.Body>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-gray-400" />
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {new Date(achievement.year, achievement.month - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+                        </span>
+                        {achievement.syncedToPayroll && (
+                          <Badge variant="success" className="text-xs">تم احتسابه في الراتب</Badge>
+                        )}
+                      </div>
+                      <span className="text-lg font-bold text-success-600 dark:text-success-400">
+                        {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                      {achievement.items.map((item, idx) => (
+                        <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{CONTENT_TYPES[item.contentType].split(' (')[0]}</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{item.quantity}</p>
+                          <p className="text-sm text-success-600 dark:text-success-400">{item.total.toFixed(0)} {getCurrencySymbol('SAR')}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </Card.Body>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Price Modal */}
       <Modal
         isOpen={showPriceModal}
@@ -1109,12 +1448,16 @@ const MediaSalaries: React.FC = () => {
       <Modal
         isOpen={showAchievementModal}
         onClose={() => setShowAchievementModal(false)}
-        title={editingAchievement ? 'تعديل الإنجازات' : 'إضافة إنجازات جديدة'}
+        title={
+          isMyAchievementMode
+            ? (editingAchievement ? 'تعديل إنجازاتي' : 'إضافة إنجازاتي')
+            : (editingAchievement ? 'تعديل الإنجازات' : 'إضافة إنجازات جديدة')
+        }
         size="lg"
       >
         <form onSubmit={handleAchievementSubmit} className="space-y-4">
-          {/* اختيار الموظف */}
-          {!editingAchievement && (
+          {/* اختيار الموظف - فقط في وضع الإدارة وليس التعديل */}
+          {!isMyAchievementMode && !editingAchievement && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الموظف</label>
               <select
@@ -1133,9 +1476,13 @@ const MediaSalaries: React.FC = () => {
             </div>
           )}
 
-          {editingAchievement && (
+          {/* عرض اسم الموظف في وضع التعديل أو إنجازاتي */}
+          {(editingAchievement || isMyAchievementMode) && (
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">الموظف: <span className="font-semibold text-gray-900 dark:text-white">{achievementFormData.employeeName}</span></p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {isMyAchievementMode ? 'إنجازاتك الشخصية' : 'الموظف'}:
+                <span className="font-semibold text-gray-900 dark:text-white mr-1">{achievementFormData.employeeName}</span>
+              </p>
             </div>
           )}
 

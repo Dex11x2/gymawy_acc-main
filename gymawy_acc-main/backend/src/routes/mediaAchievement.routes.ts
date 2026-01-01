@@ -6,6 +6,136 @@ import Employee from '../models/Employee';
 
 const router = express.Router();
 
+// جلب إنجازات الموظف الحالي (للموظف نفسه)
+router.get('/my-achievements', protect, async (req: any, res) => {
+  try {
+    const { month, year } = req.query;
+    const userId = req.user?.userId;
+
+    // جلب الموظف المرتبط بالمستخدم
+    const employee = await Employee.findOne({ userId });
+    if (!employee) {
+      return res.status(404).json({ message: 'لم يتم العثور على بيانات الموظف' });
+    }
+
+    const query: any = { employeeId: employee._id };
+    if (month) query.month = parseInt(month as string);
+    if (year) query.year = parseInt(year as string);
+
+    const achievements = await MediaAchievement.find(query)
+      .populate('employeeId', 'name position')
+      .sort({ year: -1, month: -1 });
+
+    res.json(achievements);
+  } catch (error: any) {
+    console.error('Error fetching my achievements:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// إضافة إنجاز للموظف الحالي (الموظف يضيف لنفسه)
+router.post('/my-achievements', protect, async (req: any, res) => {
+  try {
+    const { month, year, items } = req.body;
+    const userId = req.user?.userId;
+    const companyId = req.user?.companyId;
+
+    // جلب الموظف المرتبط بالمستخدم
+    const employee = await Employee.findOne({ userId });
+    if (!employee) {
+      return res.status(404).json({ message: 'لم يتم العثور على بيانات الموظف' });
+    }
+
+    // التحقق من أن الموظف من نوع الراتب المتغير
+    if (employee.salaryType !== 'variable') {
+      return res.status(403).json({ message: 'هذه الخاصية متاحة فقط لموظفي الراتب المتغير' });
+    }
+
+    // حساب الإجمالي
+    const totalAmount = items.reduce((sum: number, item: any) => sum + item.total, 0);
+
+    // التحقق من عدم وجود إنجاز للشهر نفسه
+    const existing = await MediaAchievement.findOne({
+      employeeId: employee._id,
+      month,
+      year
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: 'يوجد إنجاز مسجل لهذا الشهر. استخدم التعديل بدلاً من الإضافة.',
+        existingId: existing._id
+      });
+    }
+
+    const achievement = await MediaAchievement.create({
+      employeeId: employee._id,
+      companyId,
+      month,
+      year,
+      items,
+      totalAmount,
+      createdBy: userId,
+      syncedToPayroll: false
+    });
+
+    const populated = await MediaAchievement.findById(achievement._id)
+      .populate('employeeId', 'name position');
+
+    console.log(`✅ Self-achievement created by employee ${employee._id}: ${month}/${year} = ${totalAmount}`);
+    res.status(201).json(populated);
+  } catch (error: any) {
+    console.error('Error creating self achievement:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// تعديل إنجاز الموظف الحالي (الموظف يعدل إنجازه)
+router.put('/my-achievements/:id', protect, async (req: any, res) => {
+  try {
+    const { items } = req.body;
+    const userId = req.user?.userId;
+
+    // جلب الموظف المرتبط بالمستخدم
+    const employee = await Employee.findOne({ userId });
+    if (!employee) {
+      return res.status(404).json({ message: 'لم يتم العثور على بيانات الموظف' });
+    }
+
+    // التحقق من أن الإنجاز يخص هذا الموظف
+    const achievement = await MediaAchievement.findOne({
+      _id: req.params.id,
+      employeeId: employee._id
+    });
+
+    if (!achievement) {
+      return res.status(404).json({ message: 'الإنجاز غير موجود أو لا يخصك' });
+    }
+
+    if (achievement.syncedToPayroll) {
+      return res.status(400).json({
+        message: 'لا يمكن تعديل إنجاز تمت مزامنته مع الراتب. تواصل مع الإدارة.'
+      });
+    }
+
+    // حساب الإجمالي الجديد
+    const totalAmount = items.reduce((sum: number, item: any) => sum + item.total, 0);
+
+    achievement.items = items;
+    achievement.totalAmount = totalAmount;
+    await achievement.save();
+
+    const populated = await MediaAchievement.findById(achievement._id)
+      .populate('employeeId', 'name position');
+
+    console.log(`✅ Self-achievement updated by employee ${employee._id}: ${achievement._id}`);
+    res.json(populated);
+  } catch (error: any) {
+    console.error('Error updating self achievement:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // جلب كل الإنجازات (للشهر/السنة المحددة)
 router.get('/', protect, async (req: any, res) => {
   try {
