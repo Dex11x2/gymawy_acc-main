@@ -38,12 +38,17 @@ router.post('/my-achievements', protect, async (req: any, res) => {
   try {
     const { month, year, items } = req.body;
     const userId = req.user?.userId;
-    const companyId = req.user?.companyId;
 
     // جلب الموظف المرتبط بالمستخدم
     const employee = await Employee.findOne({ userId });
     if (!employee) {
       return res.status(404).json({ message: 'لم يتم العثور على بيانات الموظف' });
+    }
+
+    // استخدام companyId من الموظف أو من المستخدم
+    const companyId = employee.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ message: 'لم يتم تحديد الشركة للموظف' });
     }
 
     // التحقق من أن الموظف من نوع الراتب المتغير
@@ -201,8 +206,19 @@ router.get('/:id', protect, async (req: any, res) => {
 router.post('/', protect, async (req: any, res) => {
   try {
     const { employeeId, month, year, items } = req.body;
-    const companyId = req.user?.companyId;
     const createdBy = req.user?.userId;
+
+    // جلب الموظف للحصول على companyId
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'الموظف غير موجود' });
+    }
+
+    // استخدام companyId من الموظف أو من المستخدم
+    const companyId = employee.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ message: 'لم يتم تحديد الشركة للموظف' });
+    }
 
     // حساب الإجمالي
     const totalAmount = items.reduce((sum: number, item: any) => sum + item.total, 0);
