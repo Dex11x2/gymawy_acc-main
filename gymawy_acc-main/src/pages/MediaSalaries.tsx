@@ -81,10 +81,13 @@ const MediaSalaries: React.FC = () => {
   const canViewPrices = canRead('media_salaries_prices');
   const canEditPrices = canWrite('media_salaries_prices');
   const canViewAchievements = canRead('media_salaries_achievements');
-  const canEditAchievements = canWrite('media_salaries_achievements');
 
   // التحقق من إذا كان الموظف الحالي من نوع الراتب المتغير
   const currentEmployee = employees.find((e: any) => e.userId === user?.id || e.userId?._id === user?.id);
+
+  // صلاحية تعديل الإنجازات: المدير العام، المدير الإداري، أو super_admin، أو من لديه صلاحية media_salaries_achievements
+  const isAdmin = currentEmployee?.isGeneralManager || currentEmployee?.isAdministrativeManager || user?.role === 'super_admin' || user?.role === 'general_manager' || user?.role === 'administrative_manager';
+  const canEditAchievements = canWrite('media_salaries_achievements') || isAdmin;
   const isVariableSalaryEmployee = currentEmployee?.salaryType === 'variable';
 
   // للتوافق مع النظام القديم - يمكن الوصول إذا كان لديه أي من الصلاحيتين أو موظف ميديا
@@ -954,10 +957,12 @@ const MediaSalaries: React.FC = () => {
               </Button>
             </div>
 
-            <Button onClick={openAddAchievement}>
-              <Plus className="w-4 h-4" />
-              إضافة إنجازات
-            </Button>
+            {canEditAchievements && (
+              <Button onClick={openAddAchievement}>
+                <Plus className="w-4 h-4" />
+                إضافة إنجازات
+              </Button>
+            )}
           </div>
 
           <Card>
@@ -1033,37 +1038,41 @@ const MediaSalaries: React.FC = () => {
                             )}
                           </Table.Cell>
                           <Table.Cell>
-                            <div className="flex gap-2">
-                              {!achievement.syncedToPayroll && (
+                            {canEditAchievements ? (
+                              <div className="flex gap-2">
+                                {!achievement.syncedToPayroll && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => syncToPayroll(achievement)}
+                                    className="text-success-600 hover:text-success-700"
+                                    title="إضافة للراتب الشهري"
+                                  >
+                                    <DollarSign className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => syncToPayroll(achievement)}
-                                  className="text-success-600 hover:text-success-700"
-                                  title="إضافة للراتب الشهري"
+                                  onClick={() => openEditAchievement(achievement)}
+                                  className="text-brand-600 hover:text-brand-700"
+                                  disabled={achievement.syncedToPayroll}
                                 >
-                                  <DollarSign className="w-4 h-4" />
+                                  <Edit2 className="w-4 h-4" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditAchievement(achievement)}
-                                className="text-brand-600 hover:text-brand-700"
-                                disabled={achievement.syncedToPayroll}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteAchievement(achievement.id)}
-                                className="text-error-600 hover:text-error-700"
-                                disabled={achievement.syncedToPayroll}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteAchievement(achievement.id)}
+                                  className="text-error-600 hover:text-error-700"
+                                  disabled={achievement.syncedToPayroll}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">عرض فقط</span>
+                            )}
                           </Table.Cell>
                         </Table.Row>
                       ))
