@@ -74,7 +74,7 @@ const CONTENT_TYPES = {
 
 const MediaSalaries: React.FC = () => {
   const { user } = useAuthStore();
-  const { payrolls, loadPayrolls, employees, loadEmployees } = useDataStore();
+  const { payrolls, loadPayrolls } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
   // الصلاحيات المنفصلة لإعدادات الأسعار وإنجازات الموظفين
@@ -128,11 +128,10 @@ const MediaSalaries: React.FC = () => {
     items: [] as { contentType: ContentType; quantity: number }[]
   });
 
-  // Load employees on mount
+  // Load payrolls on mount
   useEffect(() => {
     loadPayrolls();
-    loadEmployees();
-  }, [loadPayrolls, loadEmployees]);
+  }, [loadPayrolls]);
 
   // جلب جميع الموظفين مع أسعارهم
   const fetchAllEmployeesWithPrices = useCallback(async () => {
@@ -219,8 +218,12 @@ const MediaSalaries: React.FC = () => {
       fetchAllEmployeesWithPrices();
     } else if (activeTab === 'achievements' && canViewAchievements) {
       fetchAchievements();
+      // جلب الموظفين ذوي الراتب المتغير لاستخدامهم في مودال إضافة الإنجازات
+      if (employeesWithPrices.length === 0) {
+        fetchAllEmployeesWithPrices();
+      }
     }
-  }, [activeTab, canViewPrices, canViewAchievements, fetchAllEmployeesWithPrices, fetchAchievements]);
+  }, [activeTab, canViewPrices, canViewAchievements, fetchAllEmployeesWithPrices, fetchAchievements, employeesWithPrices.length]);
 
   // تحديث الأسعار عند تغيير الموظف المختار
   useEffect(() => {
@@ -307,8 +310,15 @@ const MediaSalaries: React.FC = () => {
   };
 
   // Achievement Handlers
+  // الموظفين ذوي الراتب المتغير فقط (للإنجازات)
+  const variableSalaryEmployees = employeesWithPrices.map(e => ({
+    id: e.employee._id,
+    name: e.employee.name,
+    position: e.employee.position
+  }));
+
   const openAddAchievement = () => {
-    const firstEmployee = employees[0];
+    const firstEmployee = variableSalaryEmployees[0];
     setEditingAchievement(null);
     setSelectedEmployeeForAchievement(firstEmployee?.id || '');
     setAchievementFormData({
@@ -383,7 +393,7 @@ const MediaSalaries: React.FC = () => {
   };
 
   const handleEmployeeChangeForAchievement = (employeeId: string) => {
-    const employee = employees.find(e => e.id === employeeId);
+    const employee = variableSalaryEmployees.find(e => e.id === employeeId);
     setSelectedEmployeeForAchievement(employeeId);
     setAchievementFormData({
       ...achievementFormData,
@@ -1114,7 +1124,7 @@ const MediaSalaries: React.FC = () => {
                 required
               >
                 <option value="">اختر موظف...</option>
-                {employees.map(emp => (
+                {variableSalaryEmployees.map(emp => (
                   <option key={emp.id} value={emp.id}>
                     {emp.name} {emp.position ? `- ${emp.position}` : ''}
                   </option>

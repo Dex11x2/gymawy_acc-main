@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { useAuthStore } from '../store/authStore';
 import { exportExpensesToPDF, exportExpensesToExcel } from '../utils/exportUtils';
@@ -12,7 +12,7 @@ import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, F
 type Currency = 'EGP' | 'USD' | 'SAR' | 'AED';
 
 const Expenses: React.FC = () => {
-  const { expenses, addExpense, updateExpense, deleteExpense } = useDataStore();
+  const { expenses, addExpense, updateExpense, deleteExpense, loadExpenses } = useDataStore();
   const { user } = useAuthStore();
   const { canWrite, canDelete } = usePermissions();
 
@@ -20,6 +20,11 @@ const Expenses: React.FC = () => {
   const canEditExpense = canWrite('expenses');
   const canDeleteExpense = canDelete('expenses');
   const [showModal, setShowModal] = useState(false);
+
+  // تحميل المصروفات عند فتح الصفحة
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

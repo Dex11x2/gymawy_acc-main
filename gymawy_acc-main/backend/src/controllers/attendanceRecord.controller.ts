@@ -22,15 +22,18 @@ function calculateDistance(
 
 export const checkIn = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, branchId } = req.body;
+    const { latitude, longitude, branchId, clientTime } = req.body;
     const userId = req.user.userId;
 
     if (!latitude || !longitude) {
       return res.status(400).json({ success: false, message: 'يرجى تحديد الموقع الجغرافي' });
     }
 
+    // استخدام الوقت المرسل من العميل أو وقت السيرفر
+    const checkInTime = clientTime ? new Date(clientTime) : new Date();
+
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const existing = await AttendanceRecord.findOne({
       userId,
@@ -96,7 +99,7 @@ export const checkIn = async (req: any, res: Response) => {
       userId,
       branchId: branchId || undefined,
       date: today,
-      checkIn: new Date(),
+      checkIn: checkInTime,
       checkInLocation: { latitude, longitude },
       status: "present",
       isManualEntry: false,
@@ -114,11 +117,14 @@ export const checkIn = async (req: any, res: Response) => {
 
 export const checkOut = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, clientTime } = req.body;
     const userId = req.user.userId;
 
+    // استخدام الوقت المرسل من العميل أو وقت السيرفر
+    const checkOutTime = clientTime ? new Date(clientTime) : new Date();
+
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const record = await AttendanceRecord.findOne({
       userId,
@@ -135,7 +141,7 @@ export const checkOut = async (req: any, res: Response) => {
         .json({ success: false, message: "تم تسجيل الانصراف مسبقاً" });
     }
 
-    record.checkOut = new Date();
+    record.checkOut = checkOutTime;
     record.checkOutLocation = { latitude, longitude };
 
     if (record.checkIn) {
