@@ -74,7 +74,7 @@ const CONTENT_TYPES = {
 
 const MediaSalaries: React.FC = () => {
   const { user } = useAuthStore();
-  const { payrolls, loadPayrolls, employees } = useDataStore();
+  const { loadPayrolls, employees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
   // الصلاحيات المنفصلة لإعدادات الأسعار وإنجازات الموظفين
@@ -85,9 +85,8 @@ const MediaSalaries: React.FC = () => {
   // التحقق من إذا كان الموظف الحالي من نوع الراتب المتغير
   const currentEmployee = employees.find((e: any) => e.userId === user?.id || e.userId?._id === user?.id);
 
-  // صلاحية تعديل الإنجازات: المدير العام، المدير الإداري، أو super_admin، أو من لديه صلاحية media_salaries_achievements
+  // صلاحية تعديل الإنجازات: المدير العام، المدير الإداري، أو super_admin فقط
   const isAdmin = currentEmployee?.isGeneralManager || currentEmployee?.isAdministrativeManager || user?.role === 'super_admin' || user?.role === 'general_manager' || user?.role === 'administrative_manager';
-  const canEditAchievements = canWrite('media_salaries_achievements') || isAdmin;
   const isVariableSalaryEmployee = currentEmployee?.salaryType === 'variable';
 
   // للتوافق مع النظام القديم - يمكن الوصول إذا كان لديه أي من الصلاحيتين أو موظف ميديا
@@ -157,16 +156,22 @@ const MediaSalaries: React.FC = () => {
     try {
       setIsLoadingPrices(true);
       const response = await api.get('/media-prices/all-employees');
-      const data = response.data.map((item: any) => ({
-        employee: item.employee,
-        prices: item.prices.map((p: any) => ({
-          id: p._id,
-          type: p.type,
-          nameAr: p.nameAr,
-          price: p.price,
-          currency: p.currency
-        }))
-      }));
+      const data = response.data
+        .filter((item: any) => item.employee && (item.employee._id || item.employee.id)) // تصفية الموظفين بدون معرف
+        .map((item: any) => ({
+          employee: {
+            _id: item.employee._id || item.employee.id, // ضمان وجود _id
+            name: item.employee.name,
+            position: item.employee.position
+          },
+          prices: item.prices.map((p: any) => ({
+            id: p._id || p.id, // ضمان وجود id
+            type: p.type,
+            nameAr: p.nameAr,
+            price: p.price,
+            currency: p.currency
+          }))
+        }));
       setEmployeesWithPrices(data);
 
       // إذا لم يكن هناك موظف مختار، اختر الأول
@@ -188,13 +193,15 @@ const MediaSalaries: React.FC = () => {
     try {
       setIsLoadingPrices(true);
       const response = await api.get(`/media-prices/employee/${employeeId}`);
-      const fetchedPrices = response.data.map((p: any) => ({
-        id: p._id,
-        type: p.type,
-        nameAr: p.nameAr,
-        price: p.price,
-        currency: p.currency
-      }));
+      const fetchedPrices = response.data
+        .filter((p: any) => p._id || p.id) // تصفية الأسعار بدون معرف
+        .map((p: any) => ({
+          id: p._id || p.id, // ضمان وجود id
+          type: p.type,
+          nameAr: p.nameAr,
+          price: p.price,
+          currency: p.currency
+        }));
       setCurrentEmployeePrices(fetchedPrices);
     } catch (error) {
       console.error('Error fetching employee prices:', error);
@@ -317,6 +324,12 @@ const MediaSalaries: React.FC = () => {
 
     if (!selectedEmployeeForPrices || !editingPrice) {
       setToast({ message: 'يرجى اختيار موظف والسعر المراد تعديله', type: 'error', isOpen: true });
+      return;
+    }
+
+    // التحقق من وجود معرفات صالحة
+    if (!editingPrice.id) {
+      setToast({ message: 'خطأ: معرف السعر غير صالح', type: 'error', isOpen: true });
       return;
     }
 
@@ -720,7 +733,7 @@ const MediaSalaries: React.FC = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-w-[200px]"
               >
                 <option value="">اختر موظف...</option>
-                {employeesWithPrices.map(item => (
+                {employeesWithPrices.filter(item => item.employee._id).map(item => (
                   <option key={item.employee._id} value={item.employee._id}>
                     {item.employee.name} {item.employee.position ? `- ${item.employee.position}` : ''}
                   </option>
@@ -957,7 +970,8 @@ const MediaSalaries: React.FC = () => {
               </Button>
             </div>
 
-            {canEditAchievements && (
+            {/* زر إضافة إنجازات للموظفين الآخرين - فقط للمدراء */}
+            {isAdmin && (
               <Button onClick={openAddAchievement}>
                 <Plus className="w-4 h-4" />
                 إضافة إنجازات
@@ -1038,7 +1052,8 @@ const MediaSalaries: React.FC = () => {
                             )}
                           </Table.Cell>
                           <Table.Cell>
-                            {canEditAchievements ? (
+                            {/* الإجراءات فقط للمدراء */}
+                            {isAdmin ? (
                               <div className="flex gap-2">
                                 {!achievement.syncedToPayroll && (
                                   <Button
