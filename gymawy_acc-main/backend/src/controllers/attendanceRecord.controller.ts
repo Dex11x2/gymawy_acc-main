@@ -224,9 +224,9 @@ export const manualEntry = async (req: any, res: Response) => {
     const data: any = {
       userId,
       date: existingDate,
-      // الوقت المحلي - بدون Z لتجنب تحويل timezone
-      checkIn: checkIn ? new Date(`${date}T${checkIn}:00`) : undefined,
-      checkOut: checkOut ? new Date(`${date}T${checkOut}:00`) : undefined,
+      // تخزين الوقت كـ UTC - نفس القيمة المدخلة بالضبط
+      checkIn: checkIn ? new Date(`${date}T${checkIn}:00.000Z`) : undefined,
+      checkOut: checkOut ? new Date(`${date}T${checkOut}:00.000Z`) : undefined,
       checkInLocation: { latitude: 0, longitude: 0 },
       status,
       delay: delay || 0,
@@ -307,14 +307,14 @@ export const updateRecord = async (req: any, res: Response) => {
     }
 
     if (date) record.date = new Date(date);
-    // الوقت المحلي - بدون Z لتجنب تحويل timezone
+    // تخزين الوقت كـ UTC - نفس القيمة المدخلة بالضبط
     if (checkIn)
       record.checkIn = new Date(
-        `${date || record.date.toISOString().split("T")[0]}T${checkIn}:00`
+        `${date || record.date.toISOString().split("T")[0]}T${checkIn}:00.000Z`
       );
     if (checkOut)
       record.checkOut = new Date(
-        `${date || record.date.toISOString().split("T")[0]}T${checkOut}:00`
+        `${date || record.date.toISOString().split("T")[0]}T${checkOut}:00.000Z`
       );
     if (status) record.status = status;
     if (leaveType !== undefined) record.leaveType = leaveType || undefined;

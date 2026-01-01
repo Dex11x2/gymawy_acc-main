@@ -322,13 +322,13 @@ const AttendanceManagement: React.FC = () => {
                     <Table.Cell>
                       <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <Clock className="w-4 h-4" />
-                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '--:--'}
                       </div>
                     </Table.Cell>
                     <Table.Cell>
                       <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <Clock className="w-4 h-4" />
-                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '--:--'}
                       </div>
                     </Table.Cell>
                     <Table.Cell>
@@ -450,7 +450,7 @@ const AttendanceManagement: React.FC = () => {
                         </div>
                         {record.checkIn && (
                           <div className="text-gray-600 dark:text-gray-400">
-                            {new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
                           </div>
                         )}
                         {record.delay > 0 && (
@@ -507,7 +507,7 @@ const AttendanceManagement: React.FC = () => {
               <input
                 type="time"
                 name="checkIn"
-                defaultValue={editingRecord?.checkIn ? new Date(editingRecord.checkIn).toTimeString().slice(0, 5) : ''}
+                defaultValue={editingRecord?.checkIn ? new Date(editingRecord.checkIn).toISOString().slice(11, 16) : ''}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
@@ -516,7 +516,7 @@ const AttendanceManagement: React.FC = () => {
               <input
                 type="time"
                 name="checkOut"
-                defaultValue={editingRecord?.checkOut ? new Date(editingRecord.checkOut).toTimeString().slice(0, 5) : ''}
+                defaultValue={editingRecord?.checkOut ? new Date(editingRecord.checkOut).toISOString().slice(11, 16) : ''}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
