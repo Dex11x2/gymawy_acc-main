@@ -170,15 +170,49 @@ const Branches: React.FC = () => {
   };
 
   const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => setCurrentLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-        (error) => {
-          console.error('Geolocation error:', error);
-          setToast({ message: 'لم يتمكن من الحصول على الموقع. استخدم localhost أو HTTPS', type: 'warning', isOpen: true });
-        }
-      );
+    if (!navigator.geolocation) {
+      setToast({ message: 'المتصفح لا يدعم تحديد الموقع', type: 'error', isOpen: true });
+      return;
     }
+
+    // محاولة سريعة أولاً بدقة منخفضة
+    navigator.geolocation.getCurrentPosition(
+      (position) => setCurrentLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      }),
+      (error) => {
+        // إذا فشلت المحاولة السريعة، نحاول بدقة عالية مع وقت أطول
+        navigator.geolocation.getCurrentPosition(
+          (position) => setCurrentLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }),
+          (err) => {
+            console.error('Geolocation error:', err);
+            let message = 'لم يتمكن من الحصول على الموقع';
+            if (err.code === 1) {
+              message = 'يرجى السماح بالوصول للموقع. استخدم localhost أو HTTPS';
+            } else if (err.code === 2) {
+              message = 'الموقع غير متاح - تأكد من تفعيل GPS';
+            } else if (err.code === 3) {
+              message = 'انتهى وقت الطلب - حاول مرة أخرى';
+            }
+            setToast({ message, type: 'warning', isOpen: true });
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 0
+          }
+        );
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 60000
+      }
+    );
   };
 
   const loadBranches = async () => {

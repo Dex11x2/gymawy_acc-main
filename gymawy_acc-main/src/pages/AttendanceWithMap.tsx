@@ -1,19 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
 import Toast from '../components/Toast';
 
 const AttendanceWithMap: React.FC = () => {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
   const [todayRecord, setTodayRecord] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [nearestBranch, setNearestBranch] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const watchIdRef = useRef<number | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const MAX_RETRIES = 3;
 
   useEffect(() => {
-    getCurrentLocation();
+    startLocationTracking();
     loadTodayRecord();
     loadBranches();
+
+    // Cleanup on unmount
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -78,40 +95,156 @@ const AttendanceWithMap: React.FC = () => {
     setNearestBranch(nearest);
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          let message = 'فشل الحصول على الموقع';
-          if (error.code === 1) {
-            if (error.message.includes('secure origins')) {
-              message = '❌ يجب استخدام HTTPS أو localhost لتفعيل الموقع. استخدم http://localhost:5173 بدلاً من IP';
-            } else {
-              message = '❌ يرجى السماح بالوصول للموقع في إعدادات المتصفح';
-            }
-          } else if (error.code === 2) {
-            message = '❌ الموقع غير متاح';
-          } else if (error.code === 3) {
-            message = '❌ انتهى وقت الطلب';
-          }
-          setToast({ message, type: 'warning', isOpen: true });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    } else {
+  // دالة للحصول على الموقع بطريقة ذكية مع retry و fallback
+  const startLocationTracking = useCallback(() => {
+    setLocationLoading(true);
+    setLocationError(null);
+
+    if (!navigator.geolocation) {
+      setLocationError('المتصفح لا يدعم تحديد الموقع');
+      setLocationLoading(false);
       setToast({ message: '❌ المتصفح لا يدعم تحديد الموقع', type: 'error', isOpen: true });
+      return;
     }
+
+    // أولاً: محاولة سريعة بدقة منخفضة للحصول على موقع تقريبي
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log('📍 Quick location obtained:', position.coords);
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        });
+        setLocationLoading(false);
+        setLocationError(null);
+
+        // ثم نبدأ watchPosition للحصول على موقع أدق
+        startWatchPosition();
+      },
+      (error) => {
+        console.warn('Quick location failed, trying high accuracy:', error);
+        // إذا فشلت المحاولة السريعة، نحاول بدقة عالية
+        tryHighAccuracyLocation();
+      },
+      {
+        enableHighAccuracy: false, // سريع أولاً
+        timeout: 5000,
+        maximumAge: 60000 // نقبل موقع محفوظ حتى دقيقة
+      }
+    );
+  }, []);
+
+  // محاولة الحصول على موقع بدقة عالية
+  const tryHighAccuracyLocation = useCallback(() => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log('📍 High accuracy location obtained:', position.coords);
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        });
+        setLocationLoading(false);
+        setLocationError(null);
+        startWatchPosition();
+      },
+      (error) => {
+        handleLocationError(error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000, // وقت أطول للدقة العالية
+        maximumAge: 0
+      }
+    );
+  }, []);
+
+  // استخدام watchPosition للتحديث المستمر
+  const startWatchPosition = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        // تحديث الموقع فقط إذا كان أدق من السابق
+        setLocation(prev => {
+          if (!prev || (position.coords.accuracy && (!prev.accuracy || position.coords.accuracy < prev.accuracy))) {
+            console.log('📍 Better location obtained:', position.coords.accuracy, 'm accuracy');
+            return {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            };
+          }
+          return prev;
+        });
+      },
+      (error) => {
+        console.warn('Watch position error:', error);
+        // لا نوقف التتبع عند الخطأ، فقط نسجله
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 10000 // نقبل موقع محفوظ حتى 10 ثواني
+      }
+    );
+  }, []);
+
+  // معالجة أخطاء الموقع مع retry
+  const handleLocationError = useCallback((error: GeolocationPositionError) => {
+    console.error('Error getting location:', error);
+
+    let message = 'فشل الحصول على الموقع';
+    let canRetry = true;
+
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        if (error.message.includes('secure origins') || error.message.includes('Only secure origins')) {
+          message = '❌ يجب استخدام HTTPS أو localhost لتفعيل الموقع';
+        } else {
+          message = '❌ يرجى السماح بالوصول للموقع في إعدادات المتصفح';
+        }
+        canRetry = false;
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = '❌ الموقع غير متاح - تأكد من تفعيل GPS';
+        break;
+      case error.TIMEOUT:
+        message = '⏳ انتهى وقت الطلب - جاري إعادة المحاولة...';
+        break;
+    }
+
+    setLocationError(message);
+    setLocationLoading(false);
+
+    // إعادة المحاولة تلقائياً
+    if (canRetry && retryCount < MAX_RETRIES) {
+      setRetryCount(prev => prev + 1);
+      const delay = Math.min(2000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+      console.log(`🔄 Retrying location in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+
+      retryTimeoutRef.current = setTimeout(() => {
+        setLocationLoading(true);
+        tryHighAccuracyLocation();
+      }, delay);
+    } else if (retryCount >= MAX_RETRIES) {
+      setToast({
+        message: `${message} - بعد ${MAX_RETRIES} محاولات`,
+        type: 'error',
+        isOpen: true
+      });
+    } else {
+      setToast({ message, type: 'warning', isOpen: true });
+    }
+  }, [retryCount, tryHighAccuracyLocation]);
+
+  // إعادة تحديد الموقع يدوياً
+  const getCurrentLocation = () => {
+    setRetryCount(0);
+    startLocationTracking();
   };
 
   const loadTodayRecord = async () => {
@@ -211,18 +344,42 @@ const AttendanceWithMap: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl">📍</span>
+            <span className="text-3xl">{locationLoading ? '⏳' : location ? '📍' : '❌'}</span>
             <div>
               <h3 className="text-lg font-bold text-gray-800 dark:text-white">حالة الموقع</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {location ? `✅ تم تحديد الموقع` : '⏳ جاري تحديد الموقع...'}
+                {locationLoading ? '⏳ جاري تحديد الموقع...' :
+                 location ? `✅ تم تحديد الموقع ${location.accuracy ? `(دقة: ${Math.round(location.accuracy)}م)` : ''}` :
+                 locationError || '❌ فشل تحديد الموقع'}
               </p>
+              {location && (
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                </p>
+              )}
             </div>
           </div>
-          {!location && (
-            <button onClick={getCurrentLocation} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-              🔄 إعادة تحديد الموقع
+          <div className="flex gap-2">
+            <button
+              onClick={getCurrentLocation}
+              disabled={locationLoading}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {locationLoading ? '⏳ جاري التحديد...' : '🔄 إعادة تحديد الموقع'}
             </button>
+            {retryCount > 0 && retryCount < MAX_RETRIES && (
+              <span className="text-sm text-yellow-600 dark:text-yellow-400 self-center">
+                محاولة {retryCount}/{MAX_RETRIES}
+              </span>
+            )}
+          </div>
+          {locationError && !locationLoading && (
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{locationError}</p>
+              <p className="text-xs text-red-500 dark:text-red-500 mt-1">
+                💡 نصائح: تأكد من تفعيل GPS وإعطاء صلاحية الموقع للمتصفح
+              </p>
+            </div>
           )}
         </div>
 
