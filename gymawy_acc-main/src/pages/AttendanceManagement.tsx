@@ -322,13 +322,13 @@ const AttendanceManagement: React.FC = () => {
                     <Table.Cell>
                       <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <Clock className="w-4 h-4" />
-                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '--:--'}
+                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                       </div>
                     </Table.Cell>
                     <Table.Cell>
                       <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <Clock className="w-4 h-4" />
-                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '--:--'}
+                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                       </div>
                     </Table.Cell>
                     <Table.Cell>
@@ -450,7 +450,7 @@ const AttendanceManagement: React.FC = () => {
                         </div>
                         {record.checkIn && (
                           <div className="text-gray-600 dark:text-gray-400">
-                            {new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
+                            {new Date(record.checkIn).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         )}
                         {record.delay > 0 && (

@@ -360,7 +360,7 @@ const AttendanceWithMap: React.FC = () => {
           <div className="text-6xl mb-3">✅</div>
           <h3 className="text-2xl font-bold mb-2">تسجيل الحضور</h3>
           <p className="text-sm opacity-90">
-            {todayRecord?.checkIn ? `تم التسجيل: ${new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG', { timeZone: 'UTC' })}` : 'اضغط لتسجيل الحضور'}
+            {todayRecord?.checkIn ? `تم التسجيل: ${new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG')}` : 'اضغط لتسجيل الحضور'}
           </p>
         </button>
 
@@ -372,7 +372,7 @@ const AttendanceWithMap: React.FC = () => {
           <div className="text-6xl mb-3">🚪</div>
           <h3 className="text-2xl font-bold mb-2">تسجيل الانصراف</h3>
           <p className="text-sm opacity-90">
-            {todayRecord?.checkOut ? `تم التسجيل: ${new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG', { timeZone: 'UTC' })}` : 'اضغط لتسجيل الانصراف'}
+            {todayRecord?.checkOut ? `تم التسجيل: ${new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG')}` : 'اضغط لتسجيل الانصراف'}
           </p>
         </button>
       </div>
@@ -385,13 +385,13 @@ const AttendanceWithMap: React.FC = () => {
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">وقت الحضور</p>
               <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                {todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG', { timeZone: 'UTC' }) : '-'}
+                {todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG') : '-'}
               </p>
             </div>
             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">وقت الانصراف</p>
               <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                {todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG', { timeZone: 'UTC' }) : '-'}
+                {todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG') : '-'}
               </p>
             </div>
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
