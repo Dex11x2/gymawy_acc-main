@@ -620,21 +620,38 @@ const MediaSalaries: React.FC = () => {
         try {
           // جلب الإنجاز الموجود مباشرة من الـ API
           const existingId = errorData.existingId;
+          console.log('Fetching existing achievement with ID:', existingId);
           const response = await api.get(`/media-achievements/${existingId}`);
           const existingData = response.data;
+          console.log('Fetched existing achievement data:', existingData);
 
           if (existingData) {
+            // استخراج الـ ID بشكل صحيح
+            const achievementId = existingData._id || existingData.id || existingId;
+
+            // استخراج الـ employeeId بشكل صحيح
+            let empId = '';
+            if (existingData.employeeId) {
+              if (typeof existingData.employeeId === 'string') {
+                empId = existingData.employeeId;
+              } else if (typeof existingData.employeeId === 'object') {
+                empId = existingData.employeeId._id || existingData.employeeId.id || '';
+              }
+            }
+
             const existingAchievement: EmployeeAchievement = {
-              id: String(existingData._id),
-              employeeId: String(existingData.employeeId?._id || existingData.employeeId || ''),
+              id: String(achievementId),
+              employeeId: String(empId),
               employeeName: existingData.employeeId?.name || achievementFormData.employeeName,
               month: existingData.month,
               year: existingData.year,
-              items: existingData.items,
-              totalAmount: existingData.totalAmount,
-              syncedToPayroll: existingData.syncedToPayroll,
+              items: existingData.items || [],
+              totalAmount: existingData.totalAmount || 0,
+              syncedToPayroll: existingData.syncedToPayroll || false,
               syncedAt: existingData.syncedAt
             };
+
+            console.log('Created existingAchievement object:', existingAchievement);
 
             setShowAchievementModal(false);
             setTimeout(() => openEditAchievement(existingAchievement), 300);
