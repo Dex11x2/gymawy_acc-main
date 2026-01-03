@@ -105,11 +105,12 @@ const AttendanceWithMap: React.FC = () => {
     }
 
     // محاولة الحصول على الموقع
-    tryGetLocation();
+    attemptGetLocation(false);
   };
 
-  const tryGetLocation = () => {
-    // نحاول أولاً بدون high accuracy للسرعة
+  const attemptGetLocation = (highAccuracy: boolean) => {
+    console.log(`📍 Attempting location (highAccuracy: ${highAccuracy}, attempt: ${retryCountRef.current + 1})`);
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         console.log('📍 Location obtained:', position.coords);
@@ -122,48 +123,33 @@ const AttendanceWithMap: React.FC = () => {
         setLocationError(null);
       },
       (error) => {
-        console.warn('Location error:', error);
+        console.warn('Location error:', error.code, error.message);
 
-        // إذا كان خطأ timeout أو position unavailable، نحاول مرة أخرى
-        if (error.code !== error.PERMISSION_DENIED && retryCountRef.current < MAX_RETRIES) {
-          retryCountRef.current++;
+        // لو رفض الصلاحية، نوقف فوراً
+        if (error.code === error.PERMISSION_DENIED) {
+          handleFinalError(error);
+          return;
+        }
+
+        retryCountRef.current++;
+
+        // لو لسه عندنا محاولات
+        if (retryCountRef.current < MAX_RETRIES) {
           console.log(`🔄 Retrying... (${retryCountRef.current}/${MAX_RETRIES})`);
 
-          // ننتظر قليلاً ثم نحاول مرة أخرى
+          // ننتظر ثانيتين ثم نحاول بدقة عالية
           setTimeout(() => {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                setLocation({
-                  lat: pos.coords.latitude,
-                  lng: pos.coords.longitude,
-                  accuracy: pos.coords.accuracy
-                });
-                setLocationLoading(false);
-                setLocationError(null);
-              },
-              (err) => {
-                if (retryCountRef.current < MAX_RETRIES) {
-                  retryCountRef.current++;
-                  tryGetLocation();
-                } else {
-                  handleFinalError(err);
-                }
-              },
-              {
-                enableHighAccuracy: true,
-                timeout: 20000,
-                maximumAge: 30000
-              }
-            );
+            attemptGetLocation(true);
           }, 2000);
         } else {
+          // خلصت المحاولات
           handleFinalError(error);
         }
       },
       {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 15000 : 8000,
+        maximumAge: highAccuracy ? 0 : 60000
       }
     );
   };
@@ -179,6 +165,7 @@ const AttendanceWithMap: React.FC = () => {
       message = '❌ انتهى وقت الطلب - حاول مرة أخرى';
     }
 
+    console.log('❌ Final error:', message);
     setLocationError(message);
     setLocationLoading(false);
     setToast({ message, type: 'error', isOpen: true });
