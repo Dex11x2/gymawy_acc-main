@@ -419,17 +419,28 @@ const MediaSalaries: React.FC = () => {
 
     console.log('Setting up edit mode with employeeId:', employeeId);
     console.log('Achievement items:', achievement.items);
+    console.log('Achievement items length:', achievement.items?.length);
+
+    // تحويل الـ items للفورم بشكل صحيح
+    const formItems = (achievement.items || []).map(item => ({
+      contentType: item.contentType as ContentType,
+      quantity: item.quantity || 0
+    }));
+    console.log('Mapped form items:', formItems);
 
     setIsMyAchievementMode(false);
     setEditingAchievement(achievement);
     setSelectedEmployeeForAchievement(String(employeeId));
-    setAchievementFormData({
+
+    const newFormData = {
       employeeId: String(employeeId),
       employeeName: achievement.employeeName,
       month: achievement.month,
       year: achievement.year,
-      items: achievement.items.map(item => ({ contentType: item.contentType, quantity: item.quantity }))
-    });
+      items: formItems
+    };
+    console.log('Setting achievementFormData to:', newFormData);
+    setAchievementFormData(newFormData);
 
     console.log('Opening achievement modal for editing');
     setShowAchievementModal(true);
@@ -475,16 +486,30 @@ const MediaSalaries: React.FC = () => {
       ? (achievement.employeeId as any)?._id || (achievement.employeeId as any)?.id
       : achievement.employeeId;
 
+    console.log('openEditMyAchievement - Achievement items:', achievement.items);
+    console.log('openEditMyAchievement - Items length:', achievement.items?.length);
+
+    // تحويل الـ items للفورم بشكل صحيح
+    const formItems = (achievement.items || []).map(item => ({
+      contentType: item.contentType as ContentType,
+      quantity: item.quantity || 0
+    }));
+    console.log('openEditMyAchievement - Mapped form items:', formItems);
+
     setIsMyAchievementMode(true);
     setEditingAchievement(achievement);
     setSelectedEmployeeForAchievement(String(employeeId));
-    setAchievementFormData({
+
+    const newFormData = {
       employeeId: String(employeeId),
       employeeName: achievement.employeeName,
       month: achievement.month,
       year: achievement.year,
-      items: achievement.items.map(item => ({ contentType: item.contentType, quantity: item.quantity }))
-    });
+      items: formItems
+    };
+    console.log('openEditMyAchievement - Setting achievementFormData to:', newFormData);
+    setAchievementFormData(newFormData);
+
     setShowAchievementModal(true);
   };
 
@@ -629,6 +654,9 @@ const MediaSalaries: React.FC = () => {
           const response = await api.get(`/media-achievements/${existingId}`);
           const existingData = response.data;
           console.log('Fetched existing achievement data:', existingData);
+          console.log('Existing items from API:', existingData.items);
+          console.log('Existing items type:', typeof existingData.items);
+          console.log('Existing items is array:', Array.isArray(existingData.items));
 
           if (existingData) {
             // استخراج الـ ID بشكل صحيح
@@ -644,26 +672,36 @@ const MediaSalaries: React.FC = () => {
               }
             }
 
+            // التأكد من أن الـ items موجودة ومعالجتها بشكل صحيح
+            const items = Array.isArray(existingData.items) ? existingData.items.map((item: any) => ({
+              contentType: item.contentType,
+              quantity: item.quantity || 0,
+              price: item.price || 0,
+              total: item.total || 0
+            })) : [];
+            console.log('Processed items for modal:', items);
+
             const existingAchievement: EmployeeAchievement = {
               id: String(achievementId),
               employeeId: String(empId),
               employeeName: existingData.employeeId?.name || achievementFormData.employeeName,
               month: existingData.month,
               year: existingData.year,
-              items: existingData.items || [],
+              items: items,
               totalAmount: existingData.totalAmount || 0,
               syncedToPayroll: existingData.syncedToPayroll || false,
               syncedAt: existingData.syncedAt
             };
 
             console.log('Created existingAchievement object:', existingAchievement);
+            console.log('existingAchievement.items:', existingAchievement.items);
 
             // إغلاق المودال الحالي أولاً
             setShowAchievementModal(false);
 
             // الانتظار ثم فتح المودال للتعديل
             setTimeout(() => {
-              console.log('Timeout fired, now opening edit modal...');
+              console.log('Timeout fired, now opening edit modal with items:', existingAchievement.items);
               openEditAchievement(existingAchievement);
             }, 500);
           }
