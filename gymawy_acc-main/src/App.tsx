@@ -46,7 +46,14 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+    // لو مفيش SOCKET_URL، منحاولش نتصل
+    const socketUrl = import.meta.env.VITE_SOCKET_URL;
+    if (!socketUrl) {
+      console.log('ℹ️ Socket.IO disabled - no VITE_SOCKET_URL configured');
+      return;
+    }
+
+    const socket = io(socketUrl, {
       transports: ['websocket', 'polling']
     });
 
