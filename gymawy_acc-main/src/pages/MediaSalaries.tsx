@@ -572,13 +572,32 @@ const MediaSalaries: React.FC = () => {
     } catch (error: any) {
       console.error('Error saving achievement:', error);
       const errorData = error.response?.data;
-      let message = errorData?.message || 'حدث خطأ أثناء حفظ الإنجازات';
 
-      // إذا كان الخطأ بسبب وجود إنجاز مسجل مسبقاً
+      // إذا كان الخطأ بسبب وجود إنجاز مسجل مسبقاً، نفتح التعديل تلقائياً
       if (errorData?.existingId) {
-        message = `${message} (يمكنك تعديل الإنجاز الموجود)`;
+        setToast({
+          message: 'يوجد إنجاز مسجل لهذا الشهر. جاري فتح التعديل...',
+          type: 'info',
+          isOpen: true
+        });
+
+        // إعادة تحميل الإنجازات ثم فتح التعديل
+        await fetchAchievements();
+        const existingAchievement = achievements.find(a => a.id === errorData.existingId) ||
+          achievements.find(a =>
+            a.employeeId === achievementFormData.employeeId &&
+            a.month === achievementFormData.month &&
+            a.year === achievementFormData.year
+          );
+
+        if (existingAchievement) {
+          setShowAchievementModal(false);
+          setTimeout(() => openEditAchievement(existingAchievement), 300);
+        }
+        return;
       }
 
+      const message = errorData?.message || 'حدث خطأ أثناء حفظ الإنجازات';
       setToast({ message, type: 'error', isOpen: true });
     }
   };
