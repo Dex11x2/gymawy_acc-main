@@ -581,18 +581,31 @@ const MediaSalaries: React.FC = () => {
           isOpen: true
         });
 
-        // إعادة تحميل الإنجازات ثم فتح التعديل
-        await fetchAchievements();
-        const existingAchievement = achievements.find(a => a.id === errorData.existingId) ||
-          achievements.find(a =>
-            a.employeeId === achievementFormData.employeeId &&
-            a.month === achievementFormData.month &&
-            a.year === achievementFormData.year
-          );
+        try {
+          // جلب الإنجاز الموجود مباشرة من الـ API
+          const existingId = errorData.existingId;
+          const response = await api.get(`/media-achievements/${existingId}`);
+          const existingData = response.data;
 
-        if (existingAchievement) {
-          setShowAchievementModal(false);
-          setTimeout(() => openEditAchievement(existingAchievement), 300);
+          if (existingData) {
+            const existingAchievement: EmployeeAchievement = {
+              id: String(existingData._id),
+              employeeId: String(existingData.employeeId?._id || existingData.employeeId || ''),
+              employeeName: existingData.employeeId?.name || achievementFormData.employeeName,
+              month: existingData.month,
+              year: existingData.year,
+              items: existingData.items,
+              totalAmount: existingData.totalAmount,
+              syncedToPayroll: existingData.syncedToPayroll,
+              syncedAt: existingData.syncedAt
+            };
+
+            setShowAchievementModal(false);
+            setTimeout(() => openEditAchievement(existingAchievement), 300);
+          }
+        } catch (fetchError) {
+          console.error('Error fetching existing achievement:', fetchError);
+          setToast({ message: 'حدث خطأ أثناء جلب الإنجاز الموجود', type: 'error', isOpen: true });
         }
         return;
       }
