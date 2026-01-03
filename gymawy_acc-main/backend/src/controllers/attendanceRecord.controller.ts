@@ -20,6 +20,22 @@ function calculateDistance(
   return R * c;
 }
 
+// دالة مساعدة للحصول على حدود اليوم بتوقيت مصر
+const getEgyptDayBounds = () => {
+  const egyptOffset = 2 * 60; // UTC+2 in minutes
+  const now = new Date();
+  const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
+
+  const today = new Date(localNow);
+  today.setUTCHours(0, 0, 0, 0);
+  const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
+
+  const tomorrowUTC = new Date(todayUTC);
+  tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1);
+
+  return { todayUTC, tomorrowUTC };
+};
+
 // الحصول على IP المستخدم الحالي
 const getClientIP = (req: any): string => {
   const forwarded = req.headers['x-forwarded-for'];
@@ -42,12 +58,18 @@ export const checkIn = async (req: any, res: Response) => {
     // استخدام الوقت المرسل من العميل أو وقت السيرفر
     const checkInTime = clientTime ? new Date(clientTime) : new Date();
 
-    const today = new Date();
+    // استخدام توقيت مصر (UTC+2)
+    const now = new Date();
+    const egyptOffset = 2 * 60;
+    const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
+
+    const today = new Date(localNow);
     today.setUTCHours(0, 0, 0, 0);
+    const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
 
     const existing = await AttendanceRecord.findOne({
       userId,
-      date: { $gte: today },
+      date: { $gte: todayUTC },
     });
     if (existing?.checkIn) {
       return res
@@ -163,7 +185,7 @@ export const checkIn = async (req: any, res: Response) => {
     const record = await AttendanceRecord.create({
       userId,
       branchId: branchId || matchedBranch?._id || undefined,
-      date: today,
+      date: todayUTC,
       checkIn: checkInTime,
       checkInLocation: latitude && longitude ? { latitude, longitude } : { latitude: 0, longitude: 0 },
       status: "present",
@@ -198,12 +220,18 @@ export const checkOut = async (req: any, res: Response) => {
     // استخدام الوقت المرسل من العميل أو وقت السيرفر
     const checkOutTime = clientTime ? new Date(clientTime) : new Date();
 
-    const today = new Date();
+    // استخدام توقيت مصر (UTC+2)
+    const now = new Date();
+    const egyptOffset = 2 * 60;
+    const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
+
+    const today = new Date(localNow);
     today.setUTCHours(0, 0, 0, 0);
+    const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
 
     const record = await AttendanceRecord.findOne({
       userId,
-      date: { $gte: today },
+      date: { $gte: todayUTC },
     });
     if (!record) {
       return res
@@ -241,16 +269,30 @@ export const checkOut = async (req: any, res: Response) => {
 export const getTodayRecord = async (req: any, res: Response) => {
   try {
     const userId = req.user.userId;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
+    // استخدام توقيت مصر (UTC+2) بدلاً من UTC
+    // هذا يضمن أن "اليوم" يطابق التوقيت المحلي للمستخدم
+    const now = new Date();
+    const egyptOffset = 2 * 60; // +2 hours in minutes
+    const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
+
+    // بداية اليوم بالتوقيت المحلي
+    const today = new Date(localNow);
+    today.setUTCHours(0, 0, 0, 0);
+    // تحويل الوقت المحلي إلى UTC للبحث في قاعدة البيانات
+    const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
+
+    const tomorrow = new Date(todayUTC);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    console.log(`🔍 getTodayRecord: userId=${userId}, range=${todayUTC.toISOString()} to ${tomorrow.toISOString()}`);
 
     const record = await AttendanceRecord.findOne({
       userId,
-      date: { $gte: today, $lt: tomorrow },
+      date: { $gte: todayUTC, $lt: tomorrow },
     }).populate("branchId", "name");
+
+    console.log(`📋 Found record: ${record ? record._id : 'null'}`);
 
     res.json({ success: true, data: record });
   } catch (error: any) {
@@ -260,13 +302,19 @@ export const getTodayRecord = async (req: any, res: Response) => {
 
 export const getAllTodayRecords = async (req: any, res: Response) => {
   try {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    // استخدام توقيت مصر (UTC+2)
+    const now = new Date();
+    const egyptOffset = 2 * 60;
+    const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
 
-    const tomorrow = new Date(today);
+    const today = new Date(localNow);
+    today.setUTCHours(0, 0, 0, 0);
+    const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
+
+    const tomorrow = new Date(todayUTC);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
-    const records = await AttendanceRecord.find({ date: { $gte: today, $lt: tomorrow } })
+    const records = await AttendanceRecord.find({ date: { $gte: todayUTC, $lt: tomorrow } })
       .populate("userId", "name email")
       .populate("branchId", "name");
 
