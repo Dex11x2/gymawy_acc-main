@@ -167,11 +167,14 @@ export const getTodayRecord = async (req: any, res: Response) => {
   try {
     const userId = req.user.userId;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
     const record = await AttendanceRecord.findOne({
       userId,
-      date: { $gte: today },
+      date: { $gte: today, $lt: tomorrow },
     }).populate("branchId", "name");
 
     res.json({ success: true, data: record });
@@ -183,9 +186,12 @@ export const getTodayRecord = async (req: any, res: Response) => {
 export const getAllTodayRecords = async (req: any, res: Response) => {
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
-    const records = await AttendanceRecord.find({ date: { $gte: today } })
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    const records = await AttendanceRecord.find({ date: { $gte: today, $lt: tomorrow } })
       .populate("userId", "name email")
       .populate("branchId", "name");
 
