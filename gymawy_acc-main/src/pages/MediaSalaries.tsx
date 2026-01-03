@@ -571,9 +571,15 @@ const MediaSalaries: React.FC = () => {
   };
 
   const handleDeleteAchievement = (id: string) => {
+    console.log('handleDeleteAchievement called with id:', id);
     const achievement = achievements.find(a => a.id === id);
     if (achievement?.syncedToPayroll) {
       setToast({ message: 'لا يمكن حذف إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
+      return;
+    }
+    if (!id) {
+      console.error('Achievement ID is undefined or empty');
+      setToast({ message: 'خطأ: معرف الإنجاز غير موجود', type: 'error', isOpen: true });
       return;
     }
     setDeleteId(id);
@@ -582,10 +588,15 @@ const MediaSalaries: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteId) {
+      console.error('Delete failed: deleteId is empty');
+      setToast({ message: 'خطأ: لم يتم تحديد العنصر للحذف', type: 'error', isOpen: true });
+      return;
+    }
 
     try {
       if (deleteType === 'achievement') {
+        console.log('Deleting achievement with ID:', deleteId);
         await api.delete(`/media-achievements/${deleteId}`);
         setAchievements(achievements.filter(a => a.id !== deleteId));
         setToast({ message: 'تم حذف الإنجازات بنجاح', type: 'success', isOpen: true });
