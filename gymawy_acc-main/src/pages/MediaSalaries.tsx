@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
 import { usePermissions } from '../hooks/usePermissions';
@@ -27,6 +27,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
+// ==================== TYPES ====================
 type ContentType = 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
 
 interface ContentPrice {
@@ -46,24 +47,32 @@ interface EmployeeWithPrices {
   prices: ContentPrice[];
 }
 
+interface AchievementItem {
+  contentType: ContentType;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
 interface EmployeeAchievement {
   id: string;
   employeeId: string;
   employeeName: string;
   month: number;
   year: number;
-  items: {
-    contentType: ContentType;
-    quantity: number;
-    price: number;
-    total: number;
-  }[];
+  items: AchievementItem[];
   totalAmount: number;
   syncedToPayroll?: boolean;
   syncedAt?: Date;
 }
 
-const CONTENT_TYPES = {
+interface FormItem {
+  contentType: ContentType;
+  quantity: number;
+}
+
+// ==================== CONSTANTS ====================
+const CONTENT_TYPES: Record<ContentType, string> = {
   short_video: 'فيديو قصير (Short Video)',
   long_video: 'فيديو طويل (Long-form Video)',
   vlog: 'فلوج (Vlog)',
@@ -72,100 +81,168 @@ const CONTENT_TYPES = {
   thumbnail: 'صورة مصغرة (Thumbnail)'
 };
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  SAR: 'ر.س',
+  USD: '$',
+  EGP: 'ج.م'
+};
+
+// ==================== HELPER FUNCTIONS ====================
+const extractId = (value: any): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') return value._id || value.id || '';
+  return '';
+};
+
+const isValidId = (id: string | undefined | null): boolean => {
+  return !!(id && id !== 'undefined' && id !== 'null' && id.trim() !== '');
+};
+
+const getCurrencySymbol = (currency: string): string => {
+  return CURRENCY_SYMBOLS[currency] || currency;
+};
+
+// ==================== MAIN COMPONENT ====================
 const MediaSalaries: React.FC = () => {
   const { user } = useAuthStore();
   const { loadPayrolls, employees } = useDataStore();
   const { canWrite, canRead } = usePermissions();
 
-  // الصلاحيات المنفصلة لإعدادات الأسعار وإنجازات الموظفين
+  // ==================== PERMISSIONS ====================
   const canViewPrices = canRead('media_salaries_prices');
   const canEditPrices = canWrite('media_salaries_prices');
   const canViewAchievements = canRead('media_salaries_achievements');
 
-  // التحقق من إذا كان الموظف الحالي من نوع الراتب المتغير
-  const currentEmployee = employees.find((e: any) => e.userId === user?.id || e.userId?._id === user?.id);
+  const currentEmployee = useMemo(() =>
+    employees.find((e: any) => e.userId === user?.id || e.userId?._id === user?.id),
+    [employees, user?.id]
+  );
 
-  // صلاحية تعديل الإنجازات: المدير العام، المدير الإداري، أو super_admin فقط
-  const isAdmin = currentEmployee?.isGeneralManager || currentEmployee?.isAdministrativeManager || user?.role === 'super_admin' || user?.role === 'general_manager' || user?.role === 'administrative_manager';
+  const isAdmin = useMemo(() =>
+    currentEmployee?.isGeneralManager ||
+    currentEmployee?.isAdministrativeManager ||
+    user?.role === 'super_admin' ||
+    user?.role === 'general_manager' ||
+    user?.role === 'administrative_manager',
+    [currentEmployee, user?.role]
+  );
+
   const isVariableSalaryEmployee = currentEmployee?.salaryType === 'variable';
-
-  // للتوافق مع النظام القديم - يمكن الوصول إذا كان لديه أي من الصلاحيتين أو موظف ميديا
   const canViewMedia = canViewPrices || canViewAchievements || isVariableSalaryEmployee;
 
-  // تحديد التاب الافتراضي
-  const getDefaultTab = () => {
+  // ==================== STATE ====================
+  const getDefaultTab = useCallback(() => {
     if (canViewPrices) return 'prices';
     if (canViewAchievements) return 'achievements';
     if (isVariableSalaryEmployee) return 'my-achievements';
     return 'prices';
-  };
+  }, [canViewPrices, canViewAchievements, isVariableSalaryEmployee]);
 
   const [activeTab, setActiveTab] = useState<'prices' | 'achievements' | 'my-achievements'>(getDefaultTab());
+
+  // Loading states
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
+  const [isLoadingMyAchievements, setIsLoadingMyAchievements] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State لاختيار الموظف في تاب الأسعار
+  // Prices state
   const [selectedEmployeeForPrices, setSelectedEmployeeForPrices] = useState<string>('');
   const [employeesWithPrices, setEmployeesWithPrices] = useState<EmployeeWithPrices[]>([]);
   const [currentEmployeePrices, setCurrentEmployeePrices] = useState<ContentPrice[]>([]);
 
-  const [showPriceModal, setShowPriceModal] = useState(false);
-  const [editingPrice, setEditingPrice] = useState<ContentPrice | null>(null);
-
-  // Achievements State - من قاعدة البيانات
+  // Achievements state
   const [achievements, setAchievements] = useState<EmployeeAchievement[]>([]);
   const [myAchievements, setMyAchievements] = useState<EmployeeAchievement[]>([]);
-  const [isLoadingMyAchievements, setIsLoadingMyAchievements] = useState(false);
-  const [selectedEmployeeForAchievement, setSelectedEmployeeForAchievement] = useState<string>('');
-
-  const [showAchievementModal, setShowAchievementModal] = useState(false);
-  const [editingAchievement, setEditingAchievement] = useState<EmployeeAchievement | null>(null);
-  const [isMyAchievementMode, setIsMyAchievementMode] = useState(false); // للتفرقة بين إنجازاتي وإنجازات الموظفين
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  // Modal state
+  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [editingPrice, setEditingPrice] = useState<ContentPrice | null>(null);
+  const [editingAchievement, setEditingAchievement] = useState<EmployeeAchievement | null>(null);
+  const [isMyAchievementMode, setIsMyAchievementMode] = useState(false);
+  const [selectedEmployeeForAchievement, setSelectedEmployeeForAchievement] = useState<string>('');
+  const [employeePricesForForm, setEmployeePricesForForm] = useState<ContentPrice[]>([]);
+
+  // Delete dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteType, setDeleteType] = useState<'price' | 'achievement'>('price');
 
+  // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning'; isOpen: boolean }>({
     message: '', type: 'success', isOpen: false
   });
 
+  // Form data
   const [priceFormData, setPriceFormData] = useState({
     type: 'short_video' as ContentType,
     price: '' as number | '',
     currency: 'SAR' as 'SAR' | 'USD' | 'EGP'
   });
 
-  const [achievementFormData, setAchievementFormData] = useState({
+  const [achievementFormData, setAchievementFormData] = useState<{
+    employeeId: string;
+    employeeName: string;
+    month: number;
+    year: number;
+    items: FormItem[];
+  }>({
     employeeId: '',
     employeeName: '',
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-    items: [] as { contentType: ContentType; quantity: number }[]
+    items: []
   });
 
-  // Load payrolls on mount
-  useEffect(() => {
-    loadPayrolls();
-  }, [loadPayrolls]);
+  // ==================== COMPUTED VALUES ====================
+  const variableSalaryEmployees = useMemo(() =>
+    employeesWithPrices.map(e => ({
+      id: e.employee._id,
+      name: e.employee.name,
+      position: e.employee.position
+    })),
+    [employeesWithPrices]
+  );
 
-  // جلب جميع الموظفين مع أسعارهم
+  const monthlySummary = useMemo(() =>
+    achievements.reduce((acc, achievement) => {
+      acc.totalAmount += achievement.totalAmount;
+      acc.syncedCount += achievement.syncedToPayroll ? 1 : 0;
+      acc.totalItems += achievement.items.reduce((sum, item) => sum + item.quantity, 0);
+      return acc;
+    }, { totalAmount: 0, syncedCount: 0, totalItems: 0 }),
+    [achievements]
+  );
+
+  const formTotal = useMemo(() => {
+    return achievementFormData.items.reduce((sum, item) => {
+      const price = employeePricesForForm.find(p => p.type === item.contentType)?.price || 0;
+      return sum + (item.quantity * price);
+    }, 0);
+  }, [achievementFormData.items, employeePricesForForm]);
+
+  // ==================== API FUNCTIONS ====================
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning') => {
+    setToast({ message, type, isOpen: true });
+  }, []);
+
   const fetchAllEmployeesWithPrices = useCallback(async () => {
     try {
       setIsLoadingPrices(true);
       const response = await api.get('/media-prices/all-employees');
       const data = response.data
-        .filter((item: any) => item.employee && (item.employee._id || item.employee.id)) // تصفية الموظفين بدون معرف
+        .filter((item: any) => item.employee && extractId(item.employee))
         .map((item: any) => ({
           employee: {
-            _id: item.employee._id || item.employee.id, // ضمان وجود _id
+            _id: extractId(item.employee),
             name: item.employee.name,
             position: item.employee.position
           },
-          prices: item.prices.map((p: any) => ({
-            id: p._id || p.id, // ضمان وجود id
+          prices: (item.prices || []).map((p: any) => ({
+            id: extractId(p),
             type: p.type,
             nameAr: p.nameAr,
             price: p.price,
@@ -174,44 +251,35 @@ const MediaSalaries: React.FC = () => {
         }));
       setEmployeesWithPrices(data);
 
-      // إذا لم يكن هناك موظف مختار، اختر الأول
       if (!selectedEmployeeForPrices && data.length > 0) {
         setSelectedEmployeeForPrices(data[0].employee._id);
         setCurrentEmployeePrices(data[0].prices);
       }
     } catch (error) {
       console.error('Error fetching employees with prices:', error);
-      setToast({ message: 'حدث خطأ أثناء جلب بيانات الموظفين', type: 'error', isOpen: true });
+      showToast('حدث خطأ أثناء جلب بيانات الموظفين', 'error');
     } finally {
       setIsLoadingPrices(false);
     }
-  }, [selectedEmployeeForPrices]);
+  }, [selectedEmployeeForPrices, showToast]);
 
-  // جلب أسعار موظف معين
-  const fetchEmployeePrices = useCallback(async (employeeId: string) => {
-    if (!employeeId) return;
+  const fetchEmployeePrices = useCallback(async (employeeId: string): Promise<ContentPrice[]> => {
+    if (!isValidId(employeeId)) return [];
     try {
-      setIsLoadingPrices(true);
       const response = await api.get(`/media-prices/employee/${employeeId}`);
-      const fetchedPrices = response.data
-        .filter((p: any) => p._id || p.id) // تصفية الأسعار بدون معرف
-        .map((p: any) => ({
-          id: p._id || p.id, // ضمان وجود id
-          type: p.type,
-          nameAr: p.nameAr,
-          price: p.price,
-          currency: p.currency
-        }));
-      setCurrentEmployeePrices(fetchedPrices);
+      return response.data.map((p: any) => ({
+        id: extractId(p),
+        type: p.type,
+        nameAr: p.nameAr,
+        price: p.price,
+        currency: p.currency
+      }));
     } catch (error) {
       console.error('Error fetching employee prices:', error);
-      setToast({ message: 'حدث خطأ أثناء جلب أسعار الموظف', type: 'error', isOpen: true });
-    } finally {
-      setIsLoadingPrices(false);
+      return [];
     }
   }, []);
 
-  // جلب الإنجازات من قاعدة البيانات
   const fetchAchievements = useCallback(async () => {
     try {
       setIsLoadingAchievements(true);
@@ -219,28 +287,27 @@ const MediaSalaries: React.FC = () => {
         params: { month: selectedMonth, year: selectedYear }
       });
       const data = response.data
-        .filter((a: any) => a._id) // تصفية الإنجازات بدون معرف
+        .filter((a: any) => a._id)
         .map((a: any) => ({
           id: String(a._id),
-          employeeId: String(a.employeeId?._id || a.employeeId || ''),
+          employeeId: extractId(a.employeeId),
           employeeName: a.employeeId?.name || 'غير معروف',
           month: a.month,
           year: a.year,
-          items: a.items,
-          totalAmount: a.totalAmount,
+          items: a.items || [],
+          totalAmount: a.totalAmount || 0,
           syncedToPayroll: a.syncedToPayroll,
           syncedAt: a.syncedAt
         }));
       setAchievements(data);
     } catch (error) {
       console.error('Error fetching achievements:', error);
-      setToast({ message: 'حدث خطأ أثناء جلب الإنجازات', type: 'error', isOpen: true });
+      showToast('حدث خطأ أثناء جلب الإنجازات', 'error');
     } finally {
       setIsLoadingAchievements(false);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, showToast]);
 
-  // جلب إنجازاتي (للموظف الحالي فقط)
   const fetchMyAchievements = useCallback(async () => {
     try {
       setIsLoadingMyAchievements(true);
@@ -248,74 +315,77 @@ const MediaSalaries: React.FC = () => {
         params: { month: selectedMonth, year: selectedYear }
       });
       const data = response.data
-        .filter((a: any) => a._id) // تصفية الإنجازات بدون معرف
+        .filter((a: any) => a._id)
         .map((a: any) => ({
           id: String(a._id),
-          employeeId: String(a.employeeId?._id || a.employeeId || ''),
+          employeeId: extractId(a.employeeId),
           employeeName: a.employeeId?.name || 'غير معروف',
           month: a.month,
           year: a.year,
-          items: a.items,
-          totalAmount: a.totalAmount,
+          items: a.items || [],
+          totalAmount: a.totalAmount || 0,
           syncedToPayroll: a.syncedToPayroll,
           syncedAt: a.syncedAt
         }));
       setMyAchievements(data);
     } catch (error) {
       console.error('Error fetching my achievements:', error);
-      setToast({ message: 'حدث خطأ أثناء جلب إنجازاتك', type: 'error', isOpen: true });
+      showToast('حدث خطأ أثناء جلب إنجازاتك', 'error');
     } finally {
       setIsLoadingMyAchievements(false);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, showToast]);
 
-  // جلب البيانات عند تغيير التاب
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    loadPayrolls();
+  }, [loadPayrolls]);
+
   useEffect(() => {
     if (activeTab === 'prices' && canViewPrices) {
       fetchAllEmployeesWithPrices();
     } else if (activeTab === 'achievements' && canViewAchievements) {
       fetchAchievements();
-      // جلب الموظفين ذوي الراتب المتغير لاستخدامهم في مودال إضافة الإنجازات
       if (employeesWithPrices.length === 0) {
         fetchAllEmployeesWithPrices();
       }
     } else if (activeTab === 'my-achievements' && isVariableSalaryEmployee) {
       fetchMyAchievements();
     }
-  }, [activeTab, canViewPrices, canViewAchievements, isVariableSalaryEmployee, fetchAllEmployeesWithPrices, fetchAchievements, fetchMyAchievements, employeesWithPrices.length]);
+  }, [activeTab, canViewPrices, canViewAchievements, isVariableSalaryEmployee]);
 
-  // تحديث الأسعار عند تغيير الموظف المختار
+  useEffect(() => {
+    if (activeTab === 'achievements') {
+      fetchAchievements();
+    } else if (activeTab === 'my-achievements') {
+      fetchMyAchievements();
+    }
+  }, [selectedMonth, selectedYear]);
+
   useEffect(() => {
     if (selectedEmployeeForPrices) {
       const employeeData = employeesWithPrices.find(e => e.employee._id === selectedEmployeeForPrices);
       if (employeeData) {
         setCurrentEmployeePrices(employeeData.prices);
-      } else {
-        fetchEmployeePrices(selectedEmployeeForPrices);
       }
     }
-  }, [selectedEmployeeForPrices, employeesWithPrices, fetchEmployeePrices]);
+  }, [selectedEmployeeForPrices, employeesWithPrices]);
 
-  // جلب الإنجازات عند تغيير الشهر/السنة
+  // Load prices when modal opens or employee changes
   useEffect(() => {
-    if (activeTab === 'achievements') {
-      fetchAchievements();
-    }
-  }, [selectedMonth, selectedYear, activeTab, fetchAchievements]);
-
-  const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = {
-      SAR: 'ر.س',
-      USD: '$',
-      EGP: 'ج.م'
+    const loadPrices = async () => {
+      if (showAchievementModal && isValidId(selectedEmployeeForAchievement)) {
+        const prices = await fetchEmployeePrices(selectedEmployeeForAchievement);
+        setEmployeePricesForForm(prices);
+      }
     };
-    return symbols[currency] || currency;
-  };
+    loadPrices();
+  }, [showAchievementModal, selectedEmployeeForAchievement, fetchEmployeePrices]);
 
-  // Price Handlers
+  // ==================== PRICE HANDLERS ====================
   const openEditPrice = (price: ContentPrice) => {
     if (!canEditPrices) {
-      setToast({ message: 'ليس لديك صلاحية لتعديل الأسعار', type: 'error', isOpen: true });
+      showToast('ليس لديك صلاحية لتعديل الأسعار', 'error');
       return;
     }
     setEditingPrice(price);
@@ -325,35 +395,26 @@ const MediaSalaries: React.FC = () => {
 
   const handlePriceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedEmployeeForPrices || !editingPrice) {
-      setToast({ message: 'يرجى اختيار موظف والسعر المراد تعديله', type: 'error', isOpen: true });
-      return;
-    }
-
-    // التحقق من وجود معرفات صالحة
-    if (!editingPrice.id) {
-      setToast({ message: 'خطأ: معرف السعر غير صالح', type: 'error', isOpen: true });
+    if (!selectedEmployeeForPrices || !editingPrice?.id) {
+      showToast('يرجى اختيار موظف والسعر المراد تعديله', 'error');
       return;
     }
 
     try {
-      // تحديث السعر في قاعدة البيانات
+      setIsSubmitting(true);
       await api.put(`/media-prices/employee/${selectedEmployeeForPrices}/${editingPrice.id}`, {
         price: Number(priceFormData.price),
         currency: priceFormData.currency,
         nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0]
       });
 
-      // تحديث الـ state المحلي
-      setCurrentEmployeePrices(currentEmployeePrices.map(p =>
+      setCurrentEmployeePrices(prev => prev.map(p =>
         p.id === editingPrice.id
           ? { ...p, price: Number(priceFormData.price), currency: priceFormData.currency }
           : p
       ));
 
-      // تحديث employeesWithPrices
-      setEmployeesWithPrices(employeesWithPrices.map(e =>
+      setEmployeesWithPrices(prev => prev.map(e =>
         e.employee._id === selectedEmployeeForPrices
           ? {
               ...e,
@@ -366,94 +427,87 @@ const MediaSalaries: React.FC = () => {
           : e
       ));
 
-      setToast({ message: 'تم تحديث السعر بنجاح', type: 'success', isOpen: true });
+      showToast('تم تحديث السعر بنجاح', 'success');
       setShowPriceModal(false);
     } catch (error: any) {
       console.error('Error saving price:', error);
-      setToast({ message: error.response?.data?.message || 'حدث خطأ أثناء حفظ السعر', type: 'error', isOpen: true });
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء حفظ السعر', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Achievement Handlers
-  // الموظفين ذوي الراتب المتغير فقط (للإنجازات)
-  const variableSalaryEmployees = employeesWithPrices.map(e => ({
-    id: e.employee._id,
-    name: e.employee.name,
-    position: e.employee.position
-  }));
-
-  const openAddAchievement = () => {
-    const firstEmployee = variableSalaryEmployees[0];
-    setIsMyAchievementMode(false);
-    setEditingAchievement(null);
-    setSelectedEmployeeForAchievement(firstEmployee?.id || '');
+  // ==================== ACHIEVEMENT HANDLERS ====================
+  const resetAchievementForm = () => {
     setAchievementFormData({
-      employeeId: firstEmployee?.id || '',
-      employeeName: firstEmployee?.name || '',
+      employeeId: '',
+      employeeName: '',
       month: selectedMonth,
       year: selectedYear,
       items: []
     });
+    setEmployeePricesForForm([]);
+    setEditingAchievement(null);
+    setSelectedEmployeeForAchievement('');
+  };
+
+  const openAddAchievement = () => {
+    resetAchievementForm();
+    setIsMyAchievementMode(false);
+
+    const firstEmployee = variableSalaryEmployees[0];
+    if (firstEmployee) {
+      setSelectedEmployeeForAchievement(firstEmployee.id);
+      setAchievementFormData(prev => ({
+        ...prev,
+        employeeId: firstEmployee.id,
+        employeeName: firstEmployee.name
+      }));
+    }
     setShowAchievementModal(true);
   };
 
-  const openEditAchievement = (achievement: EmployeeAchievement) => {
-    console.log('openEditAchievement called with:', achievement);
-
-    // التحقق من صحة الـ achievement
-    if (!achievement || !achievement.id || achievement.id === 'undefined') {
-      console.error('Invalid achievement:', achievement);
-      setToast({ message: 'خطأ: بيانات الإنجاز غير صالحة', type: 'error', isOpen: true });
+  const openEditAchievement = async (achievement: EmployeeAchievement) => {
+    if (!isValidId(achievement.id)) {
+      showToast('خطأ: بيانات الإنجاز غير صالحة', 'error');
       return;
     }
 
     if (achievement.syncedToPayroll) {
-      setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
+      showToast('لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب', 'warning');
       return;
     }
 
-    // استخراج الـ employeeId بشكل صحيح
-    const employeeId = typeof achievement.employeeId === 'object'
-      ? (achievement.employeeId as any)?._id || (achievement.employeeId as any)?.id
-      : achievement.employeeId;
+    const employeeId = extractId(achievement.employeeId);
 
-    console.log('Setting up edit mode with employeeId:', employeeId);
-    console.log('Achievement items:', achievement.items);
-    console.log('Achievement items length:', achievement.items?.length);
-
-    // تحويل الـ items للفورم بشكل صحيح
-    const formItems = (achievement.items || []).map(item => ({
-      contentType: item.contentType as ContentType,
-      quantity: item.quantity || 0
-    }));
-    console.log('Mapped form items:', formItems);
+    // Load prices first
+    const prices = await fetchEmployeePrices(employeeId);
+    setEmployeePricesForForm(prices);
 
     setIsMyAchievementMode(false);
     setEditingAchievement(achievement);
-    setSelectedEmployeeForAchievement(String(employeeId));
-
-    const newFormData = {
-      employeeId: String(employeeId),
+    setSelectedEmployeeForAchievement(employeeId);
+    setAchievementFormData({
+      employeeId: employeeId,
       employeeName: achievement.employeeName,
       month: achievement.month,
       year: achievement.year,
-      items: formItems
-    };
-    console.log('Setting achievementFormData to:', newFormData);
-    setAchievementFormData(newFormData);
-
-    console.log('Opening achievement modal for editing');
+      items: achievement.items.map(item => ({
+        contentType: item.contentType,
+        quantity: item.quantity
+      }))
+    });
     setShowAchievementModal(true);
   };
 
-  // فتح مودال إضافة إنجازاتي (للموظف نفسه)
   const openAddMyAchievement = () => {
     if (!currentEmployee) {
-      setToast({ message: 'لم يتم العثور على بيانات الموظف', type: 'error', isOpen: true });
+      showToast('لم يتم العثور على بيانات الموظف', 'error');
       return;
     }
+
+    resetAchievementForm();
     setIsMyAchievementMode(true);
-    setEditingAchievement(null);
     setSelectedEmployeeForAchievement(currentEmployee.id);
     setAchievementFormData({
       employeeId: currentEmployee.id,
@@ -465,129 +519,95 @@ const MediaSalaries: React.FC = () => {
     setShowAchievementModal(true);
   };
 
-  // فتح مودال تعديل إنجازاتي (للموظف نفسه)
-  const openEditMyAchievement = (achievement: EmployeeAchievement) => {
-    console.log('openEditMyAchievement called with:', achievement);
-
-    // التحقق من صحة الـ achievement
-    if (!achievement || !achievement.id || achievement.id === 'undefined') {
-      console.error('Invalid achievement:', achievement);
-      setToast({ message: 'خطأ: بيانات الإنجاز غير صالحة', type: 'error', isOpen: true });
+  const openEditMyAchievement = async (achievement: EmployeeAchievement) => {
+    if (!isValidId(achievement.id)) {
+      showToast('خطأ: بيانات الإنجاز غير صالحة', 'error');
       return;
     }
 
     if (achievement.syncedToPayroll) {
-      setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب. تواصل مع الإدارة.', type: 'warning', isOpen: true });
+      showToast('لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب. تواصل مع الإدارة.', 'warning');
       return;
     }
 
-    // استخراج الـ employeeId بشكل صحيح
-    const employeeId = typeof achievement.employeeId === 'object'
-      ? (achievement.employeeId as any)?._id || (achievement.employeeId as any)?.id
-      : achievement.employeeId;
+    const employeeId = extractId(achievement.employeeId);
 
-    console.log('openEditMyAchievement - Achievement items:', achievement.items);
-    console.log('openEditMyAchievement - Items length:', achievement.items?.length);
-
-    // تحويل الـ items للفورم بشكل صحيح
-    const formItems = (achievement.items || []).map(item => ({
-      contentType: item.contentType as ContentType,
-      quantity: item.quantity || 0
-    }));
-    console.log('openEditMyAchievement - Mapped form items:', formItems);
+    // Load prices first
+    const prices = await fetchEmployeePrices(employeeId);
+    setEmployeePricesForForm(prices);
 
     setIsMyAchievementMode(true);
     setEditingAchievement(achievement);
-    setSelectedEmployeeForAchievement(String(employeeId));
-
-    const newFormData = {
-      employeeId: String(employeeId),
+    setSelectedEmployeeForAchievement(employeeId);
+    setAchievementFormData({
+      employeeId: employeeId,
       employeeName: achievement.employeeName,
       month: achievement.month,
       year: achievement.year,
-      items: formItems
-    };
-    console.log('openEditMyAchievement - Setting achievementFormData to:', newFormData);
-    setAchievementFormData(newFormData);
-
+      items: achievement.items.map(item => ({
+        contentType: item.contentType,
+        quantity: item.quantity
+      }))
+    });
     setShowAchievementModal(true);
   };
 
-  // تحميل أسعار الموظف المختار للإنجاز
-  const [selectedEmployeeAchievementPrices, setSelectedEmployeeAchievementPrices] = useState<ContentPrice[]>([]);
-
-  useEffect(() => {
-    const loadPricesForAchievement = async () => {
-      // التحقق من صحة الـ selectedEmployeeForAchievement
-      const employeeId = typeof selectedEmployeeForAchievement === 'object'
-        ? (selectedEmployeeForAchievement as any)?._id || (selectedEmployeeForAchievement as any)?.id
-        : selectedEmployeeForAchievement;
-
-      if (employeeId && typeof employeeId === 'string' && employeeId !== 'undefined' && showAchievementModal) {
-        try {
-          console.log('Loading prices for employee:', employeeId);
-          const response = await api.get(`/media-prices/employee/${employeeId}`);
-          const fetchedPrices = response.data.map((p: any) => ({
-            id: p._id,
-            type: p.type,
-            nameAr: p.nameAr,
-            price: p.price,
-            currency: p.currency
-          }));
-          setSelectedEmployeeAchievementPrices(fetchedPrices);
-        } catch (error) {
-          console.error('Error fetching prices for achievement:', error);
-        }
-      }
-    };
-    loadPricesForAchievement();
-  }, [selectedEmployeeForAchievement, showAchievementModal]);
-
   const addAchievementItem = () => {
-    setAchievementFormData({
-      ...achievementFormData,
-      items: [...achievementFormData.items, { contentType: 'short_video', quantity: 0 }]
-    });
+    setAchievementFormData(prev => ({
+      ...prev,
+      items: [...prev.items, { contentType: 'short_video', quantity: 1 }]
+    }));
   };
 
   const removeAchievementItem = (index: number) => {
-    setAchievementFormData({
-      ...achievementFormData,
-      items: achievementFormData.items.filter((_, i) => i !== index)
-    });
+    setAchievementFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
   };
 
   const updateAchievementItem = (index: number, field: 'contentType' | 'quantity', value: any) => {
-    const newItems = [...achievementFormData.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setAchievementFormData({ ...achievementFormData, items: newItems });
+    setAchievementFormData(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
   };
 
   const handleEmployeeChangeForAchievement = (employeeId: string) => {
     const employee = variableSalaryEmployees.find(e => e.id === employeeId);
     setSelectedEmployeeForAchievement(employeeId);
-    setAchievementFormData({
-      ...achievementFormData,
+    setAchievementFormData(prev => ({
+      ...prev,
       employeeId,
       employeeName: employee?.name || ''
-    });
+    }));
   };
 
   const handleAchievementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isMyAchievementMode && !achievementFormData.employeeId) {
-      setToast({ message: 'يرجى اختيار الموظف', type: 'error', isOpen: true });
+    if (!isMyAchievementMode && !isValidId(achievementFormData.employeeId)) {
+      showToast('يرجى اختيار الموظف', 'error');
       return;
     }
 
     if (achievementFormData.items.length === 0) {
-      setToast({ message: 'يرجى إضافة إنجازات', type: 'error', isOpen: true });
+      showToast('يرجى إضافة إنجاز واحد على الأقل', 'error');
       return;
     }
 
+    // Validate all items have quantity > 0
+    const invalidItems = achievementFormData.items.filter(item => item.quantity <= 0);
+    if (invalidItems.length > 0) {
+      showToast('يرجى إدخال كمية صحيحة لجميع الإنجازات', 'error');
+      return;
+    }
+
+    // Build items with prices
     const itemsWithPrices = achievementFormData.items.map(item => {
-      const price = selectedEmployeeAchievementPrices.find(p => p.type === item.contentType)?.price || 0;
+      const price = employeePricesForForm.find(p => p.type === item.contentType)?.price || 0;
       return {
         contentType: item.contentType,
         quantity: item.quantity,
@@ -597,219 +617,151 @@ const MediaSalaries: React.FC = () => {
     });
 
     try {
+      setIsSubmitting(true);
+
       if (isMyAchievementMode) {
-        // وضع إنجازاتي - الموظف يضيف/يعدل لنفسه
         if (editingAchievement) {
           await api.put(`/media-achievements/my-achievements/${editingAchievement.id}`, {
             items: itemsWithPrices
           });
-          setToast({ message: 'تم تحديث إنجازاتك بنجاح', type: 'success', isOpen: true });
+          showToast('تم تحديث إنجازاتك بنجاح', 'success');
         } else {
           await api.post('/media-achievements/my-achievements', {
             month: achievementFormData.month,
             year: achievementFormData.year,
             items: itemsWithPrices
           });
-          setToast({ message: 'تم إضافة إنجازاتك بنجاح', type: 'success', isOpen: true });
+          showToast('تم إضافة إنجازاتك بنجاح', 'success');
         }
         setShowAchievementModal(false);
-        fetchMyAchievements(); // إعادة تحميل إنجازاتي
+        fetchMyAchievements();
       } else {
-        // وضع الإدارة - المدير يضيف/يعدل للموظفين
         if (editingAchievement) {
           await api.put(`/media-achievements/${editingAchievement.id}`, {
             items: itemsWithPrices
           });
-          setToast({ message: 'تم تحديث الإنجازات بنجاح', type: 'success', isOpen: true });
+          showToast('تم تحديث الإنجازات بنجاح', 'success');
         } else {
-          const payload = {
+          await api.post('/media-achievements', {
             employeeId: achievementFormData.employeeId,
             month: achievementFormData.month,
             year: achievementFormData.year,
             items: itemsWithPrices
-          };
-          console.log('Creating achievement with payload:', payload);
-          await api.post('/media-achievements', payload);
-          setToast({ message: 'تم إضافة الإنجازات بنجاح', type: 'success', isOpen: true });
+          });
+          showToast('تم إضافة الإنجازات بنجاح', 'success');
         }
         setShowAchievementModal(false);
-        fetchAchievements(); // إعادة تحميل الإنجازات
+        fetchAchievements();
       }
     } catch (error: any) {
       console.error('Error saving achievement:', error);
       const errorData = error.response?.data;
 
-      // إذا كان الخطأ بسبب وجود إنجاز مسجل مسبقاً، نفتح التعديل تلقائياً
+      // Handle duplicate achievement - auto open edit
       if (errorData?.existingId) {
-        setToast({
-          message: 'يوجد إنجاز مسجل لهذا الشهر. جاري فتح التعديل...',
-          type: 'info',
-          isOpen: true
-        });
+        showToast('يوجد إنجاز مسجل لهذا الشهر. جاري فتح التعديل...', 'info');
 
         try {
-          // جلب الإنجاز الموجود مباشرة من الـ API
-          const existingId = errorData.existingId;
-          console.log('Fetching existing achievement with ID:', existingId);
-          const response = await api.get(`/media-achievements/${existingId}`);
+          const response = await api.get(`/media-achievements/${errorData.existingId}`);
           const existingData = response.data;
-          console.log('Fetched existing achievement data:', existingData);
-          console.log('Existing items from API:', existingData.items);
-          console.log('Existing items type:', typeof existingData.items);
-          console.log('Existing items is array:', Array.isArray(existingData.items));
 
           if (existingData) {
-            // استخراج الـ ID بشكل صحيح
-            const achievementId = existingData._id || existingData.id || existingId;
-
-            // استخراج الـ employeeId بشكل صحيح
-            let empId = '';
-            if (existingData.employeeId) {
-              if (typeof existingData.employeeId === 'string') {
-                empId = existingData.employeeId;
-              } else if (typeof existingData.employeeId === 'object') {
-                empId = existingData.employeeId._id || existingData.employeeId.id || '';
-              }
-            }
-
-            // التأكد من أن الـ items موجودة ومعالجتها بشكل صحيح
-            const items = Array.isArray(existingData.items) ? existingData.items.map((item: any) => ({
-              contentType: item.contentType,
-              quantity: item.quantity || 0,
-              price: item.price || 0,
-              total: item.total || 0
-            })) : [];
-            console.log('Processed items for modal:', items);
-
             const existingAchievement: EmployeeAchievement = {
-              id: String(achievementId),
-              employeeId: String(empId),
+              id: extractId(existingData) || errorData.existingId,
+              employeeId: extractId(existingData.employeeId),
               employeeName: existingData.employeeId?.name || achievementFormData.employeeName,
               month: existingData.month,
               year: existingData.year,
-              items: items,
+              items: existingData.items || [],
               totalAmount: existingData.totalAmount || 0,
               syncedToPayroll: existingData.syncedToPayroll || false,
               syncedAt: existingData.syncedAt
             };
 
-            console.log('Created existingAchievement object:', existingAchievement);
-            console.log('existingAchievement.items:', existingAchievement.items);
-
-            // إغلاق المودال الحالي أولاً
             setShowAchievementModal(false);
 
-            // الانتظار ثم فتح المودال للتعديل
+            // Wait for modal to close, then open edit
             setTimeout(() => {
-              console.log('Timeout fired, now opening edit modal with items:', existingAchievement.items);
-              openEditAchievement(existingAchievement);
-            }, 500);
+              if (isMyAchievementMode) {
+                openEditMyAchievement(existingAchievement);
+              } else {
+                openEditAchievement(existingAchievement);
+              }
+            }, 300);
           }
         } catch (fetchError) {
           console.error('Error fetching existing achievement:', fetchError);
-          setToast({ message: 'حدث خطأ أثناء جلب الإنجاز الموجود', type: 'error', isOpen: true });
+          showToast('حدث خطأ أثناء جلب الإنجاز الموجود', 'error');
         }
         return;
       }
 
-      const message = errorData?.message || 'حدث خطأ أثناء حفظ الإنجازات';
-      setToast({ message, type: 'error', isOpen: true });
+      showToast(errorData?.message || 'حدث خطأ أثناء حفظ الإنجازات', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteAchievement = (id: string) => {
-    console.log('handleDeleteAchievement called with id:', id, 'type:', typeof id);
-
-    // التحقق من صحة الـ ID
-    if (!id || id === 'undefined' || id === 'null' || id.trim() === '') {
-      console.error('Achievement ID is invalid:', id);
-      setToast({ message: 'خطأ: معرف الإنجاز غير صالح', type: 'error', isOpen: true });
+    if (!isValidId(id)) {
+      showToast('خطأ: معرف الإنجاز غير صالح', 'error');
       return;
     }
 
     const achievement = achievements.find(a => a.id === id);
     if (!achievement) {
-      console.error('Achievement not found with id:', id);
-      setToast({ message: 'خطأ: الإنجاز غير موجود', type: 'error', isOpen: true });
+      showToast('خطأ: الإنجاز غير موجود', 'error');
       return;
     }
 
     if (achievement.syncedToPayroll) {
-      setToast({ message: 'لا يمكن حذف إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
+      showToast('لا يمكن حذف إنجازات تمت مزامنتها مع الراتب', 'warning');
       return;
     }
 
     setDeleteId(id);
-    setDeleteType('achievement');
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = async () => {
-    // التحقق من صحة الـ deleteId
-    if (!deleteId || deleteId === 'undefined' || deleteId === 'null' || deleteId.trim() === '') {
-      console.error('Delete failed: deleteId is invalid:', deleteId);
-      setToast({ message: 'خطأ: لم يتم تحديد العنصر للحذف بشكل صحيح', type: 'error', isOpen: true });
+    if (!isValidId(deleteId)) {
+      showToast('خطأ: لم يتم تحديد العنصر للحذف بشكل صحيح', 'error');
       setShowDeleteDialog(false);
       return;
     }
 
     try {
-      if (deleteType === 'achievement') {
-        console.log('Deleting achievement with ID:', deleteId, 'URL:', `/media-achievements/${deleteId}`);
-        await api.delete(`/media-achievements/${deleteId}`);
-        setAchievements(achievements.filter(a => a.id !== deleteId));
-        setToast({ message: 'تم حذف الإنجازات بنجاح', type: 'success', isOpen: true });
-      }
-      setDeleteId(null);
-      setShowDeleteDialog(false);
+      await api.delete(`/media-achievements/${deleteId}`);
+      setAchievements(prev => prev.filter(a => a.id !== deleteId));
+      showToast('تم حذف الإنجازات بنجاح', 'success');
     } catch (error: any) {
       console.error('Error deleting:', error);
-      const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء الحذف';
-      setToast({ message: errorMessage, type: 'error', isOpen: true });
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء الحذف', 'error');
+    } finally {
+      setDeleteId(null);
+      setShowDeleteDialog(false);
     }
   };
 
-  // Sync achievement to payroll
   const syncToPayroll = async (achievement: EmployeeAchievement) => {
     try {
       await api.post(`/media-achievements/${achievement.id}/sync-payroll`);
 
-      // تحديث الـ state المحلي
-      setAchievements(achievements.map(a =>
+      setAchievements(prev => prev.map(a =>
         a.id === achievement.id
           ? { ...a, syncedToPayroll: true, syncedAt: new Date() }
           : a
       ));
 
-      setToast({
-        message: 'تم إضافة الإنجازات للراتب الشهري بنجاح',
-        type: 'success',
-        isOpen: true
-      });
-
-      // Reload payrolls to reflect changes
+      showToast('تم إضافة الإنجازات للراتب الشهري بنجاح', 'success');
       await loadPayrolls();
     } catch (error: any) {
       console.error('Error syncing to payroll:', error);
-      setToast({
-        message: error.response?.data?.message || 'حدث خطأ أثناء إضافة الإنجازات للراتب',
-        type: 'error',
-        isOpen: true
-      });
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء إضافة الإنجازات للراتب', 'error');
     }
   };
 
-  const filteredAchievements = achievements;
-
-  // Calculate monthly summary for current filter
-  const monthlySummary = filteredAchievements.reduce((acc, achievement) => {
-    acc.totalAmount += achievement.totalAmount;
-    acc.syncedCount += achievement.syncedToPayroll ? 1 : 0;
-    acc.totalItems += achievement.items.reduce((sum, item) => sum + item.quantity, 0);
-    return acc;
-  }, { totalAmount: 0, syncedCount: 0, totalItems: 0 });
-
-  // Permission Guard
+  // ==================== PERMISSION GUARD ====================
   if (!canViewMedia) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -824,6 +776,7 @@ const MediaSalaries: React.FC = () => {
     );
   }
 
+  // ==================== RENDER ====================
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
@@ -895,7 +848,6 @@ const MediaSalaries: React.FC = () => {
               </Button>
             </div>
 
-            {/* اختيار الموظف */}
             <div className="flex items-center gap-3">
               <Users className="w-5 h-5 text-gray-500" />
               <select
@@ -904,7 +856,7 @@ const MediaSalaries: React.FC = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-w-[200px]"
               >
                 <option value="">اختر موظف...</option>
-                {employeesWithPrices.filter(item => item.employee._id).map(item => (
+                {employeesWithPrices.map(item => (
                   <option key={item.employee._id} value={item.employee._id}>
                     {item.employee.name} {item.employee.position ? `- ${item.employee.position}` : ''}
                   </option>
@@ -966,16 +918,14 @@ const MediaSalaries: React.FC = () => {
                             </Table.Cell>
                             {canEditPrices && (
                               <Table.Cell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openEditPrice(price)}
-                                    className="text-brand-600 hover:text-brand-700"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditPrice(price)}
+                                  className="text-brand-600 hover:text-brand-700"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
                               </Table.Cell>
                             )}
                           </Table.Row>
@@ -992,13 +942,12 @@ const MediaSalaries: React.FC = () => {
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">اختر موظف لعرض وتعديل أسعاره</p>
-                  <p className="text-sm mt-2">كل موظف له أسعار مستقلة لأنواع المحتوى المختلفة</p>
                 </div>
               </Card.Body>
             </Card>
           )}
 
-          {/* عرض كل الموظفين مع ملخص أسعارهم */}
+          {/* Employee Cards Grid */}
           {employeesWithPrices.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -1010,9 +959,7 @@ const MediaSalaries: React.FC = () => {
                   <Card
                     key={employee._id}
                     className={`cursor-pointer transition-all ${
-                      selectedEmployeeForPrices === employee._id
-                        ? 'ring-2 ring-brand-500'
-                        : 'hover:shadow-md'
+                      selectedEmployeeForPrices === employee._id ? 'ring-2 ring-brand-500' : 'hover:shadow-md'
                     }`}
                     onClick={() => setSelectedEmployeeForPrices(employee._id)}
                   >
@@ -1053,8 +1000,8 @@ const MediaSalaries: React.FC = () => {
       {/* Achievements Tab */}
       {activeTab === 'achievements' && (
         <div className="space-y-6">
-          {/* Monthly Summary Cards */}
-          {filteredAchievements.length > 0 && (
+          {/* Summary Cards */}
+          {achievements.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
                 <Card.Body>
@@ -1097,7 +1044,7 @@ const MediaSalaries: React.FC = () => {
                     <div>
                       <p className="text-sm text-purple-700 dark:text-purple-300">تمت المزامنة</p>
                       <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                        {monthlySummary.syncedCount} / {filteredAchievements.length}
+                        {monthlySummary.syncedCount} / {achievements.length}
                       </p>
                     </div>
                   </div>
@@ -1106,6 +1053,7 @@ const MediaSalaries: React.FC = () => {
             </div>
           )}
 
+          {/* Filters */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex gap-4 items-end">
               <div>
@@ -1130,9 +1078,7 @@ const MediaSalaries: React.FC = () => {
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   {Array.from({ length: 5 }, (_, i) => (
-                    <option key={i} value={2024 + i}>
-                      {2024 + i}
-                    </option>
+                    <option key={i} value={2024 + i}>{2024 + i}</option>
                   ))}
                 </select>
               </div>
@@ -1141,7 +1087,6 @@ const MediaSalaries: React.FC = () => {
               </Button>
             </div>
 
-            {/* زر إضافة إنجازات للموظفين الآخرين - فقط للمدراء */}
             {isAdmin && (
               <Button onClick={openAddAchievement}>
                 <Plus className="w-4 h-4" />
@@ -1150,6 +1095,7 @@ const MediaSalaries: React.FC = () => {
             )}
           </div>
 
+          {/* Achievements Table */}
           <Card>
             <Card.Body className="p-0">
               <div className="overflow-x-auto">
@@ -1174,7 +1120,7 @@ const MediaSalaries: React.FC = () => {
                           </div>
                         </Table.Cell>
                       </Table.Row>
-                    ) : filteredAchievements.length === 0 ? (
+                    ) : achievements.length === 0 ? (
                       <Table.Row>
                         <Table.Cell colSpan={6}>
                           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -1183,7 +1129,7 @@ const MediaSalaries: React.FC = () => {
                         </Table.Cell>
                       </Table.Row>
                     ) : (
-                      filteredAchievements.map(achievement => (
+                      achievements.map(achievement => (
                         <Table.Row key={achievement.id}>
                           <Table.Cell>
                             <div className="flex items-center gap-2">
@@ -1223,7 +1169,6 @@ const MediaSalaries: React.FC = () => {
                             )}
                           </Table.Cell>
                           <Table.Cell>
-                            {/* الإجراءات فقط للمدراء */}
                             {isAdmin ? (
                               <div className="flex gap-2">
                                 {!achievement.syncedToPayroll && (
@@ -1269,17 +1214,16 @@ const MediaSalaries: React.FC = () => {
             </Card.Body>
           </Card>
 
-          {/* سجل الإنجازات التفصيلي لكل موظف */}
-          {filteredAchievements.length > 0 && (
+          {/* Detailed Records */}
+          {achievements.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
                 <User className="w-5 h-5" />
                 سجل تفصيلي حسب الموظف
               </h3>
 
-              {/* تجميع الإنجازات حسب الموظف */}
               {Object.entries(
-                filteredAchievements.reduce((acc, achievement) => {
+                achievements.reduce((acc, achievement) => {
                   if (!acc[achievement.employeeId]) {
                     acc[achievement.employeeId] = {
                       employeeName: achievement.employeeName,
@@ -1318,7 +1262,6 @@ const MediaSalaries: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* تفاصيل كل سجل إنجازات */}
                     <div className="space-y-3">
                       {data.achievements.map((achievement) => (
                         <div key={achievement.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
@@ -1357,10 +1300,10 @@ const MediaSalaries: React.FC = () => {
         </div>
       )}
 
-      {/* My Achievements Tab - للموظف نفسه */}
+      {/* My Achievements Tab */}
       {activeTab === 'my-achievements' && isVariableSalaryEmployee && (
         <div className="space-y-6">
-          {/* إحصائيات إنجازاتي */}
+          {/* My Stats */}
           {myAchievements.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
@@ -1413,6 +1356,7 @@ const MediaSalaries: React.FC = () => {
             </div>
           )}
 
+          {/* Filters */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex gap-4 items-end">
               <div>
@@ -1437,9 +1381,7 @@ const MediaSalaries: React.FC = () => {
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   {Array.from({ length: 5 }, (_, i) => (
-                    <option key={i} value={2024 + i}>
-                      {2024 + i}
-                    </option>
+                    <option key={i} value={2024 + i}>{2024 + i}</option>
                   ))}
                 </select>
               </div>
@@ -1454,6 +1396,7 @@ const MediaSalaries: React.FC = () => {
             </Button>
           </div>
 
+          {/* My Achievements Table */}
           <Card>
             <Card.Body className="p-0">
               <div className="overflow-x-auto">
@@ -1518,17 +1461,15 @@ const MediaSalaries: React.FC = () => {
                             )}
                           </Table.Cell>
                           <Table.Cell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditMyAchievement(achievement)}
-                                className="text-brand-600 hover:text-brand-700"
-                                disabled={achievement.syncedToPayroll}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditMyAchievement(achievement)}
+                              className="text-brand-600 hover:text-brand-700"
+                              disabled={achievement.syncedToPayroll}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
                           </Table.Cell>
                         </Table.Row>
                       ))
@@ -1539,7 +1480,7 @@ const MediaSalaries: React.FC = () => {
             </Card.Body>
           </Card>
 
-          {/* تفاصيل إنجازاتي */}
+          {/* My Achievements Details */}
           {myAchievements.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -1627,9 +1568,9 @@ const MediaSalaries: React.FC = () => {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
               <Save className="w-4 h-4" />
-              تحديث
+              {isSubmitting ? 'جاري الحفظ...' : 'تحديث'}
             </Button>
             <Button type="button" variant="outline" onClick={() => setShowPriceModal(false)} className="flex-1">
               <X className="w-4 h-4" />
@@ -1642,7 +1583,10 @@ const MediaSalaries: React.FC = () => {
       {/* Achievement Modal */}
       <Modal
         isOpen={showAchievementModal}
-        onClose={() => setShowAchievementModal(false)}
+        onClose={() => {
+          setShowAchievementModal(false);
+          resetAchievementForm();
+        }}
         title={
           isMyAchievementMode
             ? (editingAchievement ? 'تعديل إنجازاتي' : 'إضافة إنجازاتي')
@@ -1651,7 +1595,7 @@ const MediaSalaries: React.FC = () => {
         size="lg"
       >
         <form onSubmit={handleAchievementSubmit} className="space-y-4">
-          {/* اختيار الموظف - فقط في وضع الإدارة وليس التعديل */}
+          {/* Employee Selection - only for admin adding new */}
           {!isMyAchievementMode && !editingAchievement && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الموظف</label>
@@ -1671,7 +1615,7 @@ const MediaSalaries: React.FC = () => {
             </div>
           )}
 
-          {/* عرض اسم الموظف في وضع التعديل أو إنجازاتي */}
+          {/* Show employee name in edit mode */}
           {(editingAchievement || isMyAchievementMode) && (
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -1681,6 +1625,7 @@ const MediaSalaries: React.FC = () => {
             </div>
           )}
 
+          {/* Month/Year Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
@@ -1708,14 +1653,13 @@ const MediaSalaries: React.FC = () => {
                 disabled={!!editingAchievement}
               >
                 {Array.from({ length: 5 }, (_, i) => (
-                  <option key={i} value={2024 + i}>
-                    {2024 + i}
-                  </option>
+                  <option key={i} value={2024 + i}>{2024 + i}</option>
                 ))}
               </select>
             </div>
           </div>
 
+          {/* Items Section */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">الإنجازات</label>
@@ -1725,93 +1669,105 @@ const MediaSalaries: React.FC = () => {
               </Button>
             </div>
 
-            {achievementFormData.items.map((item, index) => {
-              const itemPrice = selectedEmployeeAchievementPrices.find(p => p.type === item.contentType)?.price || 0;
-              return (
-                <div key={index} className="flex gap-3 items-end p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">نوع المحتوى</label>
-                    <select
-                      value={item.contentType}
-                      onChange={(e) => updateAchievementItem(index, 'contentType', e.target.value as ContentType)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      required
-                    >
-                      {Object.entries(CONTENT_TYPES).map(([key, value]) => (
-                        <option key={key} value={key}>{value}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-24">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">العدد</label>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateAchievementItem(index, 'quantity', Number(e.target.value))}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      min="0"
-                      required
-                    />
-                  </div>
-                  <div className="w-24">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">السعر</label>
-                    <input
-                      type="text"
-                      value={itemPrice}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      disabled
-                    />
-                  </div>
-                  <div className="w-24">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">الإجمالي</label>
-                    <input
-                      type="text"
-                      value={(item.quantity * itemPrice).toFixed(2)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold"
-                      disabled
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeAchievementItem(index)}
-                    className="text-error-600 hover:text-error-700 mb-0.5"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              );
-            })}
-
-            {achievementFormData.items.length === 0 && (
-              <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
+            {achievementFormData.items.length === 0 ? (
+              <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
                 اضغط "إضافة عنصر" لبدء تسجيل الإنجازات
               </div>
+            ) : (
+              achievementFormData.items.map((item, index) => {
+                const itemPrice = employeePricesForForm.find(p => p.type === item.contentType)?.price || 0;
+                const itemTotal = item.quantity * itemPrice;
+
+                return (
+                  <div key={index} className="flex gap-3 items-end p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">نوع المحتوى</label>
+                      <select
+                        value={item.contentType}
+                        onChange={(e) => updateAchievementItem(index, 'contentType', e.target.value as ContentType)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        required
+                      >
+                        {Object.entries(CONTENT_TYPES).map(([key, value]) => (
+                          <option key={key} value={key}>{value}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">العدد</label>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateAchievementItem(index, 'quantity', Number(e.target.value))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        min="1"
+                        required
+                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">السعر</label>
+                      <input
+                        type="text"
+                        value={itemPrice}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        disabled
+                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">الإجمالي</label>
+                      <input
+                        type="text"
+                        value={itemTotal.toFixed(2)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold"
+                        disabled
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAchievementItem(index)}
+                      className="text-error-600 hover:text-error-700 mb-0.5"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })
             )}
 
-            {/* إجمالي الإنجازات */}
+            {/* Total */}
             {achievementFormData.items.length > 0 && (
               <div className="flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="text-left">
                   <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي المبلغ</p>
                   <p className="text-xl font-bold text-success-600 dark:text-success-400">
-                    {achievementFormData.items.reduce((sum, item) => {
-                      const price = selectedEmployeeAchievementPrices.find(p => p.type === item.contentType)?.price || 0;
-                      return sum + (item.quantity * price);
-                    }, 0).toFixed(2)} {getCurrencySymbol('SAR')}
+                    {formTotal.toFixed(2)} {getCurrencySymbol('SAR')}
                   </p>
                 </div>
               </div>
             )}
           </div>
 
+          {/* Submit Buttons */}
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={achievementFormData.items.length === 0 || !selectedEmployeeForAchievement}>
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={isSubmitting || achievementFormData.items.length === 0 || !isValidId(selectedEmployeeForAchievement)}
+            >
               <Save className="w-4 h-4" />
-              {editingAchievement ? 'تحديث' : 'إضافة'}
+              {isSubmitting ? 'جاري الحفظ...' : (editingAchievement ? 'تحديث' : 'إضافة')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setShowAchievementModal(false)} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowAchievementModal(false);
+                resetAchievementForm();
+              }}
+              className="flex-1"
+            >
               <X className="w-4 h-4" />
               إلغاء
             </Button>
@@ -1825,7 +1781,7 @@ const MediaSalaries: React.FC = () => {
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={confirmDelete}
         title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف ${deleteType === 'price' ? 'السعر' : 'الإنجازات'}؟ لا يمكن التراجع عن هذا الإجراء.`}
+        message="هل أنت متأكد من حذف الإنجازات؟ لا يمكن التراجع عن هذا الإجراء."
         type="danger"
       />
 
