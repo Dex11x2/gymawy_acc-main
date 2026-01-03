@@ -556,12 +556,14 @@ const MediaSalaries: React.FC = () => {
           });
           setToast({ message: 'تم تحديث الإنجازات بنجاح', type: 'success', isOpen: true });
         } else {
-          await api.post('/media-achievements', {
+          const payload = {
             employeeId: achievementFormData.employeeId,
             month: achievementFormData.month,
             year: achievementFormData.year,
             items: itemsWithPrices
-          });
+          };
+          console.log('Creating achievement with payload:', payload);
+          await api.post('/media-achievements', payload);
           setToast({ message: 'تم إضافة الإنجازات بنجاح', type: 'success', isOpen: true });
         }
         setShowAchievementModal(false);
@@ -569,7 +571,14 @@ const MediaSalaries: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error saving achievement:', error);
-      const message = error.response?.data?.message || 'حدث خطأ أثناء حفظ الإنجازات';
+      const errorData = error.response?.data;
+      let message = errorData?.message || 'حدث خطأ أثناء حفظ الإنجازات';
+
+      // إذا كان الخطأ بسبب وجود إنجاز مسجل مسبقاً
+      if (errorData?.existingId) {
+        message = `${message} (يمكنك تعديل الإنجاز الموجود)`;
+      }
+
       setToast({ message, type: 'error', isOpen: true });
     }
   };

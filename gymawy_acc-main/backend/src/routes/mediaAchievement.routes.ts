@@ -208,9 +208,18 @@ router.post('/', protect, async (req: any, res) => {
     const { employeeId, month, year, items } = req.body;
     const createdBy = req.user?.userId;
 
+    console.log('📝 Create achievement request:', { employeeId, month, year, itemsCount: items?.length });
+
+    // التحقق من صحة الـ employeeId
+    if (!employeeId || employeeId === 'undefined' || employeeId === 'null') {
+      console.error('Invalid employeeId:', employeeId);
+      return res.status(400).json({ message: 'معرف الموظف غير صالح' });
+    }
+
     // جلب الموظف للحصول على companyId
     const employee = await Employee.findById(employeeId);
     if (!employee) {
+      console.error('Employee not found with ID:', employeeId);
       return res.status(404).json({ message: 'الموظف غير موجود' });
     }
 
@@ -226,9 +235,10 @@ router.post('/', protect, async (req: any, res) => {
     // التحقق من عدم وجود إنجاز للشهر نفسه
     const existing = await MediaAchievement.findOne({ employeeId, month, year });
     if (existing) {
+      console.log(`⚠️ Achievement already exists for employee ${employeeId} in ${month}/${year}, ID: ${existing._id}`);
       return res.status(400).json({
         message: 'يوجد إنجاز مسجل لهذا الموظف في هذا الشهر. استخدم التعديل بدلاً من الإضافة.',
-        existingId: existing._id
+        existingId: String(existing._id)
       });
     }
 
