@@ -218,17 +218,19 @@ const MediaSalaries: React.FC = () => {
       const response = await api.get('/media-achievements', {
         params: { month: selectedMonth, year: selectedYear }
       });
-      const data = response.data.map((a: any) => ({
-        id: String(a._id),
-        employeeId: String(a.employeeId?._id || a.employeeId),
-        employeeName: a.employeeId?.name || 'غير معروف',
-        month: a.month,
-        year: a.year,
-        items: a.items,
-        totalAmount: a.totalAmount,
-        syncedToPayroll: a.syncedToPayroll,
-        syncedAt: a.syncedAt
-      }));
+      const data = response.data
+        .filter((a: any) => a._id) // تصفية الإنجازات بدون معرف
+        .map((a: any) => ({
+          id: String(a._id),
+          employeeId: String(a.employeeId?._id || a.employeeId || ''),
+          employeeName: a.employeeId?.name || 'غير معروف',
+          month: a.month,
+          year: a.year,
+          items: a.items,
+          totalAmount: a.totalAmount,
+          syncedToPayroll: a.syncedToPayroll,
+          syncedAt: a.syncedAt
+        }));
       setAchievements(data);
     } catch (error) {
       console.error('Error fetching achievements:', error);
@@ -245,17 +247,19 @@ const MediaSalaries: React.FC = () => {
       const response = await api.get('/media-achievements/my-achievements', {
         params: { month: selectedMonth, year: selectedYear }
       });
-      const data = response.data.map((a: any) => ({
-        id: String(a._id),
-        employeeId: String(a.employeeId?._id || a.employeeId),
-        employeeName: a.employeeId?.name || 'غير معروف',
-        month: a.month,
-        year: a.year,
-        items: a.items,
-        totalAmount: a.totalAmount,
-        syncedToPayroll: a.syncedToPayroll,
-        syncedAt: a.syncedAt
-      }));
+      const data = response.data
+        .filter((a: any) => a._id) // تصفية الإنجازات بدون معرف
+        .map((a: any) => ({
+          id: String(a._id),
+          employeeId: String(a.employeeId?._id || a.employeeId || ''),
+          employeeName: a.employeeId?.name || 'غير معروف',
+          month: a.month,
+          year: a.year,
+          items: a.items,
+          totalAmount: a.totalAmount,
+          syncedToPayroll: a.syncedToPayroll,
+          syncedAt: a.syncedAt
+        }));
       setMyAchievements(data);
     } catch (error) {
       console.error('Error fetching my achievements:', error);
@@ -571,32 +575,44 @@ const MediaSalaries: React.FC = () => {
   };
 
   const handleDeleteAchievement = (id: string) => {
-    console.log('handleDeleteAchievement called with id:', id);
+    console.log('handleDeleteAchievement called with id:', id, 'type:', typeof id);
+
+    // التحقق من صحة الـ ID
+    if (!id || id === 'undefined' || id === 'null' || id.trim() === '') {
+      console.error('Achievement ID is invalid:', id);
+      setToast({ message: 'خطأ: معرف الإنجاز غير صالح', type: 'error', isOpen: true });
+      return;
+    }
+
     const achievement = achievements.find(a => a.id === id);
-    if (achievement?.syncedToPayroll) {
+    if (!achievement) {
+      console.error('Achievement not found with id:', id);
+      setToast({ message: 'خطأ: الإنجاز غير موجود', type: 'error', isOpen: true });
+      return;
+    }
+
+    if (achievement.syncedToPayroll) {
       setToast({ message: 'لا يمكن حذف إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
       return;
     }
-    if (!id) {
-      console.error('Achievement ID is undefined or empty');
-      setToast({ message: 'خطأ: معرف الإنجاز غير موجود', type: 'error', isOpen: true });
-      return;
-    }
+
     setDeleteId(id);
     setDeleteType('achievement');
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = async () => {
-    if (!deleteId) {
-      console.error('Delete failed: deleteId is empty');
-      setToast({ message: 'خطأ: لم يتم تحديد العنصر للحذف', type: 'error', isOpen: true });
+    // التحقق من صحة الـ deleteId
+    if (!deleteId || deleteId === 'undefined' || deleteId === 'null' || deleteId.trim() === '') {
+      console.error('Delete failed: deleteId is invalid:', deleteId);
+      setToast({ message: 'خطأ: لم يتم تحديد العنصر للحذف بشكل صحيح', type: 'error', isOpen: true });
+      setShowDeleteDialog(false);
       return;
     }
 
     try {
       if (deleteType === 'achievement') {
-        console.log('Deleting achievement with ID:', deleteId);
+        console.log('Deleting achievement with ID:', deleteId, 'URL:', `/media-achievements/${deleteId}`);
         await api.delete(`/media-achievements/${deleteId}`);
         setAchievements(achievements.filter(a => a.id !== deleteId));
         setToast({ message: 'تم حذف الإنجازات بنجاح', type: 'success', isOpen: true });
@@ -605,7 +621,8 @@ const MediaSalaries: React.FC = () => {
       setShowDeleteDialog(false);
     } catch (error: any) {
       console.error('Error deleting:', error);
-      setToast({ message: error.response?.data?.message || 'حدث خطأ أثناء الحذف', type: 'error', isOpen: true });
+      const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء الحذف';
+      setToast({ message: errorMessage, type: 'error', isOpen: true });
     }
   };
 

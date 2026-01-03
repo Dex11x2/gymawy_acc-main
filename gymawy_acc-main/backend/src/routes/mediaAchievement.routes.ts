@@ -290,9 +290,19 @@ router.put('/:id', protect, async (req: any, res) => {
 // حذف إنجاز
 router.delete('/:id', protect, async (req: any, res) => {
   try {
-    const achievement = await MediaAchievement.findById(req.params.id);
+    const achievementId = req.params.id;
+    console.log(`🗑️ Delete request received for achievement ID: "${achievementId}"`);
+
+    // التحقق من صحة الـ ID
+    if (!achievementId || achievementId === 'undefined' || achievementId === 'null') {
+      console.error('Invalid achievement ID received:', achievementId);
+      return res.status(400).json({ message: 'معرف الإنجاز غير صالح' });
+    }
+
+    const achievement = await MediaAchievement.findById(achievementId);
 
     if (!achievement) {
+      console.error('Achievement not found with ID:', achievementId);
       return res.status(404).json({ message: 'الإنجاز غير موجود' });
     }
 
@@ -302,8 +312,8 @@ router.delete('/:id', protect, async (req: any, res) => {
       });
     }
 
-    await MediaAchievement.findByIdAndDelete(req.params.id);
-    console.log(`✅ Achievement deleted: ${req.params.id}`);
+    await MediaAchievement.findByIdAndDelete(achievementId);
+    console.log(`✅ Achievement deleted successfully: ${achievementId}`);
     res.json({ message: 'تم حذف الإنجاز بنجاح' });
   } catch (error: any) {
     console.error('Error deleting achievement:', error);
