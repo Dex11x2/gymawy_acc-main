@@ -22,7 +22,7 @@ function calculateDistance(
 
 export const checkIn = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, branchId, clientTime } = req.body;
+    const { latitude, longitude, branchId, clientTime, bypassLocation, accuracy } = req.body;
     const userId = req.user.userId;
 
     if (!latitude || !longitude) {
@@ -46,8 +46,8 @@ export const checkIn = async (req: any, res: Response) => {
     }
 
     let targetLocation: any = null;
-    let allowedRadius = 100;
-    let skipLocationCheck = false;
+    let allowedRadius = 150; // Default radius increased to 150m for better desktop compatibility
+    let skipLocationCheck = bypassLocation === true; // تجاوز فحص الموقع إذا طلب المستخدم
 
     if (branchId) {
       const branch = await Branch.findById(branchId);

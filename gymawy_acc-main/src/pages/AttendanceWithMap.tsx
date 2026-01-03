@@ -11,6 +11,7 @@ const AttendanceWithMap: React.FC = () => {
   const [todayRecord, setTodayRecord] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [nearestBranch, setNearestBranch] = useState<any>(null);
+  const [bypassLocationCheck, setBypassLocationCheck] = useState(false);
 
   const watchIdRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
@@ -186,7 +187,7 @@ const AttendanceWithMap: React.FC = () => {
     }
   };
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = async (forceBypass = false) => {
     if (!location) {
       setToast({ message: 'يرجى تفعيل الموقع', type: 'error', isOpen: true });
       return;
@@ -197,11 +198,12 @@ const AttendanceWithMap: React.FC = () => {
       return;
     }
 
-    if (nearestBranch.distance > nearestBranch.radius) {
-      setToast({ 
-        message: `❌ أنت خارج نطاق الفرع (${Math.round(nearestBranch.distance)}م من ${nearestBranch.radius}م)`, 
-        type: 'error', 
-        isOpen: true 
+    // لو خارج النطاق ومش عامل bypass
+    if (nearestBranch.distance > nearestBranch.radius && !forceBypass && !bypassLocationCheck) {
+      setToast({
+        message: `❌ أنت خارج نطاق الفرع (${Math.round(nearestBranch.distance)}م من ${nearestBranch.radius}م)`,
+        type: 'error',
+        isOpen: true
       });
       return;
     }
@@ -212,9 +214,12 @@ const AttendanceWithMap: React.FC = () => {
         latitude: location.lat,
         longitude: location.lng,
         branchId: nearestBranch._id,
-        clientTime: new Date().toISOString() // إرسال وقت العميل
+        clientTime: new Date().toISOString(),
+        bypassLocation: forceBypass || bypassLocationCheck, // إرسال علامة التجاوز
+        accuracy: location.accuracy // إرسال دقة الموقع
       });
       setToast({ message: `✅ تم تسجيل الحضور بنجاح في ${nearestBranch.name}`, type: 'success', isOpen: true });
+      setBypassLocationCheck(false);
       await loadTodayRecord();
     } catch (error: any) {
       console.error('Check-in error:', error);
@@ -224,7 +229,7 @@ const AttendanceWithMap: React.FC = () => {
     }
   };
 
-  const handleCheckOut = async () => {
+  const handleCheckOut = async (forceBypass = false) => {
     if (!location) {
       setToast({ message: 'يرجى تفعيل الموقع', type: 'error', isOpen: true });
       return;
@@ -235,11 +240,12 @@ const AttendanceWithMap: React.FC = () => {
       return;
     }
 
-    if (nearestBranch.distance > nearestBranch.radius) {
-      setToast({ 
-        message: `❌ أنت خارج نطاق الفرع (${Math.round(nearestBranch.distance)}م من ${nearestBranch.radius}م)`, 
-        type: 'error', 
-        isOpen: true 
+    // لو خارج النطاق ومش عامل bypass
+    if (nearestBranch.distance > nearestBranch.radius && !forceBypass && !bypassLocationCheck) {
+      setToast({
+        message: `❌ أنت خارج نطاق الفرع (${Math.round(nearestBranch.distance)}م من ${nearestBranch.radius}م)`,
+        type: 'error',
+        isOpen: true
       });
       return;
     }
@@ -250,9 +256,12 @@ const AttendanceWithMap: React.FC = () => {
         latitude: location.lat,
         longitude: location.lng,
         branchId: nearestBranch._id,
-        clientTime: new Date().toISOString() // إرسال وقت العميل
+        clientTime: new Date().toISOString(),
+        bypassLocation: forceBypass || bypassLocationCheck,
+        accuracy: location.accuracy
       });
       setToast({ message: `✅ تم تسجيل الانصراف بنجاح من ${nearestBranch.name}`, type: 'success', isOpen: true });
+      setBypassLocationCheck(false);
       await loadTodayRecord();
     } catch (error: any) {
       console.error('Check-out error:', error);
@@ -261,6 +270,10 @@ const AttendanceWithMap: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // هل الموقع غير دقيق (أكتر من 100 متر) أو خارج النطاق؟
+  const isLocationInaccurate = location && location.accuracy && location.accuracy > 100;
+  const isOutsideRange = nearestBranch && nearestBranch.distance > nearestBranch.radius;
 
   return (
     <div className="space-y-6">
@@ -350,10 +363,40 @@ const AttendanceWithMap: React.FC = () => {
         </div>
       )}
 
+      {/* تحذير الموقع غير الدقيق أو خارج النطاق */}
+      {(isLocationInaccurate || isOutsideRange) && !todayRecord?.checkIn && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1">
+              <h4 className="font-bold text-yellow-800 dark:text-yellow-200">
+                {isOutsideRange ? 'أنت خارج نطاق الفرع' : 'دقة الموقع ضعيفة'}
+              </h4>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                {isOutsideRange
+                  ? `المسافة: ${Math.round(nearestBranch?.distance || 0)}م - النطاق المسموح: ${nearestBranch?.radius || 0}م`
+                  : `دقة الموقع: ${Math.round(location?.accuracy || 0)}م (الأجهزة بدون GPS قد تعطي موقع غير دقيق)`
+                }
+              </p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+                💡 إذا كنت متأكد أنك في مكان العمل، يمكنك التسجيل مع تجاوز فحص الموقع
+              </p>
+              <button
+                onClick={() => handleCheckIn(true)}
+                disabled={loading || todayRecord?.checkIn}
+                className="mt-3 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                {loading ? '⏳ جاري التسجيل...' : '🔓 تسجيل الحضور (تجاوز فحص الموقع)'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Check In/Out Buttons */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <button
-          onClick={handleCheckIn}
+          onClick={() => handleCheckIn()}
           disabled={loading || !location || todayRecord?.checkIn}
           className="p-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
