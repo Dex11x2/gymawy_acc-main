@@ -287,9 +287,9 @@ const MediaSalaries: React.FC = () => {
         params: { month: selectedMonth, year: selectedYear }
       });
       const data = response.data
-        .filter((a: any) => a._id)
+        .filter((a: any) => a._id || a.id)
         .map((a: any) => ({
-          id: String(a._id),
+          id: String(a._id || a.id),
           employeeId: extractId(a.employeeId),
           employeeName: a.employeeId?.name || 'غير معروف',
           month: a.month,
@@ -315,9 +315,9 @@ const MediaSalaries: React.FC = () => {
         params: { month: selectedMonth, year: selectedYear }
       });
       const data = response.data
-        .filter((a: any) => a._id)
+        .filter((a: any) => a._id || a.id)
         .map((a: any) => ({
-          id: String(a._id),
+          id: String(a._id || a.id),
           employeeId: extractId(a.employeeId),
           employeeName: a.employeeId?.name || 'غير معروف',
           month: a.month,
