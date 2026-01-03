@@ -206,8 +206,13 @@ const AttendanceWithMap: React.FC = () => {
       return;
     }
 
-    // لو خارج النطاق ومش عامل bypass
-    if (nearestBranch.distance > nearestBranch.radius && !forceBypass && !bypassLocationCheck) {
+    // حساب النطاق الفعلي مع مراعاة دقة GPS
+    // نضيف تسامح 50 متر + نصف دقة الـ GPS
+    const gpsTolerance = Math.min(location.accuracy || 0, 100) / 2 + 50;
+    const effectiveRadius = nearestBranch.radius + gpsTolerance;
+
+    // لو خارج النطاق الفعلي ومش عامل bypass
+    if (nearestBranch.distance > effectiveRadius && !forceBypass && !bypassLocationCheck) {
       setToast({
         message: `❌ أنت خارج نطاق الفرع (${Math.round(nearestBranch.distance)}م من ${nearestBranch.radius}م)`,
         type: 'error',
@@ -243,32 +248,20 @@ const AttendanceWithMap: React.FC = () => {
       return;
     }
 
-    if (!nearestBranch) {
-      setToast({ message: '❌ لا يوجد فرع قريب منك', type: 'error', isOpen: true });
-      return;
-    }
-
-    // لو خارج النطاق ومش عامل bypass
-    if (nearestBranch.distance > nearestBranch.radius && !forceBypass && !bypassLocationCheck) {
-      setToast({
-        message: `❌ أنت خارج نطاق الفرع (${Math.round(nearestBranch.distance)}م من ${nearestBranch.radius}م)`,
-        type: 'error',
-        isOpen: true
-      });
-      return;
-    }
+    // تسجيل الخروج متاح بدون فحص موقع صارم
+    // نسجل الموقع للـ records بس مش بنمنع التسجيل
 
     setLoading(true);
     try {
       await api.post('/attendance-records/check-out', {
         latitude: location.lat,
         longitude: location.lng,
-        branchId: nearestBranch._id,
+        branchId: nearestBranch?._id,
         clientTime: new Date().toISOString(),
         bypassLocation: forceBypass || bypassLocationCheck,
         accuracy: location.accuracy
       });
-      setToast({ message: `✅ تم تسجيل الانصراف بنجاح من ${nearestBranch.name}`, type: 'success', isOpen: true });
+      setToast({ message: `✅ تم تسجيل الانصراف بنجاح${nearestBranch ? ` من ${nearestBranch.name}` : ''}`, type: 'success', isOpen: true });
       setBypassLocationCheck(false);
       await loadTodayRecord();
     } catch (error: any) {
