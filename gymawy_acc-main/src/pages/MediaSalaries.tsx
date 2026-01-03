@@ -417,6 +417,9 @@ const MediaSalaries: React.FC = () => {
       ? (achievement.employeeId as any)?._id || (achievement.employeeId as any)?.id
       : achievement.employeeId;
 
+    console.log('Setting up edit mode with employeeId:', employeeId);
+    console.log('Achievement items:', achievement.items);
+
     setIsMyAchievementMode(false);
     setEditingAchievement(achievement);
     setSelectedEmployeeForAchievement(String(employeeId));
@@ -427,6 +430,8 @@ const MediaSalaries: React.FC = () => {
       year: achievement.year,
       items: achievement.items.map(item => ({ contentType: item.contentType, quantity: item.quantity }))
     });
+
+    console.log('Opening achievement modal for editing');
     setShowAchievementModal(true);
   };
 
@@ -653,8 +658,14 @@ const MediaSalaries: React.FC = () => {
 
             console.log('Created existingAchievement object:', existingAchievement);
 
+            // إغلاق المودال الحالي أولاً
             setShowAchievementModal(false);
-            setTimeout(() => openEditAchievement(existingAchievement), 300);
+
+            // الانتظار ثم فتح المودال للتعديل
+            setTimeout(() => {
+              console.log('Timeout fired, now opening edit modal...');
+              openEditAchievement(existingAchievement);
+            }, 500);
           }
         } catch (fetchError) {
           console.error('Error fetching existing achievement:', fetchError);
