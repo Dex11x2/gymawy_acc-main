@@ -398,15 +398,30 @@ const MediaSalaries: React.FC = () => {
   };
 
   const openEditAchievement = (achievement: EmployeeAchievement) => {
+    console.log('openEditAchievement called with:', achievement);
+
+    // التحقق من صحة الـ achievement
+    if (!achievement || !achievement.id || achievement.id === 'undefined') {
+      console.error('Invalid achievement:', achievement);
+      setToast({ message: 'خطأ: بيانات الإنجاز غير صالحة', type: 'error', isOpen: true });
+      return;
+    }
+
     if (achievement.syncedToPayroll) {
       setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب', type: 'warning', isOpen: true });
       return;
     }
+
+    // استخراج الـ employeeId بشكل صحيح
+    const employeeId = typeof achievement.employeeId === 'object'
+      ? (achievement.employeeId as any)?._id || (achievement.employeeId as any)?.id
+      : achievement.employeeId;
+
     setIsMyAchievementMode(false);
     setEditingAchievement(achievement);
-    setSelectedEmployeeForAchievement(achievement.employeeId);
+    setSelectedEmployeeForAchievement(String(employeeId));
     setAchievementFormData({
-      employeeId: achievement.employeeId,
+      employeeId: String(employeeId),
       employeeName: achievement.employeeName,
       month: achievement.month,
       year: achievement.year,
@@ -436,15 +451,30 @@ const MediaSalaries: React.FC = () => {
 
   // فتح مودال تعديل إنجازاتي (للموظف نفسه)
   const openEditMyAchievement = (achievement: EmployeeAchievement) => {
+    console.log('openEditMyAchievement called with:', achievement);
+
+    // التحقق من صحة الـ achievement
+    if (!achievement || !achievement.id || achievement.id === 'undefined') {
+      console.error('Invalid achievement:', achievement);
+      setToast({ message: 'خطأ: بيانات الإنجاز غير صالحة', type: 'error', isOpen: true });
+      return;
+    }
+
     if (achievement.syncedToPayroll) {
       setToast({ message: 'لا يمكن تعديل إنجازات تمت مزامنتها مع الراتب. تواصل مع الإدارة.', type: 'warning', isOpen: true });
       return;
     }
+
+    // استخراج الـ employeeId بشكل صحيح
+    const employeeId = typeof achievement.employeeId === 'object'
+      ? (achievement.employeeId as any)?._id || (achievement.employeeId as any)?.id
+      : achievement.employeeId;
+
     setIsMyAchievementMode(true);
     setEditingAchievement(achievement);
-    setSelectedEmployeeForAchievement(achievement.employeeId);
+    setSelectedEmployeeForAchievement(String(employeeId));
     setAchievementFormData({
-      employeeId: achievement.employeeId,
+      employeeId: String(employeeId),
       employeeName: achievement.employeeName,
       month: achievement.month,
       year: achievement.year,
@@ -458,9 +488,15 @@ const MediaSalaries: React.FC = () => {
 
   useEffect(() => {
     const loadPricesForAchievement = async () => {
-      if (selectedEmployeeForAchievement && showAchievementModal) {
+      // التحقق من صحة الـ selectedEmployeeForAchievement
+      const employeeId = typeof selectedEmployeeForAchievement === 'object'
+        ? (selectedEmployeeForAchievement as any)?._id || (selectedEmployeeForAchievement as any)?.id
+        : selectedEmployeeForAchievement;
+
+      if (employeeId && typeof employeeId === 'string' && employeeId !== 'undefined' && showAchievementModal) {
         try {
-          const response = await api.get(`/media-prices/employee/${selectedEmployeeForAchievement}`);
+          console.log('Loading prices for employee:', employeeId);
+          const response = await api.get(`/media-prices/employee/${employeeId}`);
           const fetchedPrices = response.data.map((p: any) => ({
             id: p._id,
             type: p.type,
