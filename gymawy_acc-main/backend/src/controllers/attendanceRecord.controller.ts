@@ -35,7 +35,7 @@ const getClientIP = (req: any): string => {
 
 export const checkIn = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, branchId, clientTime, bypassLocation, accuracy, useIPAuth } = req.body;
+    const { latitude, longitude, branchId, clientTime, bypassLocation, accuracy, useIPAuth, selfiePhoto, selfieTimestamp, selfieDeviceInfo } = req.body;
     const userId = req.user.userId;
     const clientIP = getClientIP(req);
 
@@ -137,6 +137,27 @@ export const checkIn = async (req: any, res: Response) => {
 
     if (bypassLocation) {
       authMethod = 'bypass';
+      // التحقق من وجود صورة السيلفي عند استخدام التجاوز اليدوي
+      if (!selfiePhoto) {
+        return res.status(400).json({
+          success: false,
+          message: 'يجب التقاط صورة سيلفي للتحقق من الهوية عند التجاوز اليدوي',
+          requiresSelfie: true
+        });
+      }
+      // التحقق من أن وقت الصورة قريب من الوقت الحالي (خلال 5 دقائق)
+      if (selfieTimestamp) {
+        const photoTime = new Date(selfieTimestamp).getTime();
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+        if (Math.abs(now - photoTime) > fiveMinutes) {
+          return res.status(400).json({
+            success: false,
+            message: 'الصورة قديمة. يرجى التقاط صورة جديدة',
+            requiresSelfie: true
+          });
+        }
+      }
     }
 
     const record = await AttendanceRecord.create({
@@ -149,6 +170,10 @@ export const checkIn = async (req: any, res: Response) => {
       isManualEntry: false,
       authMethod, // حفظ طريقة التسجيل
       clientIP, // حفظ IP المستخدم
+      // حفظ بيانات السيلفي إذا كان التجاوز اليدوي
+      selfiePhoto: authMethod === 'bypass' ? selfiePhoto : undefined,
+      selfieTimestamp: authMethod === 'bypass' && selfieTimestamp ? new Date(selfieTimestamp) : undefined,
+      selfieDeviceInfo: authMethod === 'bypass' ? selfieDeviceInfo : undefined,
     });
 
     const methodMessage = authMethod === 'ip' ? '(عبر شبكة المكتب)' :
@@ -410,6 +435,45 @@ export const deleteRecord = async (req: any, res: Response) => {
     }
 
     res.json({ success: true, message: "تم الحذف بنجاح" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// إحصائيات صور السيلفي
+export const getSelfieStats = async (req: any, res: Response) => {
+  try {
+    const { getSelfieStats: getStats } = await import('../jobs/selfieCleanup.job');
+    const stats = await getStats();
+
+    if (!stats) {
+      return res.status(500).json({ success: false, message: 'فشل جلب الإحصائيات' });
+    }
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// تنظيف صور السيلفي القديمة يدوياً
+export const cleanupSelfiePhotos = async (req: any, res: Response) => {
+  try {
+    const { cleanupOldSelfiePhotos } = await import('../jobs/selfieCleanup.job');
+    const result = await cleanupOldSelfiePhotos();
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: result.error || 'فشل التنظيف' });
+    }
+
+    res.json({
+      success: true,
+      message: `تم تنظيف ${result.cleanedRecords} سجل`,
+      data: result
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

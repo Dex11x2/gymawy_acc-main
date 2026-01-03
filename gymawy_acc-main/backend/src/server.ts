@@ -10,6 +10,7 @@ import { Server as SocketServer } from 'socket.io';
 import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './config/database';
 import { startDailyReportJob } from './jobs/dailyReport.job';
+import { startSelfieCleanupJob } from './jobs/selfieCleanup.job';
 
 // Load environment variables from backend/.env
 dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
@@ -209,6 +210,7 @@ const startServer = async () => {
     await connectDatabase();
     await createDefaultSuperAdmin();
     startDailyReportJob();
+    startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
     
     httpServer.listen(PORT, () => {
       console.log('');

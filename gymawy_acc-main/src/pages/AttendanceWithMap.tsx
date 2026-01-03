@@ -13,8 +13,16 @@ const AttendanceWithMap: React.FC = () => {
   const [nearestBranch, setNearestBranch] = useState<any>(null);
   const [bypassLocationCheck, setBypassLocationCheck] = useState(false);
 
+  // حالات كاميرا السيلفي
+  const [showSelfieCamera, setShowSelfieCamera] = useState(false);
+  const [selfiePhoto, setSelfiePhoto] = useState<string | null>(null);
+  const [selfieTimestamp, setSelfieTimestamp] = useState<Date | null>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+
   const watchIdRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const MAX_RETRIES = 3;
 
   useEffect(() => {
@@ -275,6 +283,122 @@ const AttendanceWithMap: React.FC = () => {
   const isLocationInaccurate = location && location.accuracy && location.accuracy > 100;
   const isOutsideRange = nearestBranch && nearestBranch.distance > nearestBranch.radius;
 
+  // فتح الكاميرا
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 }
+      });
+      setCameraStream(stream);
+      setShowSelfieCamera(true);
+      setSelfiePhoto(null);
+
+      // تأخير بسيط للتأكد من تحميل الفيديو
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      }, 100);
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      setToast({
+        message: '❌ فشل فتح الكاميرا - تأكد من إعطاء صلاحية الكاميرا',
+        type: 'error',
+        isOpen: true
+      });
+    }
+  };
+
+  // التقاط الصورة
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // عكس الصورة أفقياً (مرآة)
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+
+      const photoData = canvas.toDataURL('image/jpeg', 0.8);
+      setSelfiePhoto(photoData);
+      setSelfieTimestamp(new Date());
+
+      // إيقاف الكاميرا
+      stopCamera();
+    }
+  };
+
+  // إيقاف الكاميرا
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  // إغلاق نافذة السيلفي
+  const closeSelfieModal = () => {
+    stopCamera();
+    setShowSelfieCamera(false);
+    setSelfiePhoto(null);
+    setSelfieTimestamp(null);
+  };
+
+  // إعادة التقاط
+  const retakePhoto = async () => {
+    setSelfiePhoto(null);
+    setSelfieTimestamp(null);
+    await openCamera();
+  };
+
+  // تأكيد وتسجيل الحضور مع السيلفي
+  const confirmBypassWithSelfie = async () => {
+    if (!selfiePhoto || !selfieTimestamp) {
+      setToast({ message: '❌ يرجى التقاط صورة أولاً', type: 'error', isOpen: true });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post('/attendance-records/check-in', {
+        latitude: location?.lat || 0,
+        longitude: location?.lng || 0,
+        branchId: nearestBranch?._id,
+        clientTime: new Date().toISOString(),
+        bypassLocation: true,
+        accuracy: location?.accuracy,
+        selfiePhoto: selfiePhoto,
+        selfieTimestamp: selfieTimestamp.toISOString(),
+        selfieDeviceInfo: navigator.userAgent
+      });
+
+      setToast({
+        message: `✅ تم تسجيل الحضور بنجاح (تجاوز مع صورة)`,
+        type: 'success',
+        isOpen: true
+      });
+      closeSelfieModal();
+      await loadTodayRecord();
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      setToast({
+        message: error.response?.data?.message || 'فشل تسجيل الحضور',
+        type: 'error',
+        isOpen: true
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -384,11 +508,11 @@ const AttendanceWithMap: React.FC = () => {
                 💡 إذا كنت متأكد أنك في مكان العمل، يمكنك التسجيل مع تجاوز فحص الموقع
               </p>
               <button
-                onClick={() => handleCheckIn(true)}
+                onClick={openCamera}
                 disabled={loading || todayRecord?.checkIn}
                 className="mt-3 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
               >
-                {loading ? '⏳ جاري التسجيل...' : '🔓 تسجيل الحضور (تجاوز فحص الموقع)'}
+                {loading ? '⏳ جاري التسجيل...' : '📸 تسجيل الحضور (تجاوز مع صورة سيلفي)'}
               </button>
             </div>
           </div>
@@ -444,6 +568,98 @@ const AttendanceWithMap: React.FC = () => {
               <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
                 {todayRecord.workHours ? `${todayRecord.workHours.toFixed(2)} ساعة` : '-'}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة التقاط السيلفي */}
+      {showSelfieCamera && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                  📸 التقاط صورة سيلفي للتحقق
+                </h3>
+                <button
+                  onClick={closeSelfieModal}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                يجب التقاط صورة سيلفي للتحقق من هويتك عند استخدام التجاوز اليدوي
+              </p>
+            </div>
+
+            <div className="p-4">
+              {!selfiePhoto ? (
+                <div className="space-y-4">
+                  {/* عرض الكاميرا */}
+                  <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                      style={{ transform: 'scaleX(-1)' }}
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+                  </div>
+
+                  {/* زر التقاط */}
+                  <button
+                    onClick={capturePhoto}
+                    className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-lg font-bold flex items-center justify-center gap-2"
+                  >
+                    📷 التقاط الصورة
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* عرض الصورة الملتقطة */}
+                  <div className="relative aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img
+                      src={selfiePhoto}
+                      alt="Selfie"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                      📅 {selfieTimestamp?.toLocaleString('ar-EG')}
+                    </div>
+                  </div>
+
+                  {/* أزرار التأكيد */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={retakePhoto}
+                      className="py-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-500"
+                    >
+                      🔄 إعادة التقاط
+                    </button>
+                    <button
+                      onClick={confirmBypassWithSelfie}
+                      disabled={loading}
+                      className="py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold disabled:opacity-50"
+                    >
+                      {loading ? '⏳ جاري التسجيل...' : '✅ تأكيد وتسجيل'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-500">ℹ️</span>
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="font-medium">لماذا نطلب صورة؟</p>
+                  <p className="mt-1">للتحقق من هويتك وضمان صحة التسجيل. الصورة تحتوي على وقت التقاطها ولا يمكن التلاعب بها.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

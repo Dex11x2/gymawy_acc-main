@@ -17,6 +17,10 @@ export interface IAttendanceRecord extends Document {
   // IP-based authentication
   authMethod?: 'location' | 'ip' | 'bypass';
   clientIP?: string;
+  // Selfie verification for bypass mode
+  selfiePhoto?: string; // Base64 or file path
+  selfieTimestamp?: Date; // Timestamp from EXIF metadata
+  selfieDeviceInfo?: string; // Device info from EXIF
 }
 
 const AttendanceRecordSchema = new Schema({
@@ -41,7 +45,11 @@ const AttendanceRecordSchema = new Schema({
   verifiedByManager: { type: Boolean, default: false },
   // IP-based authentication
   authMethod: { type: String, enum: ['location', 'ip', 'bypass'], default: 'location' },
-  clientIP: { type: String }
+  clientIP: { type: String },
+  // Selfie verification for bypass mode
+  selfiePhoto: { type: String },
+  selfieTimestamp: { type: Date },
+  selfieDeviceInfo: { type: String }
 }, { timestamps: true });
 
 AttendanceRecordSchema.index({ userId: 1, date: 1 }, { unique: true });

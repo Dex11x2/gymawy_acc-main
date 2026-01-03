@@ -21,7 +21,10 @@ import {
   Palmtree,
   Timer,
   FileText,
-  Smartphone
+  Smartphone,
+  Camera,
+  Wifi,
+  Image
 } from 'lucide-react';
 
 const AttendanceManagement: React.FC = () => {
@@ -39,6 +42,8 @@ const AttendanceManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
+  const [showSelfieModal, setShowSelfieModal] = useState(false);
+  const [selectedSelfie, setSelectedSelfie] = useState<{ photo: string; timestamp: Date; deviceInfo?: string } | null>(null);
 
   useEffect(() => {
     if (canViewAttendance) loadRecords();
@@ -127,6 +132,43 @@ const AttendanceManagement: React.FC = () => {
 
   const openLocationOnMap = (lat: number, lng: number) => {
     window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+  };
+
+  const viewSelfie = (record: any) => {
+    if (record.selfiePhoto) {
+      setSelectedSelfie({
+        photo: record.selfiePhoto,
+        timestamp: new Date(record.selfieTimestamp),
+        deviceInfo: record.selfieDeviceInfo
+      });
+      setShowSelfieModal(true);
+    }
+  };
+
+  const getAuthMethodBadge = (authMethod: string, hasSelfie: boolean) => {
+    switch (authMethod) {
+      case 'ip':
+        return (
+          <Badge variant="info" size="sm">
+            <Wifi className="w-3 h-3 ml-1" />
+            WiFi
+          </Badge>
+        );
+      case 'bypass':
+        return (
+          <Badge variant="warning" size="sm" className="cursor-pointer" onClick={() => hasSelfie}>
+            <Camera className="w-3 h-3 ml-1" />
+            تجاوز
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="success" size="sm">
+            <MapPin className="w-3 h-3 ml-1" />
+            موقع
+          </Badge>
+        );
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -353,17 +395,29 @@ const AttendanceManagement: React.FC = () => {
                       )}
                     </Table.Cell>
                     <Table.Cell>
-                      {record.isManualEntry ? (
-                        <Badge variant="warning" size="sm">
-                          <Edit2 className="w-3 h-3 ml-1" />
-                          يدوي
-                        </Badge>
-                      ) : (
-                        <Badge variant="info" size="sm">
-                          <Smartphone className="w-3 h-3 ml-1" />
-                          تلقائي
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {record.isManualEntry ? (
+                          <Badge variant="warning" size="sm">
+                            <Edit2 className="w-3 h-3 ml-1" />
+                            يدوي
+                          </Badge>
+                        ) : (
+                          <>
+                            {getAuthMethodBadge(record.authMethod, !!record.selfiePhoto)}
+                            {record.selfiePhoto && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => viewSelfie(record)}
+                                className="text-purple-600 hover:text-purple-700 p-1"
+                                title="عرض صورة السيلفي"
+                              >
+                                <Image className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </Table.Cell>
                     <Table.Cell>
                       <div className="flex items-center gap-2">
@@ -587,6 +641,44 @@ const AttendanceManagement: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Selfie View Modal */}
+      <Modal isOpen={showSelfieModal} onClose={() => { setShowSelfieModal(false); setSelectedSelfie(null); }} title="صورة التحقق">
+        {selectedSelfie && (
+          <div className="space-y-4">
+            <div className="relative aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <img
+                src={selectedSelfie.photo}
+                alt="Selfie verification"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <Clock className="w-4 h-4" />
+                <span>وقت التقاط الصورة:</span>
+                <span className="font-medium text-gray-800 dark:text-white">
+                  {selectedSelfie.timestamp.toLocaleString('ar-EG')}
+                </span>
+              </div>
+              {selectedSelfie.deviceInfo && (
+                <div className="flex items-start gap-2 text-gray-600 dark:text-gray-400">
+                  <Smartphone className="w-4 h-4 mt-0.5" />
+                  <span>الجهاز:</span>
+                  <span className="font-medium text-gray-800 dark:text-white text-xs break-all">
+                    {selectedSelfie.deviceInfo}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                ℹ️ هذه الصورة تم التقاطها للتحقق من هوية الموظف عند استخدام تجاوز فحص الموقع
+              </p>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Toast message={toast.message} type={toast.type} isOpen={toast.isOpen} onClose={() => setToast({ ...toast, isOpen: false })} />

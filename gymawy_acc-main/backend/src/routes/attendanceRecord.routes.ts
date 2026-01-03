@@ -16,4 +16,8 @@ router.post('/manual', authorize('super_admin', 'general_manager', 'administrati
 router.put('/:id', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.updateRecord);
 router.delete('/:id', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.deleteRecord);
 
+// إدارة صور السيلفي
+router.get('/selfie-stats', authorize('super_admin', 'general_manager'), controller.getSelfieStats);
+router.post('/cleanup-selfies', authorize('super_admin', 'general_manager'), controller.cleanupSelfiePhotos);
+
 export default router;
