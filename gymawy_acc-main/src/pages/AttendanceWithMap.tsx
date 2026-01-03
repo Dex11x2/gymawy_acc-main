@@ -335,6 +335,8 @@ const AttendanceWithMap: React.FC = () => {
                   </p>
                   {nearestBranch.distance <= nearestBranch.radius ? (
                     <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">✅ داخل النطاق</p>
+                  ) : nearestBranch.allowedIPs && nearestBranch.allowedIPs.length > 0 ? (
+                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mt-1">📡 يمكن التسجيل عبر شبكة WiFi</p>
                   ) : (
                     <p className="text-sm text-red-600 dark:text-red-400 font-medium mt-1">❌ خارج النطاق</p>
                   )}

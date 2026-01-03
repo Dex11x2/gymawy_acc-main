@@ -14,6 +14,9 @@ export interface IAttendanceRecord extends Document {
   status: 'present' | 'late' | 'absent' | 'leave';
   isManualEntry: boolean;
   verifiedByManager: boolean;
+  // IP-based authentication
+  authMethod?: 'location' | 'ip' | 'bypass';
+  clientIP?: string;
 }
 
 const AttendanceRecordSchema = new Schema({
@@ -35,7 +38,10 @@ const AttendanceRecordSchema = new Schema({
   leaveType: { type: String, enum: ['annual', 'emergency', 'sick', 'unpaid'] },
   status: { type: String, enum: ['present', 'late', 'absent', 'leave'], default: 'present' },
   isManualEntry: { type: Boolean, default: false },
-  verifiedByManager: { type: Boolean, default: false }
+  verifiedByManager: { type: Boolean, default: false },
+  // IP-based authentication
+  authMethod: { type: String, enum: ['location', 'ip', 'bypass'], default: 'location' },
+  clientIP: { type: String }
 }, { timestamps: true });
 
 AttendanceRecordSchema.index({ userId: 1, date: 1 }, { unique: true });

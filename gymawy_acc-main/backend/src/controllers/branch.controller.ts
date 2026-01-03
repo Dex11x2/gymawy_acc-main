@@ -76,3 +76,91 @@ export const deleteBranch = async (req: any, res: Response) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// الحصول على IP المستخدم الحالي
+const getClientIP = (req: any): string => {
+  // ترتيب الأولوية للحصول على IP الحقيقي
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    // x-forwarded-for قد يحتوي على عدة IPs، نأخذ الأول
+    return forwarded.split(',')[0].trim();
+  }
+  return req.headers['x-real-ip'] ||
+         req.connection?.remoteAddress ||
+         req.socket?.remoteAddress ||
+         req.ip ||
+         'unknown';
+};
+
+// تحديث IP الحالي للفرع
+export const updateBranchIP = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const clientIP = getClientIP(req);
+
+    if (clientIP === 'unknown' || clientIP === '::1' || clientIP === '127.0.0.1') {
+      return res.status(400).json({
+        success: false,
+        message: 'لا يمكن تحديد عنوان IP الحالي. تأكد أنك متصل من شبكة المكتب.'
+      });
+    }
+
+    const branch = await Branch.findById(id);
+    if (!branch) {
+      return res.status(404).json({ success: false, message: 'الفرع غير موجود' });
+    }
+
+    // إضافة IP للقائمة إذا لم يكن موجوداً
+    if (!branch.allowedIPs.includes(clientIP)) {
+      branch.allowedIPs.push(clientIP);
+    }
+    branch.lastIPUpdate = new Date();
+    await branch.save();
+
+    res.json({
+      success: true,
+      message: `تم تحديث IP بنجاح: ${clientIP}`,
+      data: {
+        currentIP: clientIP,
+        allowedIPs: branch.allowedIPs,
+        lastIPUpdate: branch.lastIPUpdate
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// حذف IP من قائمة الفرع
+export const removeBranchIP = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ip } = req.body;
+
+    const branch = await Branch.findById(id);
+    if (!branch) {
+      return res.status(404).json({ success: false, message: 'الفرع غير موجود' });
+    }
+
+    branch.allowedIPs = branch.allowedIPs.filter(existingIP => existingIP !== ip);
+    await branch.save();
+
+    res.json({
+      success: true,
+      message: 'تم حذف IP بنجاح',
+      data: { allowedIPs: branch.allowedIPs }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// الحصول على IP الحالي للمستخدم
+export const getCurrentIP = async (req: any, res: Response) => {
+  try {
+    const clientIP = getClientIP(req);
+    res.json({ success: true, data: { ip: clientIP } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

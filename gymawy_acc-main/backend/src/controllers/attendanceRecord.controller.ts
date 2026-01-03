@@ -20,14 +20,24 @@ function calculateDistance(
   return R * c;
 }
 
+// الحصول على IP المستخدم الحالي
+const getClientIP = (req: any): string => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.headers['x-real-ip'] ||
+         req.connection?.remoteAddress ||
+         req.socket?.remoteAddress ||
+         req.ip ||
+         'unknown';
+};
+
 export const checkIn = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, branchId, clientTime, bypassLocation, accuracy } = req.body;
+    const { latitude, longitude, branchId, clientTime, bypassLocation, accuracy, useIPAuth } = req.body;
     const userId = req.user.userId;
-
-    if (!latitude || !longitude) {
-      return res.status(400).json({ success: false, message: 'يرجى تحديد الموقع الجغرافي' });
-    }
+    const clientIP = getClientIP(req);
 
     // استخدام الوقت المرسل من العميل أو وقت السيرفر
     const checkInTime = clientTime ? new Date(clientTime) : new Date();
@@ -46,35 +56,64 @@ export const checkIn = async (req: any, res: Response) => {
     }
 
     let targetLocation: any = null;
-    let allowedRadius = 150; // Default radius increased to 150m for better desktop compatibility
-    let skipLocationCheck = bypassLocation === true; // تجاوز فحص الموقع إذا طلب المستخدم
+    let allowedRadius = 150;
+    let skipLocationCheck = bypassLocation === true;
+    let matchedBranch: any = null;
+    let authMethod = 'location'; // location | ip | bypass
 
-    if (branchId) {
+    // التحقق من IP أولاً إذا طلب المستخدم
+    if (useIPAuth && branchId) {
       const branch = await Branch.findById(branchId);
-      if (!branch)
-        return res
-          .status(404)
-          .json({ success: false, message: "الفرع غير موجود" });
-      targetLocation = {
-        latitude: branch.latitude,
-        longitude: branch.longitude,
-      };
-      allowedRadius = branch.radius;
-    } else {
-      const user = await User.findById(userId);
-      if (user?.companyId) {
-        const Company = (await import("../models/Company")).default;
-        const company = await Company.findById(user.companyId);
-        if (company?.location) {
-          targetLocation = company.location;
-          allowedRadius = company.location.radius || 100;
-        }
-      }
-      if (!targetLocation) {
+      if (branch && branch.allowedIPs && branch.allowedIPs.includes(clientIP)) {
+        // IP مطابق - تسجيل مباشر بدون فحص الموقع
         skipLocationCheck = true;
+        matchedBranch = branch;
+        authMethod = 'ip';
       }
     }
 
+    // لو مفيش تسجيل بـ IP، نتحقق من الموقع
+    if (!matchedBranch) {
+      if (!latitude || !longitude) {
+        return res.status(400).json({ success: false, message: 'يرجى تحديد الموقع الجغرافي' });
+      }
+
+      if (branchId) {
+        const branch = await Branch.findById(branchId);
+        if (!branch)
+          return res
+            .status(404)
+            .json({ success: false, message: "الفرع غير موجود" });
+
+        // التحقق من IP حتى لو لم يطلب المستخدم صراحة
+        if (branch.allowedIPs && branch.allowedIPs.includes(clientIP)) {
+          skipLocationCheck = true;
+          authMethod = 'ip';
+        }
+
+        targetLocation = {
+          latitude: branch.latitude,
+          longitude: branch.longitude,
+        };
+        allowedRadius = branch.radius;
+        matchedBranch = branch;
+      } else {
+        const user = await User.findById(userId);
+        if (user?.companyId) {
+          const Company = (await import("../models/Company")).default;
+          const company = await Company.findById(user.companyId);
+          if (company?.location) {
+            targetLocation = company.location;
+            allowedRadius = company.location.radius || 100;
+          }
+        }
+        if (!targetLocation) {
+          skipLocationCheck = true;
+        }
+      }
+    }
+
+    // فحص المسافة إذا لم يتم تجاوز فحص الموقع
     if (!skipLocationCheck && targetLocation) {
       const distance = calculateDistance(
         latitude,
@@ -91,24 +130,35 @@ export const checkIn = async (req: any, res: Response) => {
           )} متر`,
           distance: Math.round(distance),
           allowedRadius,
+          clientIP, // إرسال IP للمستخدم ليعرفه
         });
       }
     }
 
+    if (bypassLocation) {
+      authMethod = 'bypass';
+    }
+
     const record = await AttendanceRecord.create({
       userId,
-      branchId: branchId || undefined,
+      branchId: branchId || matchedBranch?._id || undefined,
       date: today,
       checkIn: checkInTime,
-      checkInLocation: { latitude, longitude },
+      checkInLocation: latitude && longitude ? { latitude, longitude } : { latitude: 0, longitude: 0 },
       status: "present",
       isManualEntry: false,
+      authMethod, // حفظ طريقة التسجيل
+      clientIP, // حفظ IP المستخدم
     });
+
+    const methodMessage = authMethod === 'ip' ? '(عبر شبكة المكتب)' :
+                          authMethod === 'bypass' ? '(تجاوز فحص الموقع)' : '';
 
     res.json({
       success: true,
-      message: "✅ تم تسجيل الحضور بنجاح",
+      message: `✅ تم تسجيل الحضور بنجاح ${methodMessage}`,
       data: record,
+      authMethod,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

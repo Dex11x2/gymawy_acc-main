@@ -17,7 +17,10 @@ import {
   Pencil,
   Save,
   Navigation,
-  FileText
+  FileText,
+  Wifi,
+  RefreshCw,
+  X
 } from 'lucide-react';
 
 const Branches: React.FC = () => {
@@ -36,12 +39,60 @@ const Branches: React.FC = () => {
   const [editingBranch, setEditingBranch] = useState<any>(null);
   const [currentLocation, setCurrentLocation] = useState<any>(null);
   const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
+  const [currentIP, setCurrentIP] = useState<string>('');
+  const [showIPModal, setShowIPModal] = useState(false);
+  const [selectedBranchForIP, setSelectedBranchForIP] = useState<any>(null);
+  const [updatingIP, setUpdatingIP] = useState(false);
 
   useEffect(() => {
     loadBranches();
     loadEmployeesAndPages();
     getCurrentLocation();
+    loadCurrentIP();
   }, []);
+
+  const loadCurrentIP = async () => {
+    try {
+      const response = await api.get('/branches/current-ip');
+      setCurrentIP(response.data.data.ip);
+    } catch (error) {
+      console.error('Failed to load current IP:', error);
+    }
+  };
+
+  const handleUpdateBranchIP = async (branchId: string) => {
+    setUpdatingIP(true);
+    try {
+      const response = await api.post(`/branches/${branchId}/update-ip`);
+      setToast({ message: response.data.message, type: 'success', isOpen: true });
+      loadBranches();
+      if (selectedBranchForIP) {
+        setSelectedBranchForIP({ ...selectedBranchForIP, allowedIPs: response.data.data.allowedIPs });
+      }
+    } catch (error: any) {
+      setToast({ message: error.response?.data?.message || 'فشل تحديث IP', type: 'error', isOpen: true });
+    } finally {
+      setUpdatingIP(false);
+    }
+  };
+
+  const handleRemoveBranchIP = async (branchId: string, ip: string) => {
+    try {
+      const response = await api.post(`/branches/${branchId}/remove-ip`, { ip });
+      setToast({ message: response.data.message, type: 'success', isOpen: true });
+      loadBranches();
+      if (selectedBranchForIP) {
+        setSelectedBranchForIP({ ...selectedBranchForIP, allowedIPs: response.data.data.allowedIPs });
+      }
+    } catch (error: any) {
+      setToast({ message: error.response?.data?.message || 'فشل حذف IP', type: 'error', isOpen: true });
+    }
+  };
+
+  const openIPModal = (branch: any) => {
+    setSelectedBranchForIP(branch);
+    setShowIPModal(true);
+  };
 
   // قائمة بجميع الصفحات المتاحة في النظام
   const getAllPages = () => {
@@ -399,13 +450,31 @@ const Branches: React.FC = () => {
                       <span>{branch.address}</span>
                     </div>
                   )}
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <Wifi className="w-4 h-4 text-purple-500" />
+                    <span>
+                      {branch.allowedIPs && branch.allowedIPs.length > 0
+                        ? `${branch.allowedIPs.length} عنوان IP مسموح`
+                        : 'لا يوجد IP مسجل'}
+                    </span>
+                  </div>
                 </div>
+
+                {canWriteBranches && (
+                  <button
+                    onClick={() => openIPModal(branch)}
+                    className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                  >
+                    <Wifi className="w-4 h-4" />
+                    إدارة شبكات WiFi
+                  </button>
+                )}
 
                 <a
                   href={`https://www.google.com/maps?q=${branch.latitude},${branch.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-400 rounded-lg hover:bg-success-100 dark:hover:bg-success-900/30 transition-colors"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-400 rounded-lg hover:bg-success-100 dark:hover:bg-success-900/30 transition-colors"
                 >
                   <MapPin className="w-4 h-4" />
                   عرض على الخريطة
@@ -609,6 +678,84 @@ const Branches: React.FC = () => {
       </Modal>
 
       <Toast message={toast.message} type={toast.type} isOpen={toast.isOpen} onClose={() => setToast({ ...toast, isOpen: false })} />
+
+      {/* IP Management Modal */}
+      <Modal isOpen={showIPModal} onClose={() => setShowIPModal(false)} title={`إدارة شبكات WiFi: ${selectedBranchForIP?.name}`}>
+        <div className="space-y-4">
+          {/* Current IP Info */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Wifi className="w-5 h-5 text-blue-600" />
+              <span className="font-medium text-blue-800 dark:text-blue-300">عنوان IP الحالي:</span>
+            </div>
+            <code className="text-lg font-mono text-blue-900 dark:text-blue-200">{currentIP || 'جاري التحميل...'}</code>
+          </div>
+
+          {/* Update IP Button */}
+          <button
+            onClick={() => selectedBranchForIP && handleUpdateBranchIP(selectedBranchForIP._id || selectedBranchForIP.id)}
+            disabled={updatingIP}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+          >
+            {updatingIP ? (
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                جاري التحديث...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-5 h-5" />
+                إضافة IP الحالي للفرع
+              </>
+            )}
+          </button>
+
+          {/* Allowed IPs List */}
+          <div className="mt-4">
+            <h4 className="font-medium text-gray-800 dark:text-white mb-3">عناوين IP المسموحة:</h4>
+            {selectedBranchForIP?.allowedIPs && selectedBranchForIP.allowedIPs.length > 0 ? (
+              <div className="space-y-2">
+                {selectedBranchForIP.allowedIPs.map((ip: string, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  >
+                    <code className="font-mono text-gray-700 dark:text-gray-300">{ip}</code>
+                    <button
+                      onClick={() => handleRemoveBranchIP(selectedBranchForIP._id || selectedBranchForIP.id, ip)}
+                      className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                لا يوجد عناوين IP مسجلة لهذا الفرع
+              </p>
+            )}
+          </div>
+
+          {/* Instructions */}
+          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <h4 className="font-medium text-yellow-800 dark:text-yellow-300 mb-2">كيفية الاستخدام:</h4>
+            <ol className="text-sm text-yellow-700 dark:text-yellow-400 space-y-1 list-decimal list-inside">
+              <li>تأكد أنك متصل بشبكة WiFi المكتب</li>
+              <li>اضغط على "إضافة IP الحالي للفرع"</li>
+              <li>الموظفون المتصلون بنفس الشبكة يمكنهم التسجيل تلقائياً</li>
+              <li>إذا تغير IP الشبكة، أعد التحديث من هنا</li>
+            </ol>
+          </div>
+
+          {/* Last Update */}
+          {selectedBranchForIP?.lastIPUpdate && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              آخر تحديث: {new Date(selectedBranchForIP.lastIPUpdate).toLocaleString('ar-EG')}
+            </p>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

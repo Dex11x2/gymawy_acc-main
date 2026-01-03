@@ -8,6 +8,9 @@ export interface IBranch extends Document {
   radius: number;
   address?: string;
   isActive: boolean;
+  // IP-based attendance
+  allowedIPs: string[];
+  lastIPUpdate?: Date;
 }
 
 const BranchSchema = new Schema({
@@ -17,7 +20,10 @@ const BranchSchema = new Schema({
   longitude: { type: Number, required: true },
   radius: { type: Number, default: 100 },
   address: { type: String },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  // IP-based attendance
+  allowedIPs: { type: [String], default: [] },
+  lastIPUpdate: { type: Date }
 }, { timestamps: true });
 
 export default mongoose.model<IBranch>('Branch', BranchSchema);
