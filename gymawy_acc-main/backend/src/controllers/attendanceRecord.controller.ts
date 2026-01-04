@@ -365,6 +365,8 @@ export const manualEntry = async (req: any, res: Response) => {
       overtime: overtime || 0,
       isManualEntry: true,
       verifiedByManager: true,
+      authMethod: 'manual', // الإدخال اليدوي له الأولوية القصوى
+      modifiedBy: req.user.userId, // من قام بالإدخال
     };
 
     if (leaveType && leaveType !== "") {
@@ -401,6 +403,7 @@ export const getMonthlyReport = async (req: any, res: Response) => {
 
     const records = await AttendanceRecord.find(query)
       .populate("userId", "name")
+      .populate("modifiedBy", "name") // من قام بالتعديل اليدوي
       .sort({ date: 1 });
 
     const summary = {
@@ -458,6 +461,8 @@ export const updateRecord = async (req: any, res: Response) => {
     if (overtime !== undefined) record.overtime = overtime;
     record.isManualEntry = true;
     record.verifiedByManager = true;
+    record.authMethod = 'manual'; // التعديل اليدوي له الأولوية القصوى
+    record.modifiedBy = req.user.userId; // من قام بالتعديل
 
     await record.save();
 

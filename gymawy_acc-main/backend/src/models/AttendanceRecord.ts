@@ -14,9 +14,15 @@ export interface IAttendanceRecord extends Document {
   status: 'present' | 'late' | 'absent' | 'leave';
   isManualEntry: boolean;
   verifiedByManager: boolean;
-  // IP-based authentication
-  authMethod?: 'location' | 'ip' | 'bypass';
+  // Authentication method with priority (manual > location > ip > bypass)
+  // manual: Admin entry (highest priority, can override all)
+  // location: GPS-based check-in
+  // ip: WiFi/IP-based check-in
+  // bypass: Selfie verification (lowest priority)
+  authMethod?: 'manual' | 'location' | 'ip' | 'bypass';
   clientIP?: string;
+  // Who modified the record (for manual entries)
+  modifiedBy?: mongoose.Types.ObjectId;
   // Selfie verification for bypass mode
   selfiePhoto?: string; // Base64 or file path
   selfieTimestamp?: Date; // Timestamp from EXIF metadata
@@ -43,9 +49,10 @@ const AttendanceRecordSchema = new Schema({
   status: { type: String, enum: ['present', 'late', 'absent', 'leave'], default: 'present' },
   isManualEntry: { type: Boolean, default: false },
   verifiedByManager: { type: Boolean, default: false },
-  // IP-based authentication
-  authMethod: { type: String, enum: ['location', 'ip', 'bypass'], default: 'location' },
+  // Authentication method with priority (manual > location > ip > bypass)
+  authMethod: { type: String, enum: ['manual', 'location', 'ip', 'bypass'], default: 'location' },
   clientIP: { type: String },
+  modifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   // Selfie verification for bypass mode
   selfiePhoto: { type: String },
   selfieTimestamp: { type: Date },

@@ -145,8 +145,26 @@ const AttendanceManagement: React.FC = () => {
     }
   };
 
-  const getAuthMethodBadge = (authMethod: string, hasSelfie: boolean) => {
+  const getAuthMethodBadge = (authMethod: string, hasSelfie: boolean, isManualEntry?: boolean) => {
+    // الأولوية: manual > location > ip > bypass
+    // نعرض manual إذا كان isManualEntry أو authMethod === 'manual'
+    if (isManualEntry || authMethod === 'manual') {
+      return (
+        <Badge variant="primary" size="sm">
+          <Edit2 className="w-3 h-3 ml-1" />
+          يدوي
+        </Badge>
+      );
+    }
+
     switch (authMethod) {
+      case 'location':
+        return (
+          <Badge variant="success" size="sm">
+            <MapPin className="w-3 h-3 ml-1" />
+            موقع GPS
+          </Badge>
+        );
       case 'ip':
         return (
           <Badge variant="info" size="sm">
@@ -156,14 +174,14 @@ const AttendanceManagement: React.FC = () => {
         );
       case 'bypass':
         return (
-          <Badge variant="warning" size="sm" className="cursor-pointer" onClick={() => hasSelfie}>
+          <Badge variant="warning" size="sm" className={hasSelfie ? 'cursor-pointer' : ''}>
             <Camera className="w-3 h-3 ml-1" />
-            تجاوز
+            سيلفي
           </Badge>
         );
       default:
         return (
-          <Badge variant="success" size="sm">
+          <Badge variant="light" size="sm">
             <MapPin className="w-3 h-3 ml-1" />
             موقع
           </Badge>
@@ -396,26 +414,17 @@ const AttendanceManagement: React.FC = () => {
                     </Table.Cell>
                     <Table.Cell>
                       <div className="flex items-center gap-2">
-                        {record.isManualEntry ? (
-                          <Badge variant="warning" size="sm">
-                            <Edit2 className="w-3 h-3 ml-1" />
-                            يدوي
-                          </Badge>
-                        ) : (
-                          <>
-                            {getAuthMethodBadge(record.authMethod, !!record.selfiePhoto)}
-                            {record.selfiePhoto && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => viewSelfie(record)}
-                                className="text-purple-600 hover:text-purple-700 p-1"
-                                title="عرض صورة السيلفي"
-                              >
-                                <Image className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </>
+                        {getAuthMethodBadge(record.authMethod, !!record.selfiePhoto, record.isManualEntry)}
+                        {record.selfiePhoto && record.authMethod === 'bypass' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => viewSelfie(record)}
+                            className="text-purple-600 hover:text-purple-700 p-1"
+                            title="عرض صورة السيلفي"
+                          >
+                            <Image className="w-4 h-4" />
+                          </Button>
                         )}
                       </div>
                     </Table.Cell>
