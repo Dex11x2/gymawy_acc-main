@@ -59,18 +59,17 @@ export const checkIn = async (req: any, res: Response) => {
     const checkInTime = clientTime ? new Date(clientTime) : new Date();
 
     // استخدام توقيت مصر (UTC+2)
-    const now = new Date();
-    const egyptOffset = 2 * 60;
-    const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
+    const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
 
-    const today = new Date(localNow);
-    today.setUTCHours(0, 0, 0, 0);
-    const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
+    console.log(`🔍 checkIn: Looking for existing record for userId=${userId}, range=${todayUTC.toISOString()} to ${tomorrowUTC.toISOString()}`);
 
     const existing = await AttendanceRecord.findOne({
       userId,
-      date: { $gte: todayUTC },
+      date: { $gte: todayUTC, $lt: tomorrowUTC },
     });
+
+    console.log(`📋 checkIn: Found existing record: ${existing ? existing._id : 'null'}, checkIn: ${existing?.checkIn || 'none'}`);
+
     if (existing?.checkIn) {
       return res
         .status(400)
@@ -221,17 +220,11 @@ export const checkOut = async (req: any, res: Response) => {
     const checkOutTime = clientTime ? new Date(clientTime) : new Date();
 
     // استخدام توقيت مصر (UTC+2)
-    const now = new Date();
-    const egyptOffset = 2 * 60;
-    const localNow = new Date(now.getTime() + egyptOffset * 60 * 1000);
-
-    const today = new Date(localNow);
-    today.setUTCHours(0, 0, 0, 0);
-    const todayUTC = new Date(today.getTime() - egyptOffset * 60 * 1000);
+    const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
 
     const record = await AttendanceRecord.findOne({
       userId,
-      date: { $gte: todayUTC },
+      date: { $gte: todayUTC, $lt: tomorrowUTC },
     });
     if (!record) {
       return res
@@ -356,12 +349,16 @@ export const manualEntry = async (req: any, res: Response) => {
         });
     }
 
+    // تحويل الوقت المحلي (مصر UTC+2) إلى UTC
+    // المستخدم يدخل 09:00 بتوقيت مصر، نخزنه كـ 07:00 UTC
+    const egyptOffsetMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
     const data: any = {
       userId,
       date: existingDate,
-      // تخزين الوقت كـ UTC - نفس القيمة المدخلة بالضبط
-      checkIn: checkIn ? new Date(`${date}T${checkIn}:00.000Z`) : undefined,
-      checkOut: checkOut ? new Date(`${date}T${checkOut}:00.000Z`) : undefined,
+      // تحويل الوقت المدخل (توقيت مصر) إلى UTC
+      checkIn: checkIn ? new Date(new Date(`${date}T${checkIn}:00.000Z`).getTime() - egyptOffsetMs) : undefined,
+      checkOut: checkOut ? new Date(new Date(`${date}T${checkOut}:00.000Z`).getTime() - egyptOffsetMs) : undefined,
       checkInLocation: { latitude: 0, longitude: 0 },
       status,
       delay: delay || 0,
@@ -442,15 +439,19 @@ export const updateRecord = async (req: any, res: Response) => {
     }
 
     if (date) record.date = new Date(date);
-    // تخزين الوقت كـ UTC - نفس القيمة المدخلة بالضبط
-    if (checkIn)
-      record.checkIn = new Date(
-        `${date || record.date.toISOString().split("T")[0]}T${checkIn}:00.000Z`
-      );
-    if (checkOut)
-      record.checkOut = new Date(
-        `${date || record.date.toISOString().split("T")[0]}T${checkOut}:00.000Z`
-      );
+
+    // تحويل الوقت المحلي (مصر UTC+2) إلى UTC
+    const egyptOffsetMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+    const recordDate = date || record.date.toISOString().split("T")[0];
+
+    if (checkIn) {
+      const localTime = new Date(`${recordDate}T${checkIn}:00.000Z`);
+      record.checkIn = new Date(localTime.getTime() - egyptOffsetMs);
+    }
+    if (checkOut) {
+      const localTime = new Date(`${recordDate}T${checkOut}:00.000Z`);
+      record.checkOut = new Date(localTime.getTime() - egyptOffsetMs);
+    }
     if (status) record.status = status;
     if (leaveType !== undefined) record.leaveType = leaveType || undefined;
     if (delay !== undefined) record.delay = delay;
