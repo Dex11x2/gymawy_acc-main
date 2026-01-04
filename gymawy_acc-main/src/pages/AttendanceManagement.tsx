@@ -38,6 +38,7 @@ const AttendanceManagement: React.FC = () => {
   const [records, setRecords] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | ''>(new Date().getDate()); // اليوم الحالي
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
@@ -45,9 +46,12 @@ const AttendanceManagement: React.FC = () => {
   const [showSelfieModal, setShowSelfieModal] = useState(false);
   const [selectedSelfie, setSelectedSelfie] = useState<{ photo: string; timestamp: Date; deviceInfo?: string } | null>(null);
 
+  // حساب عدد أيام الشهر المحدد
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+
   useEffect(() => {
     if (canViewAttendance) loadRecords();
-  }, [selectedMonth, selectedYear, selectedEmployee, canViewAttendance]);
+  }, [selectedMonth, selectedYear, selectedDay, selectedEmployee, canViewAttendance]);
 
   const loadRecords = async () => {
     try {
@@ -55,7 +59,17 @@ const AttendanceManagement: React.FC = () => {
       if (selectedEmployee) params.userId = selectedEmployee;
 
       const response = await api.get('/attendance-records/monthly-report', { params });
-      const sortedRecords = response.data.data.records.sort((a: any, b: any) =>
+      let filteredRecords = response.data.data.records;
+
+      // فلترة حسب اليوم إذا تم اختياره
+      if (selectedDay !== '') {
+        filteredRecords = filteredRecords.filter((record: any) => {
+          const recordDate = new Date(record.date);
+          return recordDate.getUTCDate() === selectedDay;
+        });
+      }
+
+      const sortedRecords = filteredRecords.sort((a: any, b: any) =>
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
       setRecords(sortedRecords);
@@ -285,7 +299,7 @@ const AttendanceManagement: React.FC = () => {
       {/* Filters */}
       <Card>
         <Card.Body>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الموظف</label>
               <select
@@ -300,10 +314,25 @@ const AttendanceManagement: React.FC = () => {
               </select>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اليوم</label>
+              <select
+                value={selectedDay}
+                onChange={(e) => setSelectedDay(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                <option value="">كل أيام الشهر</option>
+                {Array.from({ length: daysInMonth }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {i + 1} - {new Date(selectedYear, selectedMonth - 1, i + 1).toLocaleDateString('ar-EG', { weekday: 'long' })}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                onChange={(e) => { setSelectedMonth(Number(e.target.value)); setSelectedDay(''); }}
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
                 {Array.from({ length: 12 }, (_, i) => (
@@ -317,7 +346,7 @@ const AttendanceManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السنة</label>
               <select
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                onChange={(e) => { setSelectedYear(Number(e.target.value)); setSelectedDay(''); }}
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
                 {Array.from({ length: 5 }, (_, i) => {
