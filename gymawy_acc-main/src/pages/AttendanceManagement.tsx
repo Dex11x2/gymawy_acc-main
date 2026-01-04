@@ -27,6 +27,21 @@ import {
   Image
 } from 'lucide-react';
 
+// دالة مساعدة لتحويل التوقيت UTC إلى توقيت مصر
+const toEgyptTime = (utcDate: Date | string): Date => {
+  const date = new Date(utcDate);
+  // إضافة ساعتين لتحويل من UTC إلى توقيت مصر
+  return new Date(date.getTime() + 2 * 60 * 60 * 1000);
+};
+
+// دالة للحصول على الوقت بتنسيق HH:mm بتوقيت مصر
+const getEgyptTimeString = (utcDate: Date | string): string => {
+  const egyptDate = toEgyptTime(utcDate);
+  const hours = egyptDate.getUTCHours().toString().padStart(2, '0');
+  const minutes = egyptDate.getUTCMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
 const AttendanceManagement: React.FC = () => {
   const { user } = useAuthStore();
   const { employees } = useDataStore();
@@ -61,11 +76,12 @@ const AttendanceManagement: React.FC = () => {
       const response = await api.get('/attendance-records/monthly-report', { params });
       let filteredRecords = response.data.data.records;
 
-      // فلترة حسب اليوم إذا تم اختياره
+      // فلترة حسب اليوم إذا تم اختياره (باستخدام توقيت مصر)
       if (selectedDay !== '') {
         filteredRecords = filteredRecords.filter((record: any) => {
-          const recordDate = new Date(record.date);
-          return recordDate.getUTCDate() === selectedDay;
+          // تحويل تاريخ السجل إلى توقيت مصر للمقارنة الصحيحة
+          const recordDateEgypt = toEgyptTime(record.date);
+          return recordDateEgypt.getUTCDate() === selectedDay;
         });
       }
 
@@ -588,7 +604,7 @@ const AttendanceManagement: React.FC = () => {
               name="date"
               required
               disabled={!!editingRecord}
-              defaultValue={editingRecord ? new Date(editingRecord.date).toISOString().split('T')[0] : ''}
+              defaultValue={editingRecord ? toEgyptTime(editingRecord.date).toISOString().split('T')[0] : ''}
               className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
             />
           </div>
@@ -599,7 +615,7 @@ const AttendanceManagement: React.FC = () => {
               <input
                 type="time"
                 name="checkIn"
-                defaultValue={editingRecord?.checkIn ? new Date(editingRecord.checkIn).toISOString().slice(11, 16) : ''}
+                defaultValue={editingRecord?.checkIn ? getEgyptTimeString(editingRecord.checkIn) : ''}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
@@ -608,7 +624,7 @@ const AttendanceManagement: React.FC = () => {
               <input
                 type="time"
                 name="checkOut"
-                defaultValue={editingRecord?.checkOut ? new Date(editingRecord.checkOut).toISOString().slice(11, 16) : ''}
+                defaultValue={editingRecord?.checkOut ? getEgyptTimeString(editingRecord.checkOut) : ''}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
