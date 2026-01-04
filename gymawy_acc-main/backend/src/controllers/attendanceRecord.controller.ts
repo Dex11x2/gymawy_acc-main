@@ -213,8 +213,9 @@ export const checkIn = async (req: any, res: Response) => {
 
 export const checkOut = async (req: any, res: Response) => {
   try {
-    const { latitude, longitude, clientTime } = req.body;
+    const { latitude, longitude, clientTime, branchId, bypassLocation, accuracy } = req.body;
     const userId = req.user.userId;
+    const clientIP = getClientIP(req);
 
     // استخدام الوقت المرسل من العميل أو وقت السيرفر
     const checkOutTime = clientTime ? new Date(clientTime) : new Date();
@@ -222,14 +223,24 @@ export const checkOut = async (req: any, res: Response) => {
     // استخدام توقيت مصر (UTC+2)
     const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
 
+    console.log(`🔍 checkOut: Looking for record for userId=${userId}, range=${todayUTC.toISOString()} to ${tomorrowUTC.toISOString()}`);
+
     const record = await AttendanceRecord.findOne({
       userId,
       date: { $gte: todayUTC, $lt: tomorrowUTC },
     });
+
+    console.log(`📋 checkOut: Found record: ${record ? record._id : 'null'}, checkIn: ${record?.checkIn || 'none'}, checkOut: ${record?.checkOut || 'none'}`);
+
     if (!record) {
       return res
         .status(404)
         .json({ success: false, message: "لم يتم تسجيل الحضور اليوم" });
+    }
+    if (!record.checkIn) {
+      return res
+        .status(400)
+        .json({ success: false, message: "لم يتم تسجيل الحضور بعد" });
     }
     if (record.checkOut) {
       return res
@@ -238,16 +249,25 @@ export const checkOut = async (req: any, res: Response) => {
     }
 
     record.checkOut = checkOutTime;
-    record.checkOutLocation = { latitude, longitude };
+    record.checkOutLocation = {
+      latitude: latitude || 0,
+      longitude: longitude || 0
+    };
 
+    // حساب ساعات العمل
     if (record.checkIn) {
-      const hours =
-        (record.checkOut.getTime() - record.checkIn.getTime()) /
-        (1000 * 60 * 60);
-      if (hours > 8) record.overtime = hours - 8;
+      const hours = (record.checkOut.getTime() - record.checkIn.getTime()) / (1000 * 60 * 60);
+      record.workHours = Math.round(hours * 100) / 100; // تقريب لرقمين عشريين
+
+      // حساب الوقت الإضافي (لو أكتر من 8 ساعات)
+      if (hours > 8) {
+        record.overtime = Math.round((hours - 8) * 100) / 100;
+      }
     }
 
     await record.save();
+
+    console.log(`✅ checkOut: Saved successfully. workHours=${record.workHours}, overtime=${record.overtime}`);
 
     res.json({
       success: true,
@@ -255,6 +275,7 @@ export const checkOut = async (req: any, res: Response) => {
       data: record,
     });
   } catch (error: any) {
+    console.error('❌ checkOut error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

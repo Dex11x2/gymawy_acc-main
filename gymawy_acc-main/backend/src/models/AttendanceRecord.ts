@@ -8,6 +8,7 @@ export interface IAttendanceRecord extends Document {
   checkOut?: Date;
   checkInLocation: { latitude: number; longitude: number };
   checkOutLocation?: { latitude: number; longitude: number };
+  workHours: number;
   overtime: number;
   delay: number;
   leaveType?: 'annual' | 'emergency' | 'sick' | 'unpaid';
@@ -43,6 +44,7 @@ const AttendanceRecordSchema = new Schema({
     latitude: { type: Number },
     longitude: { type: Number }
   },
+  workHours: { type: Number, default: 0 },
   overtime: { type: Number, default: 0 },
   delay: { type: Number, default: 0 },
   leaveType: { type: String, enum: ['annual', 'emergency', 'sick', 'unpaid'] },
