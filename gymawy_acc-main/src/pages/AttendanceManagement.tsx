@@ -44,7 +44,7 @@ const getEgyptTimeString = (utcDate: Date | string): string => {
 
 const AttendanceManagement: React.FC = () => {
   const { user } = useAuthStore();
-  const { employees } = useDataStore();
+  const { employees, loadEmployees } = useDataStore();
   const { canRead, canWrite, canDelete } = usePermissions();
 
   const canViewAttendance = canRead('attendance');
@@ -65,7 +65,10 @@ const AttendanceManagement: React.FC = () => {
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
 
   useEffect(() => {
-    if (canViewAttendance) loadRecords();
+    if (canViewAttendance) {
+      loadRecords();
+      loadEmployees();
+    }
   }, [selectedMonth, selectedYear, selectedDay, selectedEmployee, canViewAttendance]);
 
   const loadRecords = async () => {
