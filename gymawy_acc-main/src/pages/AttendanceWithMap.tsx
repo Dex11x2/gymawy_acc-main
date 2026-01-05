@@ -527,7 +527,7 @@ const AttendanceWithMap: React.FC = () => {
         </button>
 
         <button
-          onClick={handleCheckOut}
+          onClick={() => handleCheckOut()}
           disabled={loading || !location || !todayRecord?.checkIn || todayRecord?.checkOut}
           className="p-8 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
