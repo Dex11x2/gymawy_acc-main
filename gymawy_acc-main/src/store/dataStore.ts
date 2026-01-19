@@ -269,10 +269,25 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   loadExpenses: async () => {
     try {
+      console.log('📡 API: Calling GET /expenses');
       const response = await api.get("/expenses");
+      console.log('✅ Expenses API Success:', {
+        count: response.data.length,
+        firstItem: response.data[0],
+        status: response.status
+      });
       set({ expenses: response.data });
-    } catch (error) {
-      console.error("Failed to load expenses:", error);
+    } catch (error: any) {
+      console.error("❌ Failed to load expenses - Full diagnostic:");
+      console.error("  Error type:", error?.constructor?.name);
+      console.error("  HTTP Status:", error?.response?.status);
+      console.error("  Response data:", error?.response?.data);
+      console.error("  Error message:", error?.message);
+      console.error("  Request config:", error?.config);
+      console.error("  Full error object:", error);
+
+      // Set empty array to prevent undefined errors
+      set({ expenses: [] });
     }
   },
 

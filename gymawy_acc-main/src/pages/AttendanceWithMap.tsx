@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import Toast from '../components/Toast';
+import { useAuthStore } from '../store/authStore';
 
 const AttendanceWithMap: React.FC = () => {
+  const { user } = useAuthStore();
+
+  // ✅ Check if user is a manager (can see exact times)
+  const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
@@ -522,7 +528,11 @@ const AttendanceWithMap: React.FC = () => {
           <div className="text-6xl mb-3">✅</div>
           <h3 className="text-2xl font-bold mb-2">تسجيل الحضور</h3>
           <p className="text-sm opacity-90">
-            {todayRecord?.checkIn ? `تم التسجيل: ${new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG')}` : 'اضغط لتسجيل الحضور'}
+            {todayRecord?.checkIn
+              ? (isManager
+                  ? `تم التسجيل: ${new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG')}`
+                  : 'تم التسجيل بنجاح ✓')
+              : 'اضغط لتسجيل الحضور'}
           </p>
         </button>
 
@@ -534,7 +544,11 @@ const AttendanceWithMap: React.FC = () => {
           <div className="text-6xl mb-3">🚪</div>
           <h3 className="text-2xl font-bold mb-2">تسجيل الانصراف</h3>
           <p className="text-sm opacity-90">
-            {todayRecord?.checkOut ? `تم التسجيل: ${new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG')}` : 'اضغط لتسجيل الانصراف'}
+            {todayRecord?.checkOut
+              ? (isManager
+                  ? `تم التسجيل: ${new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG')}`
+                  : 'تم التسجيل بنجاح ✓')
+              : 'اضغط لتسجيل الانصراف'}
           </p>
         </button>
       </div>
@@ -543,26 +557,48 @@ const AttendanceWithMap: React.FC = () => {
       {todayRecord && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">📋 سجل اليوم</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">وقت الحضور</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                {todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG') : '-'}
-              </p>
+
+          {/* ✅ Show detailed times only to managers */}
+          {isManager ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">وقت الحضور</p>
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG') : '-'}
+                </p>
+              </div>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">وقت الانصراف</p>
+                <p className="text-xl font-bold text-red-600 dark:text-red-400">
+                  {todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG') : '-'}
+                </p>
+              </div>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">ساعات العمل</p>
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  {todayRecord.workHours ? `${todayRecord.workHours.toFixed(2)} ساعة` : '-'}
+                </p>
+              </div>
             </div>
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">وقت الانصراف</p>
-              <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                {todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG') : '-'}
+          ) : (
+            /* ✅ Show simplified status for employees (no exact times) */
+            <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="text-4xl mb-3">✅</div>
+              <p className="text-lg font-bold text-green-600 dark:text-green-400 mb-2">
+                تم تسجيل حضورك اليوم
               </p>
+              {todayRecord.checkOut && (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  تم تسجيل الانصراف أيضاً
+                </p>
+              )}
+              {todayRecord.workHours && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  ساعات العمل: {todayRecord.workHours.toFixed(2)} ساعة
+                </p>
+              )}
             </div>
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">ساعات العمل</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {todayRecord.workHours ? `${todayRecord.workHours.toFixed(2)} ساعة` : '-'}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       )}
 

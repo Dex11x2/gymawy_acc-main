@@ -7,15 +7,16 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
-import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, FileDown, FileSpreadsheet, Wrench, Building2, BarChart3 } from 'lucide-react';
+import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, FileDown, FileSpreadsheet, Wrench, Building2, BarChart3, Lock } from 'lucide-react';
 
 type Currency = 'EGP' | 'USD' | 'SAR' | 'AED';
 
 const Expenses: React.FC = () => {
   const { expenses, addExpense, updateExpense, deleteExpense, loadExpenses } = useDataStore();
   const { user } = useAuthStore();
-  const { canWrite, canDelete } = usePermissions();
+  const { canRead, canWrite, canDelete } = usePermissions();
 
+  const canViewExpenses = canRead('expenses');
   const canCreateExpense = canWrite('expenses');
   const canEditExpense = canWrite('expenses');
   const canDeleteExpense = canDelete('expenses');
@@ -23,8 +24,23 @@ const Expenses: React.FC = () => {
 
   // تحميل المصروفات عند فتح الصفحة
   useEffect(() => {
-    loadExpenses();
-  }, [loadExpenses]);
+    console.log('🔍 Expenses Page - Diagnostic Info:');
+    console.log('  Current user:', user);
+    console.log('  User permissions:', user?.permissions);
+    console.log('  User companyId:', user?.companyId);
+    console.log('  User role:', user?.role);
+    console.log('  Can view expenses:', canViewExpenses);
+    console.log('  Can create expense:', canCreateExpense);
+    console.log('  Can edit expense:', canEditExpense);
+    console.log('  Can delete expense:', canDeleteExpense);
+
+    if (canViewExpenses) {
+      console.log('  ✅ User has VIEW permission - Loading expenses...');
+      loadExpenses();
+    } else {
+      console.warn('  ⚠️ User does NOT have VIEW permission for expenses');
+    }
+  }, [loadExpenses, user, canViewExpenses, canCreateExpense, canEditExpense, canDeleteExpense]);
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -234,6 +250,35 @@ const Expenses: React.FC = () => {
       setIsCalculating(false);
     }
   };
+
+  // Permission guard - show access denied if user doesn't have VIEW permission
+  if (!canViewExpenses) {
+    return (
+      <div className="p-4 lg:p-6">
+        <Card>
+          <Card.Body className="p-12">
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center">
+                <Lock className="w-10 h-10 text-error-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                ليس لديك صلاحية للوصول
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                لا يمكنك عرض صفحة المصروفات. يرجى التواصل مع المدير لمنحك الصلاحيات المناسبة.
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">
+                الصلاحية المطلوبة: عرض المصروفات (expenses.view)
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-600 mt-4">
+                الدور الحالي: {user?.role || 'غير محدد'}
+              </p>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">

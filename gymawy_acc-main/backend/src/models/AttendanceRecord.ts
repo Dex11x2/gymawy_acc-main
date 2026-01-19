@@ -28,6 +28,22 @@ export interface IAttendanceRecord extends Document {
   selfiePhoto?: string; // Base64 or file path
   selfieTimestamp?: Date; // Timestamp from EXIF metadata
   selfieDeviceInfo?: string; // Device info from EXIF
+  // Permission tracking fields (NEW)
+  earlyLeaveMinutes?: number; // دقائق المغادرة المبكرة
+  earlyLeaveReason?: string; // سبب المغادرة المبكرة
+  lateArrivalReason?: string; // سبب التأخير (complement to delay field)
+  permissionType?: 'early_leave' | 'late_arrival' | 'both' | 'none'; // نوع الإذن
+  permissionGrantedBy?: mongoose.Types.ObjectId; // المدير الذي أعطى الإذن
+  permissionGrantedAt?: Date; // تاريخ ووقت منح الإذن
+  permissionNotes?: string; // ملاحظات إضافية للإذن
+  // Deduction fields (NEW) - for manager penalties
+  deduction?: {
+    type: 'hours' | 'days';
+    amount: number;
+    reason?: string;
+    appliedBy?: mongoose.Types.ObjectId; // المدير الذي أضاف الخصم
+    appliedAt?: Date; // تاريخ إضافة الخصم
+  };
 }
 
 const AttendanceRecordSchema = new Schema({
@@ -58,7 +74,30 @@ const AttendanceRecordSchema = new Schema({
   // Selfie verification for bypass mode
   selfiePhoto: { type: String },
   selfieTimestamp: { type: Date },
-  selfieDeviceInfo: { type: String }
+  selfieDeviceInfo: { type: String },
+  // Permission tracking fields (NEW)
+  earlyLeaveMinutes: { type: Number, default: 0 },
+  earlyLeaveReason: { type: String },
+  lateArrivalReason: { type: String },
+  permissionType: {
+    type: String,
+    enum: ['early_leave', 'late_arrival', 'both', 'none'],
+    default: 'none'
+  },
+  permissionGrantedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  permissionGrantedAt: { type: Date },
+  permissionNotes: { type: String },
+  // Deduction fields (NEW) - for manager penalties
+  deduction: {
+    type: {
+      type: String,
+      enum: ['hours', 'days']
+    },
+    amount: { type: Number },
+    reason: { type: String },
+    appliedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    appliedAt: { type: Date }
+  }
 }, { timestamps: true });
 
 AttendanceRecordSchema.index({ userId: 1, date: 1 }, { unique: true });

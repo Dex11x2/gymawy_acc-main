@@ -55,8 +55,29 @@ export const checkIn = async (req: any, res: Response) => {
     const userId = req.user.userId;
     const clientIP = getClientIP(req);
 
-    // استخدام الوقت المرسل من العميل أو وقت السيرفر
-    const checkInTime = clientTime ? new Date(clientTime) : new Date();
+    // ✅ SECURITY FIX: Use server time ONLY to prevent time manipulation
+    const serverTime = new Date();
+    const checkInTime = serverTime;
+
+    // ⚠️ Validate clientTime if provided (security check for suspicious activity)
+    if (clientTime) {
+      try {
+        const clientDate = new Date(clientTime);
+        const timeDiffMinutes = Math.abs(serverTime.getTime() - clientDate.getTime()) / (1000 * 60);
+
+        // If client time differs by more than 10 minutes, log it as suspicious
+        if (timeDiffMinutes > 10) {
+          console.warn(`⚠️ SUSPICIOUS TIME MANIPULATION DETECTED:`);
+          console.warn(`  User ID: ${userId}`);
+          console.warn(`  Client Time: ${clientTime} (${clientDate.toISOString()})`);
+          console.warn(`  Server Time: ${serverTime.toISOString()}`);
+          console.warn(`  Difference: ${timeDiffMinutes.toFixed(1)} minutes`);
+          console.warn(`  Client IP: ${clientIP}`);
+        }
+      } catch (e) {
+        console.warn(`⚠️ Invalid clientTime format received from user ${userId}: ${clientTime}`);
+      }
+    }
 
     // استخدام توقيت مصر (UTC+2)
     const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
@@ -200,10 +221,21 @@ export const checkIn = async (req: any, res: Response) => {
     const methodMessage = authMethod === 'ip' ? '(عبر شبكة المكتب)' :
                           authMethod === 'bypass' ? '(تجاوز فحص الموقع)' : '';
 
+    // ✅ PRIVACY FIX: Don't send exact time to user (only to managers)
+    const sanitizedRecord = {
+      _id: record._id,
+      userId: record.userId,
+      branchId: record.branchId,
+      date: record.date,
+      status: record.status,
+      authMethod: record.authMethod,
+      // Don't include checkIn time in response
+    };
+
     res.json({
       success: true,
       message: `✅ تم تسجيل الحضور بنجاح ${methodMessage}`,
-      data: record,
+      data: sanitizedRecord,
       authMethod,
     });
   } catch (error: any) {
@@ -217,8 +249,29 @@ export const checkOut = async (req: any, res: Response) => {
     const userId = req.user.userId;
     const clientIP = getClientIP(req);
 
-    // استخدام الوقت المرسل من العميل أو وقت السيرفر
-    const checkOutTime = clientTime ? new Date(clientTime) : new Date();
+    // ✅ SECURITY FIX: Use server time ONLY to prevent time manipulation
+    const serverTime = new Date();
+    const checkOutTime = serverTime;
+
+    // ⚠️ Validate clientTime if provided (security check for suspicious activity)
+    if (clientTime) {
+      try {
+        const clientDate = new Date(clientTime);
+        const timeDiffMinutes = Math.abs(serverTime.getTime() - clientDate.getTime()) / (1000 * 60);
+
+        // If client time differs by more than 10 minutes, log it as suspicious
+        if (timeDiffMinutes > 10) {
+          console.warn(`⚠️ SUSPICIOUS TIME MANIPULATION DETECTED (checkOut):`);
+          console.warn(`  User ID: ${userId}`);
+          console.warn(`  Client Time: ${clientTime} (${clientDate.toISOString()})`);
+          console.warn(`  Server Time: ${serverTime.toISOString()}`);
+          console.warn(`  Difference: ${timeDiffMinutes.toFixed(1)} minutes`);
+          console.warn(`  Client IP: ${clientIP}`);
+        }
+      } catch (e) {
+        console.warn(`⚠️ Invalid clientTime format received from user ${userId}: ${clientTime}`);
+      }
+    }
 
     // استخدام توقيت مصر (UTC+2)
     const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
@@ -269,10 +322,21 @@ export const checkOut = async (req: any, res: Response) => {
 
     console.log(`✅ checkOut: Saved successfully. workHours=${record.workHours}, overtime=${record.overtime}`);
 
+    // ✅ PRIVACY FIX: Don't send exact times to user (only to managers)
+    const sanitizedRecord = {
+      _id: record._id,
+      userId: record.userId,
+      branchId: record.branchId,
+      date: record.date,
+      status: record.status,
+      workHours: record.workHours,
+      // Don't include checkIn/checkOut times in response
+    };
+
     res.json({
       success: true,
       message: "✅ تم تسجيل الانصراف بنجاح",
-      data: record,
+      data: sanitizedRecord,
     });
   } catch (error: any) {
     console.error('❌ checkOut error:', error);
@@ -388,6 +452,22 @@ export const manualEntry = async (req: any, res: Response) => {
       verifiedByManager: true,
       authMethod: 'manual', // الإدخال اليدوي له الأولوية القصوى
       modifiedBy: req.user.userId, // من قام بالإدخال
+      // Permission fields (NEW)
+      earlyLeaveMinutes: req.body.earlyLeaveMinutes || 0,
+      earlyLeaveReason: req.body.earlyLeaveReason,
+      lateArrivalReason: req.body.lateArrivalReason,
+      permissionNotes: req.body.permissionNotes,
+      permissionType: req.body.permissionType || 'none',
+      permissionGrantedBy: req.user.userId, // المدير الذي منح الإذن
+      permissionGrantedAt: new Date(), // تاريخ منح الإذن
+      // Deduction fields (NEW) - for manager penalties
+      deduction: req.body.deduction ? {
+        type: req.body.deduction.type,
+        amount: req.body.deduction.amount,
+        reason: req.body.deduction.reason,
+        appliedBy: req.user.userId,
+        appliedAt: new Date()
+      } : undefined
     };
 
     if (leaveType && leaveType !== "") {
@@ -425,6 +505,8 @@ export const getMonthlyReport = async (req: any, res: Response) => {
     const records = await AttendanceRecord.find(query)
       .populate("userId", "name")
       .populate("modifiedBy", "name") // من قام بالتعديل اليدوي
+      .populate("permissionGrantedBy", "name") // من منح الإذن
+      .populate("deduction.appliedBy", "name") // NEW: من أضاف الخصم
       .sort({ date: 1 });
 
     const summary = {
@@ -480,10 +562,35 @@ export const updateRecord = async (req: any, res: Response) => {
     if (leaveType !== undefined) record.leaveType = leaveType || undefined;
     if (delay !== undefined) record.delay = delay;
     if (overtime !== undefined) record.overtime = overtime;
+
+    // Permission fields (NEW)
+    if (req.body.earlyLeaveMinutes !== undefined) record.earlyLeaveMinutes = req.body.earlyLeaveMinutes;
+    if (req.body.earlyLeaveReason !== undefined) record.earlyLeaveReason = req.body.earlyLeaveReason;
+    if (req.body.lateArrivalReason !== undefined) record.lateArrivalReason = req.body.lateArrivalReason;
+    if (req.body.permissionNotes !== undefined) record.permissionNotes = req.body.permissionNotes;
+    if (req.body.permissionType !== undefined) record.permissionType = req.body.permissionType;
+
+    // Deduction fields (NEW) - for manager penalties
+    if (req.body.deduction !== undefined) {
+      if (req.body.deduction === null || !req.body.deduction.amount) {
+        record.deduction = undefined; // Remove deduction
+      } else {
+        record.deduction = {
+          type: req.body.deduction.type,
+          amount: req.body.deduction.amount,
+          reason: req.body.deduction.reason,
+          appliedBy: req.user.userId,
+          appliedAt: new Date()
+        };
+      }
+    }
+
     record.isManualEntry = true;
     record.verifiedByManager = true;
     record.authMethod = 'manual'; // التعديل اليدوي له الأولوية القصوى
     record.modifiedBy = req.user.userId; // من قام بالتعديل
+    record.permissionGrantedBy = req.user.userId; // NEW: المدير الذي منح الإذن
+    record.permissionGrantedAt = new Date(); // NEW: تاريخ منح الإذن
 
     await record.save();
 

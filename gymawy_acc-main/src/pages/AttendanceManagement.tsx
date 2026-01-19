@@ -24,7 +24,10 @@ import {
   Smartphone,
   Camera,
   Wifi,
-  Image
+  Image,
+  Shield,
+  ArrowLeft,
+  TrendingDown
 } from 'lucide-react';
 
 // دالة مساعدة لتحويل التوقيت UTC إلى توقيت مصر
@@ -46,6 +49,9 @@ const AttendanceManagement: React.FC = () => {
   const { user } = useAuthStore();
   const { employees, loadEmployees } = useDataStore();
   const { canRead, canWrite, canDelete } = usePermissions();
+
+  // Check if user is a manager (can add permissions)
+  const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
   const canViewAttendance = canRead('attendance');
   const canWriteAttendance = canWrite('attendance');
@@ -102,6 +108,9 @@ const AttendanceManagement: React.FC = () => {
     const formData = new FormData(e.target as HTMLFormElement);
 
     try {
+      const earlyLeaveMinutes = parseInt(formData.get('earlyLeaveMinutes') as string) || 0;
+      const delay = parseInt(formData.get('delay') as string) || 0;
+
       const data = {
         userId: formData.get('userId'),
         date: formData.get('date'),
@@ -109,8 +118,32 @@ const AttendanceManagement: React.FC = () => {
         checkOut: formData.get('checkOut') || undefined,
         status: formData.get('status'),
         leaveType: formData.get('leaveType') || undefined,
-        delay: parseInt(formData.get('delay') as string) || 0,
-        overtime: parseFloat(formData.get('overtime') as string) || 0
+        delay: delay,
+        overtime: parseFloat(formData.get('overtime') as string) || 0,
+        // Permission fields (only if user is manager)
+        ...(isManager && {
+          earlyLeaveMinutes: earlyLeaveMinutes,
+          earlyLeaveReason: formData.get('earlyLeaveReason') || undefined,
+          lateArrivalReason: formData.get('lateArrivalReason') || undefined,
+          permissionNotes: formData.get('permissionNotes') || undefined,
+          // Determine permission type based on what was filled
+          permissionType: (() => {
+            const hasEarly = earlyLeaveMinutes > 0;
+            const hasLate = delay > 0 && formData.get('lateArrivalReason');
+            if (hasEarly && hasLate) return 'both';
+            if (hasEarly) return 'early_leave';
+            if (hasLate) return 'late_arrival';
+            return 'none';
+          })()
+        }),
+        // Deduction fields (only if manager and deduction type is selected)
+        ...(isManager && formData.get('deductionType') && {
+          deduction: {
+            type: formData.get('deductionType'),
+            amount: parseFloat(formData.get('deductionAmount') as string) || 0,
+            reason: formData.get('deductionReason') || undefined
+          }
+        })
       };
 
       if (editingRecord) {
@@ -443,9 +476,59 @@ const AttendanceManagement: React.FC = () => {
                       {getStatusBadge(record.status)}
                     </Table.Cell>
                     <Table.Cell>
-                      <span className={`font-medium ${record.delay > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400'}`}>
-                        {record.delay > 0 ? `${record.delay} دقيقة` : '-'}
-                      </span>
+                      <div className="space-y-1">
+                        {record.delay > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="warning" size="sm">
+                              <Timer className="w-3 h-3 ml-1" />
+                              تأخير: {record.delay} دقيقة
+                            </Badge>
+                            {record.lateArrivalReason && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                ({record.lateArrivalReason})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {record.earlyLeaveMinutes > 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Badge variant="info" size="sm">
+                              <ArrowLeft className="w-3 h-3 ml-1" />
+                              مغادرة: {record.earlyLeaveMinutes} دقيقة
+                            </Badge>
+                            {record.earlyLeaveReason && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                ({record.earlyLeaveReason})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {record.permissionGrantedBy && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Badge variant="success" size="sm">
+                              <Shield className="w-3 h-3 ml-1" />
+                              إذن من مدير
+                            </Badge>
+                          </div>
+                        )}
+                        {/* Show deduction if exists */}
+                        {record.deduction && record.deduction.amount > 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Badge variant="error" size="sm">
+                              <TrendingDown className="w-3 h-3 ml-1" />
+                              خصم: {record.deduction.amount} {record.deduction.type === 'hours' ? 'ساعة' : 'يوم'}
+                            </Badge>
+                            {record.deduction.reason && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                ({record.deduction.reason})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {!record.delay && !record.earlyLeaveMinutes && !record.deduction && (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
                     </Table.Cell>
                     <Table.Cell>
                       {record.checkInLocation?.latitude && (
@@ -534,10 +617,23 @@ const AttendanceManagement: React.FC = () => {
                 <div key={`day-${idx}`} className="text-center font-semibold text-gray-700 dark:text-gray-300 py-2 text-sm">{day}</div>
               ))}
 
-              {/* Calendar Days */}
-              {Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }, (_, i) => {
-                const day = i + 1;
-                const record = records.find(r => new Date(r.date).getDate() === day);
+              {/* ✅ FIX: Calculate first day of month to align calendar correctly */}
+              {(() => {
+                const firstDayOfMonth = new Date(selectedYear, selectedMonth - 1, 1).getDay(); // 0 = Sunday
+                const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+
+                return (
+                  <>
+                    {/* Add blank cells before the 1st to align with correct weekday */}
+                    {Array.from({ length: firstDayOfMonth }, (_, i) => (
+                      <div key={`blank-${i}`} className="p-3" />
+                    ))}
+
+                    {/* Calendar Days */}
+                    {Array.from({ length: daysInMonth }, (_, i) => {
+                      const day = i + 1;
+                      // ✅ Use Egypt timezone to match day correctly (fixes day 7 bug)
+                      const record = records.find(r => toEgyptTime(r.date).getUTCDate() === day);
 
                 return (
                   <div
@@ -575,7 +671,10 @@ const AttendanceManagement: React.FC = () => {
                     )}
                   </div>
                 );
-              })}
+                    })}
+                  </>
+                );
+              })()}
             </div>
           </Card.Body>
         </Card>
@@ -684,6 +783,140 @@ const AttendanceManagement: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Permission Section - Only for Managers */}
+          {isManager && (
+            <>
+              <div className="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-brand-500" />
+                  أذونات الحضور (للمديرين فقط)
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    مغادرة مبكرة (دقيقة)
+                  </label>
+                  <input
+                    type="number"
+                    name="earlyLeaveMinutes"
+                    min="0"
+                    defaultValue={editingRecord?.earlyLeaveMinutes || 0}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    سبب المغادرة المبكرة
+                  </label>
+                  <input
+                    type="text"
+                    name="earlyLeaveReason"
+                    defaultValue={editingRecord?.earlyLeaveReason || ''}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="مثال: ظرف طارئ، موعد طبيب..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  سبب التأخير
+                </label>
+                <input
+                  type="text"
+                  name="lateArrivalReason"
+                  defaultValue={editingRecord?.lateArrivalReason || ''}
+                  className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  placeholder="مثال: زحمة مرور، ظرف طارئ..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  ملاحظات الإذن
+                </label>
+                <textarea
+                  name="permissionNotes"
+                  defaultValue={editingRecord?.permissionNotes || ''}
+                  rows={2}
+                  className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  placeholder="ملاحظات إضافية عن الإذن (اختياري)..."
+                />
+              </div>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  سيتم تسجيل اسمك كمانح للإذن وتاريخ المنح تلقائياً
+                </p>
+              </div>
+
+              {/* Deduction Section - Only for Managers */}
+              <div className="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-error-500" />
+                  الخصومات (للمديرين فقط)
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    نوع الخصم
+                  </label>
+                  <select
+                    name="deductionType"
+                    defaultValue={editingRecord?.deduction?.type || ''}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  >
+                    <option value="">بدون خصم</option>
+                    <option value="hours">ساعات</option>
+                    <option value="days">أيام</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    مقدار الخصم
+                  </label>
+                  <input
+                    type="number"
+                    name="deductionAmount"
+                    min="0"
+                    step="0.5"
+                    defaultValue={editingRecord?.deduction?.amount || 0}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  سبب الخصم
+                </label>
+                <textarea
+                  name="deductionReason"
+                  defaultValue={editingRecord?.deduction?.reason || ''}
+                  rows={2}
+                  className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  placeholder="سبب الخصم (اختياري)..."
+                />
+              </div>
+
+              <div className="p-3 bg-error-50 dark:bg-error-900/20 rounded-lg">
+                <p className="text-sm text-error-700 dark:text-error-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  سيتم تسجيل اسمك كمضيف للخصم وتاريخ الإضافة تلقائياً
+                </p>
+              </div>
+            </>
+          )}
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1">
