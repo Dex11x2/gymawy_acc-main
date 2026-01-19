@@ -8,6 +8,17 @@ export const getAll = async (req: any, res: Response) => {
     console.log('  User Role:', req.user?.role);
     console.log('  User CompanyId:', req.user?.companyId);
 
+    // 🔍 DIAGNOSTIC: Check all expenses in DB (before filtering)
+    const allExpenses = await Expense.find({}).select('_id amount currency companyId').limit(10);
+    console.log('🔍 DIAGNOSTIC - All Expenses in DB (first 10):',
+      allExpenses.map(e => ({
+        id: e._id.toString().substring(0, 8),
+        amount: e.amount,
+        currency: e.currency,
+        companyId: e.companyId?.toString() || 'null'
+      }))
+    );
+
     const filter = req.user?.role === 'super_admin' ? {} : { companyId: req.user?.companyId };
     console.log('  Applied Filter:', JSON.stringify(filter));
 
