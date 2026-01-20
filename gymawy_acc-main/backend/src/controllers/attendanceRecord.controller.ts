@@ -372,7 +372,27 @@ export const getTodayRecord = async (req: any, res: Response) => {
 
     console.log(`📋 Found record: ${record ? record._id : 'null'}`);
 
-    res.json({ success: true, data: record });
+    // ✅ PRIVACY FIX: Filter sensitive data based on user role
+    const userRole = req.user?.role;
+    const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(userRole);
+
+    if (!isManager && record) {
+      // For regular employees, hide exact times
+      const sanitizedRecord = {
+        _id: record._id,
+        userId: record.userId,
+        branchId: record.branchId,
+        date: record.date,
+        status: record.status,
+        workHours: record.workHours,
+        overtime: record.overtime,
+        // Don't include checkIn/checkOut times for employees
+      };
+      res.json({ success: true, data: sanitizedRecord });
+    } else {
+      // For managers, send full record
+      res.json({ success: true, data: record });
+    }
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
