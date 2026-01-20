@@ -522,14 +522,14 @@ const AttendanceWithMap: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <button
           onClick={() => handleCheckIn()}
-          disabled={loading || !location || todayRecord?.checkIn}
+          disabled={loading || !location || (todayRecord?.checkIn || todayRecord?.hasCheckedIn)}
           className="p-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <div className="text-6xl mb-3">✅</div>
           <h3 className="text-2xl font-bold mb-2">تسجيل الحضور</h3>
           <p className="text-sm opacity-90">
-            {todayRecord?.checkIn
-              ? (isManager
+            {(todayRecord?.checkIn || todayRecord?.hasCheckedIn)
+              ? (isManager && todayRecord?.checkIn
                   ? `تم التسجيل: ${new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG')}`
                   : 'تم التسجيل بنجاح ✓')
               : 'اضغط لتسجيل الحضور'}
@@ -538,14 +538,14 @@ const AttendanceWithMap: React.FC = () => {
 
         <button
           onClick={() => handleCheckOut()}
-          disabled={loading || !location || !todayRecord?.checkIn || todayRecord?.checkOut}
+          disabled={loading || !location || !(todayRecord?.checkIn || todayRecord?.hasCheckedIn) || (todayRecord?.checkOut || todayRecord?.hasCheckedOut)}
           className="p-8 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <div className="text-6xl mb-3">🚪</div>
           <h3 className="text-2xl font-bold mb-2">تسجيل الانصراف</h3>
           <p className="text-sm opacity-90">
-            {todayRecord?.checkOut
-              ? (isManager
+            {(todayRecord?.checkOut || todayRecord?.hasCheckedOut)
+              ? (isManager && todayRecord?.checkOut
                   ? `تم التسجيل: ${new Date(todayRecord.checkOut).toLocaleTimeString('ar-EG')}`
                   : 'تم التسجيل بنجاح ✓')
               : 'اضغط لتسجيل الانصراف'}
@@ -587,7 +587,7 @@ const AttendanceWithMap: React.FC = () => {
               <p className="text-lg font-bold text-green-600 dark:text-green-400 mb-2">
                 تم تسجيل حضورك اليوم
               </p>
-              {todayRecord.checkOut && (
+              {(todayRecord.checkOut || todayRecord.hasCheckedOut) && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   تم تسجيل الانصراف أيضاً
                 </p>

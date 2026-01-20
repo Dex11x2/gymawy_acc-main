@@ -377,7 +377,7 @@ export const getTodayRecord = async (req: any, res: Response) => {
     const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(userRole);
 
     if (!isManager && record) {
-      // For regular employees, hide exact times
+      // For regular employees, hide exact times but send flags
       const sanitizedRecord = {
         _id: record._id,
         userId: record.userId,
@@ -386,7 +386,9 @@ export const getTodayRecord = async (req: any, res: Response) => {
         status: record.status,
         workHours: record.workHours,
         overtime: record.overtime,
-        // Don't include checkIn/checkOut times for employees
+        // ✅ ADD boolean flags instead of actual times
+        hasCheckedIn: !!record.checkIn,      // true/false
+        hasCheckedOut: !!record.checkOut,    // true/false
       };
       res.json({ success: true, data: sanitizedRecord });
     } else {
