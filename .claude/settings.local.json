@@ -12,7 +12,9 @@
       "Bash(cat:*)",
       "Bash(powershell:*)",
       "Bash(npm run build:*)",
-      "Bash(docker-compose up:*)"
+      "Bash(docker-compose up:*)",
+      "Bash(cd:*)",
+      "mcp__serena__list_memories"
     ]
   }
 }

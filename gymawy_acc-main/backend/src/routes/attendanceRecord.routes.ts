@@ -11,7 +11,7 @@ router.post('/check-in', controller.checkIn);
 router.post('/check-out', controller.checkOut);
 router.get('/today', controller.getTodayRecord);
 router.get('/today-all', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.getAllTodayRecords);
-router.get('/monthly-report', controller.getMonthlyReport);
+router.get('/monthly-report', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.getMonthlyReport);
 router.post('/manual', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.manualEntry);
 router.put('/:id', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.updateRecord);
 router.delete('/:id', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.deleteRecord);

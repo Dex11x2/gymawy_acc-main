@@ -522,7 +522,24 @@ export const getMonthlyReport = async (req: any, res: Response) => {
     );
 
     const query: any = { date: { $gte: startDate, $lte: endDate } };
-    if (userId) query.userId = userId;
+
+    // إضافة فلترة حسب الدور
+    const userRole = req.user?.role;
+    const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(userRole);
+
+    // إذا تم تحديد userId في الطلب، استخدمه (للمديرين الذين يريدون فلترة موظف معين)
+    if (userId) {
+      query.userId = userId;
+    }
+    // إذا كان موظف عادي، فرض الفلترة على سجلاته فقط
+    else if (!isManager) {
+      query.userId = req.user.userId;
+      console.log(`🔒 موظف عادي ${req.user.userId} - عرض سجلاته فقط`);
+    }
+    // إذا كان مدير ولم يحدد موظف، عرض جميع السجلات
+    else {
+      console.log(`👔 مدير ${req.user.userId} - عرض جميع السجلات للشهر ${month}/${year}`);
+    }
 
     const records = await AttendanceRecord.find(query)
       .populate("userId", "name")
@@ -530,6 +547,8 @@ export const getMonthlyReport = async (req: any, res: Response) => {
       .populate("permissionGrantedBy", "name") // من منح الإذن
       .populate("deduction.appliedBy", "name") // NEW: من أضاف الخصم
       .sort({ date: 1 });
+
+    console.log(`📊 تم إيجاد ${records.length} سجل`);
 
     const summary = {
       totalPresent: records.filter(
@@ -543,6 +562,7 @@ export const getMonthlyReport = async (req: any, res: Response) => {
 
     res.json({ success: true, data: { records, summary } });
   } catch (error: any) {
+    console.error('❌ getMonthlyReport error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

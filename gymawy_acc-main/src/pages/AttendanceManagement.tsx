@@ -53,9 +53,9 @@ const AttendanceManagement: React.FC = () => {
   // Check if user is a manager (can add permissions)
   const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
-  const canViewAttendance = canRead('attendance');
-  const canWriteAttendance = canWrite('attendance');
-  const canDeleteAttendance = canDelete('attendance');
+  const canViewAttendance = canRead('attendance') || canRead('attendance_management');
+  const canWriteAttendance = canWrite('attendance') || canWrite('attendance_management');
+  const canDeleteAttendance = canDelete('attendance') || canDelete('attendance_management');
   const [records, setRecords] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -70,6 +70,19 @@ const AttendanceManagement: React.FC = () => {
   // حساب عدد أيام الشهر المحدد
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
 
+  // Logging تشخيصي للصلاحيات
+  useEffect(() => {
+    console.log('🔐 صلاحيات إدارة الحضور:', {
+      المستخدم: { id: user?.id, name: user?.name, role: user?.role },
+      يمكن_القراءة_attendance: canRead('attendance'),
+      يمكن_القراءة_attendance_management: canRead('attendance_management'),
+      هل_مدير: isManager,
+      صلاحيات_الحضور: user?.permissions?.filter(p =>
+        p.module.includes('attendance')
+      )
+    });
+  }, [user]);
+
   useEffect(() => {
     if (canViewAttendance) {
       loadRecords();
@@ -82,7 +95,15 @@ const AttendanceManagement: React.FC = () => {
       const params: any = { month: selectedMonth, year: selectedYear };
       if (selectedEmployee) params.userId = selectedEmployee;
 
+      console.log('📡 تحميل سجلات الحضور:', params);
+
       const response = await api.get('/attendance-records/monthly-report', { params });
+
+      console.log('✅ تم استلام:', {
+        عدد_السجلات: response.data.data.records.length,
+        الملخص: response.data.data.summary
+      });
+
       let filteredRecords = response.data.data.records;
 
       // فلترة حسب اليوم إذا تم اختياره (باستخدام توقيت مصر)
@@ -97,9 +118,24 @@ const AttendanceManagement: React.FC = () => {
       const sortedRecords = filteredRecords.sort((a: any, b: any) =>
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
+
+      console.log(`📋 عرض ${sortedRecords.length} سجل`);
       setRecords(sortedRecords);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('❌ فشل تحميل سجلات الحضور:', error);
+
+      // عرض رسالة الخطأ للمستخدم
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.statusText ||
+                          'فشل في تحميل سجلات الحضور';
+
+      setToast({
+        message: errorMessage,
+        type: 'error',
+        isOpen: true
+      });
+
+      setRecords([]);
     }
   };
 
