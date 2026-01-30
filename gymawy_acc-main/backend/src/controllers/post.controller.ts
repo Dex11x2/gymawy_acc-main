@@ -3,16 +3,22 @@ import Post from '../models/Post';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const posts = await Post.find({})
+    // ✅ FIXED: Managers see ALL posts, regular employees see only their company's posts
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all posts
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
+    const posts = await Post.find(filter)
       .populate('authorId', 'name')
       .sort({ createdAt: -1 });
-    
+
     const formattedPosts = posts.map(post => ({
       ...post.toObject(),
       id: post._id,
       authorName: (post.authorId as any)?.name || 'مجهول'
     }));
-    
+
     res.json(formattedPosts);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

@@ -3,7 +3,13 @@ import Complaint from '../models/Complaint';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const complaints = await Complaint.find({});
+    // ✅ FIXED: Managers see ALL complaints, regular employees see only their company's complaints
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all complaints
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
+    const complaints = await Complaint.find(filter);
     res.json(complaints);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

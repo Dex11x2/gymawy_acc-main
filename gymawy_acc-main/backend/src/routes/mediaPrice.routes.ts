@@ -33,14 +33,19 @@ async function getDefaultPrices(): Promise<Array<{
 // يعرض فقط الموظفين ذوي الراتب المتغير (ميديا)
 router.get('/all-employees', protect, async (req: any, res) => {
   try {
-    const companyId = req.user?.companyId;
-
-    // جلب الموظفين النشطين ذوي الراتب المتغير فقط
-    const employees = await Employee.find({
-      companyId,
+    // ✅ FIXED: Managers see ALL employees, regular employees see only their company's employees
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter: any = {
       isActive: true,
       salaryType: 'variable' // فقط الرواتب المتغيرة
-    }).select('_id name position');
+    };
+
+    if (!managerRoles.includes(req.user?.role)) {
+      filter.companyId = req.user?.companyId;
+    }
+
+    // جلب الموظفين النشطين ذوي الراتب المتغير فقط
+    const employees = await Employee.find(filter).select('_id name position');
 
     // جلب أسعار كل موظف
     const employeesWithPrices = await Promise.all(
@@ -51,10 +56,11 @@ router.get('/all-employees', protect, async (req: any, res) => {
           // إنشاء أسعار افتراضية إذا لم توجد
           if (prices.length === 0) {
             const defaultPrices = await getDefaultPrices();
+            const employee = await Employee.findById(emp._id);
             const defaultPricesWithEmployee = defaultPrices.map(p => ({
               ...p,
               employeeId: emp._id,
-              companyId
+              companyId: employee?.companyId || req.user?.companyId
             }));
             // استخدام insertMany مع ordered: false لتجاهل الأخطاء المكررة
             try {
@@ -93,7 +99,20 @@ router.get('/all-employees', protect, async (req: any, res) => {
 router.get('/employee/:employeeId', protect, async (req: any, res) => {
   try {
     const { employeeId } = req.params;
+
+    // ✅ SECURITY FIX: Verify employee belongs to user's company (unless manager)
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
     const companyId = req.user?.companyId || null;
+
+    if (!managerRoles.includes(req.user?.role)) {
+      const employee = await Employee.findById(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: 'الموظف غير موجود' });
+      }
+      if (employee.companyId?.toString() !== req.user?.companyId?.toString()) {
+        return res.status(403).json({ message: 'غير مصرح' });
+      }
+    }
 
     let prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
 

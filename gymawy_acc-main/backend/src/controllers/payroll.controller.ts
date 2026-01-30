@@ -3,7 +3,13 @@ import Payroll from '../models/Payroll';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const payrolls = await Payroll.find().populate('employeeId');
+    // ✅ FIXED: Managers see ALL payrolls, regular employees see only their company's payrolls
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all payrolls
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
+    const payrolls = await Payroll.find(filter).populate('employeeId');
     res.json(payrolls);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

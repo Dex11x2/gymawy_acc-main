@@ -3,8 +3,14 @@ import Employee from '../models/Employee';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const employees = await Employee.find().populate('userId').populate('departmentId');
-    
+    // ✅ FIXED: Managers see ALL employees, regular employees see only their company's employees
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all employees
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
+    const employees = await Employee.find(filter).populate('userId').populate('departmentId');
+
     // إضافة الصلاحيات من User إلى Employee
     const employeesWithPermissions = employees.map(emp => {
       const empObj: any = emp.toObject();
@@ -13,7 +19,7 @@ export const getAll = async (req: any, res: Response) => {
       }
       return empObj;
     });
-    
+
     res.json(employeesWithPermissions);
   } catch (error: any) {
     console.error('Error fetching employees:', error);

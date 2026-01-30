@@ -4,14 +4,19 @@ import Attendance from '../models/Attendance';
 export const getAll = async (req: any, res: Response) => {
   try {
     const { month, year } = req.query;
-    const query: any = {};
-    
+
+    // ✅ FIXED: Managers see ALL attendance, regular employees see only their company's attendance
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const query: any = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all attendance
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
     if (month && year) {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0);
       query.date = { $gte: startDate, $lte: endDate };
     }
-    
+
     const attendance = await Attendance.find(query);
     res.json(attendance);
   } catch (error: any) {

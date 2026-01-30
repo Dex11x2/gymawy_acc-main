@@ -145,9 +145,13 @@ router.put('/my-achievements/:id', protect, async (req: any, res) => {
 router.get('/', protect, async (req: any, res) => {
   try {
     const { month, year } = req.query;
-    const companyId = req.user?.companyId;
 
-    const query: any = { companyId };
+    // ✅ FIXED: Managers see ALL achievements, regular employees see only their company's achievements
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const query: any = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all achievements
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
     if (month) query.month = parseInt(month as string);
     if (year) query.year = parseInt(year as string);
 
@@ -168,6 +172,18 @@ router.get('/employee/:employeeId', protect, async (req: any, res) => {
   try {
     const { employeeId } = req.params;
     const { month, year } = req.query;
+
+    // ✅ SECURITY FIX: Verify employee belongs to user's company (unless manager)
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    if (!managerRoles.includes(req.user?.role)) {
+      const employee = await Employee.findById(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: 'الموظف غير موجود' });
+      }
+      if (employee.companyId?.toString() !== req.user?.companyId?.toString()) {
+        return res.status(403).json({ message: 'غير مصرح' });
+      }
+    }
 
     const query: any = { employeeId };
     if (month) query.month = parseInt(month as string);
@@ -193,6 +209,14 @@ router.get('/:id', protect, async (req: any, res) => {
 
     if (!achievement) {
       return res.status(404).json({ message: 'الإنجاز غير موجود' });
+    }
+
+    // ✅ SECURITY FIX: Verify achievement belongs to user's company (unless manager)
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    if (!managerRoles.includes(req.user?.role)) {
+      if (achievement.companyId?.toString() !== req.user?.companyId?.toString()) {
+        return res.status(403).json({ message: 'غير مصرح' });
+      }
     }
 
     res.json(achievement);
@@ -399,13 +423,19 @@ router.post('/:id/sync-payroll', protect, async (req: any, res) => {
 router.get('/summary/:month/:year', protect, async (req: any, res) => {
   try {
     const { month, year } = req.params;
-    const companyId = req.user?.companyId;
 
-    const achievements = await MediaAchievement.find({
-      companyId,
+    // ✅ FIXED: Managers see ALL summaries, regular employees see only their company's summary
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const query: any = {
       month: parseInt(month),
       year: parseInt(year)
-    }).populate('employeeId', 'name position');
+    };
+
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
+
+    const achievements = await MediaAchievement.find(query).populate('employeeId', 'name position');
 
     const summary = {
       totalAmount: achievements.reduce((sum, a) => sum + a.totalAmount, 0),

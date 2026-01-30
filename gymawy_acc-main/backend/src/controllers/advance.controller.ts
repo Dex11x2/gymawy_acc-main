@@ -3,7 +3,13 @@ import Advance from '../models/Advance';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const advances = await Advance.find({}).populate('employeeId approvedBy');
+    // ✅ FIXED: Managers see ALL advances, regular employees see only their company's advances
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all advances
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
+    const advances = await Advance.find(filter).populate('employeeId approvedBy');
     res.json(advances);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

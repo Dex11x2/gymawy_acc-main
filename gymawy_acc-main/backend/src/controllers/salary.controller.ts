@@ -4,14 +4,21 @@ import Employee from '../models/Employee';
 import { ensureId } from '../utils/mongooseHelper';
 
 // Get all salaries for a specific month/year
-export const getSalaries = async (req: Request, res: Response) => {
+export const getSalaries = async (req: any, res: Response) => {
   try {
-    const { month, year, companyId } = req.query;
+    const { month, year } = req.query;
 
+    // ✅ FIXED: Managers see ALL salaries, regular employees see only their company's salaries
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
     const query: any = {};
+
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
-    if (companyId) query.companyId = companyId;
+
+    // Force companyId filter unless user is a manager
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
 
     const salaries = await Salary.find(query)
       .populate('employeeId', 'name email position salary salaryCurrency')
@@ -67,20 +74,25 @@ export const getSalaryById = async (req: Request, res: Response) => {
 };
 
 // Generate salaries for all employees for a specific month/year
-export const generateMonthlySalaries = async (req: Request, res: Response) => {
+export const generateMonthlySalaries = async (req: any, res: Response) => {
   try {
-    const { month, year, companyId } = req.body;
+    const { month, year } = req.body;
 
-    console.log('🔥 Generate salaries request:', { month, year, companyId, user: (req as any).user });
+    console.log('🔥 Generate salaries request:', { month, year, user: req.user });
 
     if (!month || !year) {
       console.error('❌ Month and year are required');
       return res.status(400).json({ message: 'Month and year are required' });
     }
 
-    // Find all active employees
+    // ✅ FIXED: Managers see ALL employees, regular employees see only their company's employees
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
     const query: any = { isActive: true };
-    if (companyId) query.companyId = companyId;
+
+    // Force companyId filter unless user is a manager
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
 
     console.log('🔍 Searching for employees with query:', query);
     const employees = await Employee.find(query);
@@ -348,14 +360,21 @@ export const deleteSalary = async (req: Request, res: Response) => {
 };
 
 // Get salary statistics
-export const getSalaryStatistics = async (req: Request, res: Response) => {
+export const getSalaryStatistics = async (req: any, res: Response) => {
   try {
-    const { month, year, companyId } = req.query;
+    const { month, year } = req.query;
 
+    // ✅ FIXED: Managers see ALL statistics, regular employees see only their company's statistics
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
     const query: any = {};
+
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
-    if (companyId) query.companyId = companyId;
+
+    // Force companyId filter unless user is a manager
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
 
     const salaries = await Salary.find(query);
 

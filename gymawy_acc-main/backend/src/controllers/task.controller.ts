@@ -6,7 +6,13 @@ import { notifyNewTask } from '../services/notification.service';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const tasks = await Task.find({}).populate('assignedTo assignedBy');
+    // ✅ FIXED: Managers see ALL tasks, regular employees see only their company's tasks
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const filter = managerRoles.includes(req.user?.role)
+      ? {}  // Managers see all tasks
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
+
+    const tasks = await Task.find(filter).populate('assignedTo assignedBy');
     res.json(tasks);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

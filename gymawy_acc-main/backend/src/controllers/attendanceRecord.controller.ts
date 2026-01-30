@@ -414,7 +414,15 @@ export const getAllTodayRecords = async (req: any, res: Response) => {
     const tomorrow = new Date(todayUTC);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
-    const records = await AttendanceRecord.find({ date: { $gte: todayUTC, $lt: tomorrow } })
+    // ✅ FIXED: Managers see ALL records, regular employees see only their company's records
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const query: any = { date: { $gte: todayUTC, $lt: tomorrow } };
+
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
+
+    const records = await AttendanceRecord.find(query)
       .populate("userId", "name email")
       .populate("branchId", "name");
 
