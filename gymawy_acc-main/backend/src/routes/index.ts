@@ -88,6 +88,9 @@ router.use('/media-prices', mediaPriceRoutes);
 import mediaAchievementRoutes from './mediaAchievement.routes';
 router.use('/media-achievements', mediaAchievementRoutes);
 
+import contentTypeRoutes from './contentType.routes';
+router.use('/content-types', contentTypeRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

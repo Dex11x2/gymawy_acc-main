@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMediaPrice extends Document {
-  type: 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
+  type: string; // Dynamic type - validated against ContentType model
   nameAr: string;
   price: number;
   currency: 'SAR' | 'USD' | 'EGP';
@@ -15,8 +15,8 @@ export interface IMediaPrice extends Document {
 const MediaPriceSchema = new Schema({
   type: {
     type: String,
-    required: true,
-    enum: ['short_video', 'long_video', 'vlog', 'podcast', 'post_design', 'thumbnail']
+    required: true
+    // No enum - validated dynamically against ContentType
   },
   nameAr: { type: String, required: true },
   price: { type: Number, required: true, default: 0 },
@@ -33,5 +33,20 @@ const MediaPriceSchema = new Schema({
 
 // Unique constraint per type and employee
 MediaPriceSchema.index({ type: 1, employeeId: 1 }, { unique: true });
+
+// Validation middleware - ensure type exists in ContentType
+MediaPriceSchema.pre('save', async function(next) {
+  try {
+    const ContentType = mongoose.model('ContentType');
+    const validType = await ContentType.findOne({ key: this.type, isActive: true });
+
+    if (!validType) {
+      throw new Error(`نوع محتوى غير صحيح: ${this.type}`);
+    }
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
 
 export default mongoose.model<IMediaPrice>('MediaPrice', MediaPriceSchema);

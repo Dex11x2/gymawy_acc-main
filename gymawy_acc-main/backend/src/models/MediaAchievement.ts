@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMediaAchievementItem {
-  contentType: 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
+  contentType: string; // Dynamic type - validated against ContentType model
   quantity: number;
   price: number;
   total: number;
@@ -24,8 +24,8 @@ export interface IMediaAchievement extends Document {
 const MediaAchievementItemSchema = new Schema({
   contentType: {
     type: String,
-    required: true,
-    enum: ['short_video', 'long_video', 'vlog', 'podcast', 'post_design', 'thumbnail']
+    required: true
+    // No enum - validated dynamically against ContentType
   },
   quantity: { type: Number, required: true, default: 0 },
   price: { type: Number, required: true, default: 0 },
@@ -78,5 +78,25 @@ MediaAchievementSchema.index({ employeeId: 1, month: 1, year: 1 }, { unique: tru
 
 // Index for faster queries
 MediaAchievementSchema.index({ companyId: 1, month: 1, year: 1 });
+
+// Validation middleware - ensure all contentTypes exist in ContentType
+MediaAchievementSchema.pre('save', async function(next) {
+  try {
+    const ContentType = mongoose.model('ContentType');
+
+    // Check each item's contentType
+    for (const item of this.items) {
+      const validType = await ContentType.findOne({ key: item.contentType, isActive: true });
+
+      if (!validType) {
+        throw new Error(`نوع محتوى غير صحيح: ${item.contentType}`);
+      }
+    }
+
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
 
 export default mongoose.model<IMediaAchievement>('MediaAchievement', MediaAchievementSchema);

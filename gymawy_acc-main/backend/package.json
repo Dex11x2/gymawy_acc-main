@@ -16,7 +16,8 @@
     "seed:permissions": "ts-node src/scripts/seedRolesAndPermissions.ts",
     "add:ads-funding": "ts-node src/scripts/addAdsFundingPage.ts",
     "add:media-salaries-pages": "ts-node src/scripts/addMediaSalariesPages.ts",
-    "fix:media-price-index": "ts-node src/scripts/fixMediaPriceIndex.ts"
+    "fix:media-price-index": "ts-node src/scripts/fixMediaPriceIndex.ts",
+    "migrate:content-types": "ts-node src/scripts/migrateContentTypes.ts"
   },
   "keywords": [
     "accounting",

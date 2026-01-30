@@ -2,23 +2,32 @@ import express from 'express';
 import { protect } from '../middleware/auth.middleware';
 import MediaPrice from '../models/MediaPrice';
 import Employee from '../models/Employee';
+import ContentType from '../models/ContentType';
 
 const router = express.Router();
 
-// الأسعار الافتراضية لكل موظف جديد
-const DEFAULT_PRICES: Array<{
-  type: 'short_video' | 'long_video' | 'vlog' | 'podcast' | 'post_design' | 'thumbnail';
+// دالة لجلب الأسعار الافتراضية ديناميكياً من جدول ContentType
+async function getDefaultPrices(): Promise<Array<{
+  type: string;
   nameAr: string;
   price: number;
   currency: 'SAR' | 'USD' | 'EGP';
-}> = [
-  { type: 'short_video', nameAr: 'فيديو قصير', price: 50, currency: 'SAR' },
-  { type: 'long_video', nameAr: 'فيديو طويل', price: 150, currency: 'SAR' },
-  { type: 'vlog', nameAr: 'فلوج', price: 200, currency: 'SAR' },
-  { type: 'podcast', nameAr: 'بودكاست', price: 100, currency: 'SAR' },
-  { type: 'post_design', nameAr: 'تصميم بوست', price: 30, currency: 'SAR' },
-  { type: 'thumbnail', nameAr: 'صورة مصغرة', price: 20, currency: 'SAR' },
-];
+}>> {
+  try {
+    const contentTypes = await ContentType.find({ isActive: true }).sort({ displayOrder: 1 });
+
+    return contentTypes.map(ct => ({
+      type: ct.key,
+      nameAr: ct.nameAr,
+      price: ct.defaultPrice,
+      currency: ct.currency
+    }));
+  } catch (error) {
+    console.error('Error fetching default prices from ContentType:', error);
+    // Fallback to empty array if ContentType is not available yet
+    return [];
+  }
+}
 
 // جلب كل الموظفين مع أسعارهم (للإدارة) - يجب أن يكون قبل /employee/:employeeId
 // يعرض فقط الموظفين ذوي الراتب المتغير (ميديا)
@@ -41,7 +50,8 @@ router.get('/all-employees', protect, async (req: any, res) => {
 
           // إنشاء أسعار افتراضية إذا لم توجد
           if (prices.length === 0) {
-            const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
+            const defaultPrices = await getDefaultPrices();
+            const defaultPricesWithEmployee = defaultPrices.map(p => ({
               ...p,
               employeeId: emp._id,
               companyId
@@ -89,7 +99,8 @@ router.get('/employee/:employeeId', protect, async (req: any, res) => {
 
     // إذا لم توجد أسعار للموظف، إنشاء أسعار افتراضية
     if (prices.length === 0) {
-      const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
+      const defaultPrices = await getDefaultPrices();
+      const defaultPricesWithEmployee = defaultPrices.map(p => ({
         ...p,
         employeeId,
         companyId
@@ -186,7 +197,8 @@ router.post('/employee/:employeeId/initialize', protect, async (req: any, res) =
       return res.json({ message: 'الأسعار موجودة بالفعل', prices: existingPrices });
     }
 
-    const defaultPricesWithEmployee = DEFAULT_PRICES.map(p => ({
+    const defaultPrices = await getDefaultPrices();
+    const defaultPricesWithEmployee = defaultPrices.map(p => ({
       ...p,
       employeeId,
       companyId

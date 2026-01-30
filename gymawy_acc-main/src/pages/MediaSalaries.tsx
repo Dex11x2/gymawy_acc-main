@@ -119,14 +119,23 @@ const MediaSalaries: React.FC = () => {
     [employees, user?.id]
   );
 
-  const isAdmin = useMemo(() =>
-    currentEmployee?.isGeneralManager ||
-    currentEmployee?.isAdministrativeManager ||
-    user?.role === 'super_admin' ||
-    user?.role === 'general_manager' ||
-    user?.role === 'administrative_manager',
-    [currentEmployee, user?.role]
-  );
+  const isAdmin = useMemo(() => {
+    // Check role-based access (managers)
+    const isManagerRole =
+      currentEmployee?.isGeneralManager ||
+      currentEmployee?.isAdministrativeManager ||
+      user?.role === 'super_admin' ||
+      user?.role === 'general_manager' ||
+      user?.role === 'administrative_manager';
+
+    // Check permission-based access
+    const hasMediaSalariesPermission =
+      canRead('media_salaries_prices') ||
+      canRead('media_salaries_achievements') ||
+      canRead('media_salaries');
+
+    return isManagerRole || hasMediaSalariesPermission;
+  }, [currentEmployee, user?.role, canRead]);
 
   const isVariableSalaryEmployee = currentEmployee?.salaryType === 'variable';
   const canViewMedia = canViewPrices || canViewAchievements || isVariableSalaryEmployee;
@@ -139,7 +148,7 @@ const MediaSalaries: React.FC = () => {
     return 'prices';
   }, [canViewPrices, canViewAchievements, isVariableSalaryEmployee]);
 
-  const [activeTab, setActiveTab] = useState<'prices' | 'achievements' | 'my-achievements'>(getDefaultTab());
+  const [activeTab, setActiveTab] = useState<'prices' | 'achievements' | 'my-achievements' | 'content-types'>(getDefaultTab());
 
   // Loading states
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
@@ -195,6 +204,20 @@ const MediaSalaries: React.FC = () => {
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     items: []
+  });
+
+  // Content Types state
+  const [contentTypes, setContentTypes] = useState<any[]>([]);
+  const [isLoadingContentTypes, setIsLoadingContentTypes] = useState(false);
+  const [showContentTypeModal, setShowContentTypeModal] = useState(false);
+  const [editingContentType, setEditingContentType] = useState<any | null>(null);
+  const [contentTypeFormData, setContentTypeFormData] = useState({
+    key: '',
+    nameAr: '',
+    nameEn: '',
+    defaultPrice: '' as number | '',
+    currency: 'SAR' as 'SAR' | 'USD' | 'EGP',
+    displayOrder: 0
   });
 
   // ==================== COMPUTED VALUES ====================
@@ -336,6 +359,107 @@ const MediaSalaries: React.FC = () => {
     }
   }, [selectedMonth, selectedYear, showToast]);
 
+  // ==================== CONTENT TYPES FUNCTIONS ====================
+  const fetchContentTypes = useCallback(async () => {
+    try {
+      setIsLoadingContentTypes(true);
+      const response = await api.get('/content-types');
+      setContentTypes(response.data);
+    } catch (error) {
+      console.error('Error fetching content types:', error);
+      showToast('حدث خطأ أثناء جلب أنواع المحتوى', 'error');
+    } finally {
+      setIsLoadingContentTypes(false);
+    }
+  }, [showToast]);
+
+  const handleSaveContentType = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Validation
+      if (!contentTypeFormData.key || !contentTypeFormData.nameAr || !contentTypeFormData.nameEn) {
+        showToast('يرجى ملء جميع الحقول المطلوبة', 'warning');
+        return;
+      }
+
+      if (!contentTypeFormData.key.match(/^[a-z_]+$/)) {
+        showToast('المفتاح يجب أن يحتوي على أحرف صغيرة وشرطات سفلية فقط', 'warning');
+        return;
+      }
+
+      const payload = {
+        ...contentTypeFormData,
+        defaultPrice: Number(contentTypeFormData.defaultPrice) || 0
+      };
+
+      if (editingContentType) {
+        await api.put(`/content-types/${editingContentType._id}`, payload);
+        showToast('تم تحديث نوع المحتوى بنجاح', 'success');
+      } else {
+        await api.post('/content-types', payload);
+        showToast('تم إضافة نوع المحتوى بنجاح', 'success');
+      }
+
+      setShowContentTypeModal(false);
+      setEditingContentType(null);
+      fetchContentTypes();
+    } catch (error: any) {
+      console.error('Error saving content type:', error);
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء حفظ نوع المحتوى', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteContentType = async (id: string) => {
+    try {
+      await api.delete(`/content-types/${id}`);
+      showToast('تم حذف نوع المحتوى بنجاح', 'success');
+      fetchContentTypes();
+    } catch (error: any) {
+      console.error('Error deleting content type:', error);
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء حذف نوع المحتوى', 'error');
+    }
+  };
+
+  const handleRestoreContentType = async (id: string) => {
+    try {
+      await api.post(`/content-types/${id}/restore`);
+      showToast('تم استعادة نوع المحتوى بنجاح', 'success');
+      fetchContentTypes();
+    } catch (error: any) {
+      console.error('Error restoring content type:', error);
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء استعادة نوع المحتوى', 'error');
+    }
+  };
+
+  const openAddContentType = () => {
+    setContentTypeFormData({
+      key: '',
+      nameAr: '',
+      nameEn: '',
+      defaultPrice: '',
+      currency: 'SAR',
+      displayOrder: contentTypes.length
+    });
+    setEditingContentType(null);
+    setShowContentTypeModal(true);
+  };
+
+  const openEditContentType = (contentType: any) => {
+    setContentTypeFormData({
+      key: contentType.key,
+      nameAr: contentType.nameAr,
+      nameEn: contentType.nameEn,
+      defaultPrice: contentType.defaultPrice,
+      currency: contentType.currency,
+      displayOrder: contentType.displayOrder
+    });
+    setEditingContentType(contentType);
+    setShowContentTypeModal(true);
+  };
+
   // ==================== EFFECTS ====================
   useEffect(() => {
     loadPayrolls();
@@ -351,8 +475,10 @@ const MediaSalaries: React.FC = () => {
       }
     } else if (activeTab === 'my-achievements' && isVariableSalaryEmployee) {
       fetchMyAchievements();
+    } else if (activeTab === 'content-types' && isAdmin) {
+      fetchContentTypes();
     }
-  }, [activeTab, canViewPrices, canViewAchievements, isVariableSalaryEmployee]);
+  }, [activeTab, canViewPrices, canViewAchievements, isVariableSalaryEmployee, isAdmin, fetchContentTypes]);
 
   useEffect(() => {
     if (activeTab === 'achievements') {
@@ -832,6 +958,19 @@ const MediaSalaries: React.FC = () => {
             >
               <User className="w-4 h-4 inline ml-2" />
               إنجازاتي
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('content-types')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'content-types'
+                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
+              }`}
+            >
+              <Video className="w-4 h-4 inline ml-2" />
+              أنواع المحتوى
             </button>
           )}
         </nav>
@@ -1522,6 +1661,106 @@ const MediaSalaries: React.FC = () => {
         </div>
       )}
 
+      {/* Content Types Tab */}
+      {activeTab === 'content-types' && isAdmin && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">إدارة أنواع المحتوى</h2>
+              <Button variant="ghost" size="sm" onClick={fetchContentTypes} disabled={isLoadingContentTypes}>
+                <RefreshCw className={`w-4 h-4 ${isLoadingContentTypes ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+            <Button onClick={openAddContentType}>
+              <Plus className="w-4 h-4" />
+              إضافة نوع محتوى
+            </Button>
+          </div>
+
+          {isLoadingContentTypes ? (
+            <div className="flex justify-center items-center py-12">
+              <RefreshCw className="w-8 h-8 animate-spin text-brand-500" />
+            </div>
+          ) : (
+            <Card>
+              <Card.Body className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.Head>المفتاح (Key)</Table.Head>
+                        <Table.Head>الاسم بالعربية</Table.Head>
+                        <Table.Head>الاسم بالإنجليزية</Table.Head>
+                        <Table.Head>السعر الافتراضي</Table.Head>
+                        <Table.Head>العملة</Table.Head>
+                        <Table.Head>الترتيب</Table.Head>
+                        <Table.Head>الحالة</Table.Head>
+                        <Table.Head>الإجراءات</Table.Head>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {contentTypes.map((contentType) => (
+                        <Table.Row key={contentType._id}>
+                          <Table.Cell>
+                            <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm">
+                              {contentType.key}
+                            </code>
+                          </Table.Cell>
+                          <Table.Cell>{contentType.nameAr}</Table.Cell>
+                          <Table.Cell>{contentType.nameEn}</Table.Cell>
+                          <Table.Cell>
+                            {contentType.defaultPrice} {getCurrencySymbol(contentType.currency)}
+                          </Table.Cell>
+                          <Table.Cell>{contentType.currency}</Table.Cell>
+                          <Table.Cell>{contentType.displayOrder}</Table.Cell>
+                          <Table.Cell>
+                            {contentType.isActive ? (
+                              <Badge variant="success">نشط</Badge>
+                            ) : (
+                              <Badge variant="error">محذوف</Badge>
+                            )}
+                          </Table.Cell>
+                          <Table.Cell>
+                            <div className="flex items-center gap-2">
+                              {contentType.isActive ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => openEditContentType(contentType)}
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteContentType(contentType._id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRestoreContentType(contentType._id)}
+                                >
+                                  <RefreshCw className="w-4 h-4 text-green-500" />
+                                </Button>
+                              )}
+                            </div>
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
+                    </Table.Body>
+                  </Table>
+                </div>
+              </Card.Body>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* Price Modal */}
       <Modal
         isOpen={showPriceModal}
@@ -1765,6 +2004,132 @@ const MediaSalaries: React.FC = () => {
               onClick={() => {
                 setShowAchievementModal(false);
                 resetAchievementForm();
+              }}
+              className="flex-1"
+            >
+              <X className="w-4 h-4" />
+              إلغاء
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Content Type Modal */}
+      <Modal
+        isOpen={showContentTypeModal}
+        onClose={() => {
+          setShowContentTypeModal(false);
+          setEditingContentType(null);
+        }}
+        title={editingContentType ? 'تعديل نوع المحتوى' : 'إضافة نوع محتوى جديد'}
+        size="md"
+      >
+        <form onSubmit={(e) => { e.preventDefault(); handleSaveContentType(); }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              المفتاح (Key) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={contentTypeFormData.key}
+              onChange={(e) => setContentTypeFormData({ ...contentTypeFormData, key: e.target.value.toLowerCase().replace(/[^a-z_]/g, '') })}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="مثال: short_video"
+              disabled={!!editingContentType}
+              required
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              أحرف صغيرة وشرطات سفلية فقط (a-z, _)
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                الاسم بالعربية <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={contentTypeFormData.nameAr}
+                onChange={(e) => setContentTypeFormData({ ...contentTypeFormData, nameAr: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="فيديو قصير"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                الاسم بالإنجليزية <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={contentTypeFormData.nameEn}
+                onChange={(e) => setContentTypeFormData({ ...contentTypeFormData, nameEn: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="Short Video"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                السعر الافتراضي
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={contentTypeFormData.defaultPrice}
+                onChange={(e) => setContentTypeFormData({ ...contentTypeFormData, defaultPrice: e.target.value === '' ? '' : Number(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                العملة
+              </label>
+              <select
+                value={contentTypeFormData.currency}
+                onChange={(e) => setContentTypeFormData({ ...contentTypeFormData, currency: e.target.value as 'SAR' | 'USD' | 'EGP' })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              >
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
+                <option value="EGP">جنيه مصري (EGP)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              ترتيب العرض
+            </label>
+            <input
+              type="number"
+              value={contentTypeFormData.displayOrder}
+              onChange={(e) => setContentTypeFormData({ ...contentTypeFormData, displayOrder: Number(e.target.value) })}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="0"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={isSubmitting}
+            >
+              <Save className="w-4 h-4" />
+              {isSubmitting ? 'جاري الحفظ...' : (editingContentType ? 'تحديث' : 'إضافة')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowContentTypeModal(false);
+                setEditingContentType(null);
               }}
               className="flex-1"
             >
