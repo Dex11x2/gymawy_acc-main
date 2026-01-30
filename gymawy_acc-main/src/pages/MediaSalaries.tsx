@@ -364,6 +364,7 @@ const MediaSalaries: React.FC = () => {
     try {
       setIsLoadingContentTypes(true);
       const response = await api.get('/content-types');
+      console.log('Content types from backend:', response.data); // Debug log
       setContentTypes(response.data);
     } catch (error) {
       console.error('Error fetching content types:', error);
@@ -394,7 +395,16 @@ const MediaSalaries: React.FC = () => {
       };
 
       if (editingContentType) {
-        await api.put(`/content-types/${editingContentType._id}`, payload);
+        // ✅ FIX: Use proper ID field from MongoDB
+        const contentTypeId = editingContentType._id || editingContentType.id;
+        console.log('Editing content type:', editingContentType, 'ID:', contentTypeId);
+
+        if (!contentTypeId) {
+          showToast('خطأ: معرف نوع المحتوى غير موجود', 'error');
+          return;
+        }
+
+        await api.put(`/content-types/${contentTypeId}`, payload);
         showToast('تم تحديث نوع المحتوى بنجاح', 'success');
       } else {
         await api.post('/content-types', payload);
@@ -448,6 +458,7 @@ const MediaSalaries: React.FC = () => {
   };
 
   const openEditContentType = (contentType: any) => {
+    console.log('Opening edit for content type:', contentType); // Debug log
     setContentTypeFormData({
       key: contentType.key,
       nameAr: contentType.nameAr,
@@ -456,6 +467,7 @@ const MediaSalaries: React.FC = () => {
       currency: contentType.currency,
       displayOrder: contentType.displayOrder
     });
+    // ✅ FIX: Save the entire contentType object including _id
     setEditingContentType(contentType);
     setShowContentTypeModal(true);
   };
