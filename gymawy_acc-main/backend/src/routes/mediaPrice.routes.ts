@@ -33,8 +33,15 @@ async function getDefaultPrices(): Promise<Array<{
 // يعرض فقط الموظفين ذوي الراتب المتغير (ميديا)
 router.get('/all-employees', protect, async (req: any, res) => {
   try {
-    // ✅ FIXED: Managers see ALL employees, regular employees see only their company's employees
     const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+
+    // ===== DEBUG LOGGING =====
+    console.log('🔍 DEBUG /all-employees:');
+    console.log('  - User ID:', req.user?._id || req.user?.userId);
+    console.log('  - User role:', req.user?.role);
+    console.log('  - Is manager:', managerRoles.includes(req.user?.role));
+    console.log('  - User companyId:', req.user?.companyId);
+
     const filter: any = {
       isActive: true,
       salaryType: 'variable' // فقط الرواتب المتغيرة
@@ -44,8 +51,16 @@ router.get('/all-employees', protect, async (req: any, res) => {
       filter.companyId = req.user?.companyId;
     }
 
+    console.log('  - Employee filter:', JSON.stringify(filter));
+
     // جلب الموظفين النشطين ذوي الراتب المتغير فقط
     const employees = await Employee.find(filter).select('_id name position');
+    console.log('  - Employees found:', employees.length);
+
+    // ✅ FIX: جلب أنواع المحتوى النشطة لتصفية الأسعار
+    const activeContentTypes = await ContentType.find({ isActive: true }).sort({ displayOrder: 1 });
+    const activeTypeKeys = new Set(activeContentTypes.map(ct => ct.key));
+    console.log('  - Active content types:', activeContentTypes.map(ct => ct.key));
 
     // جلب أسعار كل موظف
     const employeesWithPrices = await Promise.all(
@@ -53,25 +68,37 @@ router.get('/all-employees', protect, async (req: any, res) => {
         try {
           let prices = await MediaPrice.find({ employeeId: emp._id }).sort({ type: 1 });
 
-          // إنشاء أسعار افتراضية إذا لم توجد
-          if (prices.length === 0) {
-            const defaultPrices = await getDefaultPrices();
+          // ✅ FIX: تصفية الأسعار للأنواع النشطة فقط
+          prices = prices.filter(p => activeTypeKeys.has(p.type));
+
+          // جلب الأنواع الموجودة في الأسعار
+          const existingTypes = new Set(prices.map(p => p.type));
+
+          // إضافة أنواع جديدة إذا لم تكن موجودة
+          const missingTypes = activeContentTypes.filter(ct => !existingTypes.has(ct.key));
+
+          if (missingTypes.length > 0) {
             const employee = await Employee.findById(emp._id);
-            const defaultPricesWithEmployee = defaultPrices.map(p => ({
-              ...p,
+            const newPrices = missingTypes.map(ct => ({
+              type: ct.key,
+              nameAr: ct.nameAr,
+              price: ct.defaultPrice,
+              currency: ct.currency,
               employeeId: emp._id,
               companyId: employee?.companyId || req.user?.companyId
             }));
-            // استخدام insertMany مع ordered: false لتجاهل الأخطاء المكررة
+
             try {
-              await MediaPrice.insertMany(defaultPricesWithEmployee, { ordered: false });
+              await MediaPrice.insertMany(newPrices, { ordered: false });
             } catch (insertError: any) {
-              // تجاهل أخطاء duplicate key
               if (insertError.code !== 11000) {
                 console.error('Insert error:', insertError);
               }
             }
+
+            // إعادة جلب وتصفية
             prices = await MediaPrice.find({ employeeId: emp._id }).sort({ type: 1 });
+            prices = prices.filter(p => activeTypeKeys.has(p.type));
           }
 
           return {
@@ -88,6 +115,7 @@ router.get('/all-employees', protect, async (req: any, res) => {
       })
     );
 
+    console.log('  - Returning', employeesWithPrices.length, 'employees with prices');
     res.json(employeesWithPrices);
   } catch (error: any) {
     console.error('Error fetching all employees prices:', error);
@@ -114,27 +142,43 @@ router.get('/employee/:employeeId', protect, async (req: any, res) => {
       }
     }
 
+    // ✅ FIX: جلب أنواع المحتوى النشطة لتصفية الأسعار
+    const activeContentTypes = await ContentType.find({ isActive: true }).sort({ displayOrder: 1 });
+    const activeTypeKeys = new Set(activeContentTypes.map(ct => ct.key));
+
     let prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
 
-    // إذا لم توجد أسعار للموظف، إنشاء أسعار افتراضية
-    if (prices.length === 0) {
-      const defaultPrices = await getDefaultPrices();
-      const defaultPricesWithEmployee = defaultPrices.map(p => ({
-        ...p,
+    // ✅ FIX: تصفية الأسعار للأنواع النشطة فقط
+    prices = prices.filter(p => activeTypeKeys.has(p.type));
+
+    // جلب الأنواع الموجودة في الأسعار
+    const existingTypes = new Set(prices.map(p => p.type));
+
+    // إضافة أنواع جديدة إذا لم تكن موجودة
+    const missingTypes = activeContentTypes.filter(ct => !existingTypes.has(ct.key));
+
+    if (missingTypes.length > 0) {
+      const newPrices = missingTypes.map(ct => ({
+        type: ct.key,
+        nameAr: ct.nameAr,
+        price: ct.defaultPrice,
+        currency: ct.currency,
         employeeId,
         companyId
       }));
 
       try {
-        await MediaPrice.insertMany(defaultPricesWithEmployee, { ordered: false });
+        await MediaPrice.insertMany(newPrices, { ordered: false });
       } catch (insertError: any) {
-        // تجاهل أخطاء duplicate key
         if (insertError.code !== 11000) {
           console.error('Insert error:', insertError);
         }
       }
+
+      // إعادة جلب وتصفية
       prices = await MediaPrice.find({ employeeId }).sort({ type: 1 });
-      console.log(`✅ Default media prices created for employee: ${employeeId}`);
+      prices = prices.filter(p => activeTypeKeys.has(p.type));
+      console.log(`✅ Media prices synced for employee: ${employeeId}`);
     }
 
     res.json(prices);

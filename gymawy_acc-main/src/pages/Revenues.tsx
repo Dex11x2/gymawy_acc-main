@@ -277,8 +277,8 @@ const Revenues: React.FC = () => {
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
-                {Array.from({length: 5}, (_, i) => {
-                  const y = 2025 + i;
+                {Array.from({length: 6}, (_, i) => {
+                  const y = 2024 + i;
                   return (<option key={y} value={y}>{y}</option>);
                 })}
               </select>
