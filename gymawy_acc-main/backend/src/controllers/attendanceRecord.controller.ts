@@ -518,16 +518,28 @@ export const getMonthlyReport = async (req: any, res: Response) => {
   try {
     const { month, year, userId } = req.query;
 
-    const startDate = new Date(
+    // ✅ FIX: استخدام توقيت مصر (UTC+2) لحساب نطاق التاريخ
+    // السجلات تُخزن بتوقيت مصر، لذا يجب أن يتطابق نطاق البحث
+    const egyptOffset = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+    // بداية الشهر بتوقيت مصر (00:00 مصر = 22:00 اليوم السابق UTC)
+    const startDateEgypt = new Date(
       parseInt(year as string),
       parseInt(month as string) - 1,
       1
     );
-    const endDate = new Date(
+    const startDate = new Date(startDateEgypt.getTime() - egyptOffset);
+
+    // نهاية الشهر بتوقيت مصر (23:59:59 مصر)
+    const endDateEgypt = new Date(
       parseInt(year as string),
       parseInt(month as string),
-      0
+      0,
+      23, 59, 59, 999
     );
+    const endDate = new Date(endDateEgypt.getTime() - egyptOffset);
+
+    console.log(`📅 getMonthlyReport: البحث من ${startDate.toISOString()} إلى ${endDate.toISOString()}`);
 
     const query: any = { date: { $gte: startDate, $lte: endDate } };
 
