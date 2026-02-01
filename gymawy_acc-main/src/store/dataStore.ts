@@ -261,7 +261,12 @@ export const useDataStore = create<DataState>((set, get) => ({
   loadRevenues: async () => {
     try {
       const response = await api.get("/revenues");
-      set({ revenues: response.data });
+      // ✅ FIX: Map _id to id for frontend compatibility
+      const revenues = response.data.map((r: any) => ({
+        ...r,
+        id: r._id || r.id,
+      }));
+      set({ revenues });
     } catch (error) {
       console.error("Failed to load revenues:", error);
     }
@@ -276,7 +281,12 @@ export const useDataStore = create<DataState>((set, get) => ({
         firstItem: response.data[0],
         status: response.status
       });
-      set({ expenses: response.data });
+      // ✅ FIX: Map _id to id for frontend compatibility
+      const expenses = response.data.map((e: any) => ({
+        ...e,
+        id: e._id || e.id,
+      }));
+      set({ expenses });
     } catch (error: any) {
       console.error("❌ Failed to load expenses - Full diagnostic:");
       console.error("  Error type:", error?.constructor?.name);

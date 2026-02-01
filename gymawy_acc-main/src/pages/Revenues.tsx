@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDataStore } from "../store/dataStore";
 import { useAuthStore } from "../store/authStore";
 import { usePermissions } from "../hooks/usePermissions";
@@ -11,13 +11,18 @@ import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar } fr
 type Currency = "EGP" | "USD" | "SAR" | "AED";
 
 const Revenues: React.FC = () => {
-  const { revenues, addRevenue, updateRevenue, deleteRevenue } = useDataStore();
+  const { revenues, addRevenue, updateRevenue, deleteRevenue, loadRevenues } = useDataStore();
   const { user } = useAuthStore();
   const { canWrite, canDelete } = usePermissions();
 
   const canCreateRevenue = canWrite('revenues');
   const canEditRevenue = canWrite('revenues');
   const canDeleteRevenue = canDelete('revenues');
+
+  // ✅ FIX: Load revenues on component mount
+  useEffect(() => {
+    loadRevenues();
+  }, [loadRevenues]);
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
