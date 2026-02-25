@@ -9,7 +9,7 @@ import { Card, StatCard, Badge, Button, Input, Textarea } from '../components/ui
 import {
   Wallet, Plus, Edit2, Trash2, Check, X,
   TrendingUp, TrendingDown, Users, AlertCircle,
-  ChevronDown, ChevronUp, FileText
+  ChevronDown, ChevronUp, FileText, RefreshCw
 } from 'lucide-react';
 
 type Currency = 'EGP' | 'SAR' | 'USD' | 'AED';
@@ -77,6 +77,7 @@ const Salaries: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const [editingSalary, setEditingSalary] = useState<Salary | null>(null);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error' | 'info' | 'warning'; isOpen: boolean}>({
@@ -206,6 +207,36 @@ const Salaries: React.FC = () => {
     }
   };
 
+  const handleResetAndRegenerate = async () => {
+    if (!canEdit) {
+      setToast({ message: 'ليس لديك صلاحية لإعادة توليد الرواتب', type: 'error', isOpen: true });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Delete all existing salaries for this month/year
+      await Promise.all(salaries.map(salary => api.delete(`/salaries/${salary._id}`)));
+
+      // Regenerate new ones
+      await api.post('/salaries/generate', {
+        month: selectedMonth,
+        year: selectedYear,
+        companyId: user?.companyId
+      });
+
+      setToast({ message: 'تم مسح الكشف وإعادة توليد الرواتب بنجاح', type: 'success', isOpen: true });
+      setShowResetDialog(false);
+      await loadSalaries();
+      await loadStatistics();
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'حدث خطأ في إعادة توليد الرواتب';
+      setToast({ message: errorMsg, type: 'error', isOpen: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openEditModal = (salary: Salary) => {
     if (!canEdit) {
       setToast({ message: 'ليس لديك صلاحية لتعديل الرواتب', type: 'error', isOpen: true });
@@ -327,6 +358,17 @@ const Salaries: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة رواتب الموظفين</p>
         </div>
         <div className="flex gap-3">
+          {canEdit && salaries.length > 0 && (
+            <Button
+              onClick={() => setShowResetDialog(true)}
+              variant="outline"
+              className="gap-2 border-error-300 text-error-600 hover:bg-error-50 dark:border-error-700 dark:text-error-400 dark:hover:bg-error-900/20"
+              disabled={loading}
+            >
+              <RefreshCw className="w-4 h-4" />
+              إعادة التوليد
+            </Button>
+          )}
           {canEdit && salaries.length === 0 && (
             <Button
               onClick={() => {
@@ -873,6 +915,18 @@ const Salaries: React.FC = () => {
         message={`هل أنت متأكد من توليد الرواتب لشهر ${getMonthName(selectedMonth)} ${selectedYear}؟ سيتم إنشاء سجل راتب لكل موظف نشط.`}
         type="info"
         confirmText="توليد"
+        cancelText="إلغاء"
+      />
+
+      {/* Reset & Regenerate Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showResetDialog}
+        onClose={() => setShowResetDialog(false)}
+        onConfirm={handleResetAndRegenerate}
+        title="إعادة توليد الرواتب"
+        message={`سيتم مسح جميع سجلات رواتب ${getMonthName(selectedMonth)} ${selectedYear} وإعادة توليدها من جديد. تحذير: الرواتب المصروفة بالفعل ستُمسح أيضاً. هل أنت متأكد؟`}
+        type="warning"
+        confirmText="مسح وإعادة التوليد"
         cancelText="إلغاء"
       />
 

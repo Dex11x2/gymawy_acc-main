@@ -43,6 +43,8 @@ const Branches: React.FC = () => {
   const [showIPModal, setShowIPModal] = useState(false);
   const [selectedBranchForIP, setSelectedBranchForIP] = useState<any>(null);
   const [updatingIP, setUpdatingIP] = useState(false);
+  const [googleMapsLink, setGoogleMapsLink] = useState('');
+  const [parseLinkLoading, setParseLinkLoading] = useState(false);
 
   useEffect(() => {
     loadBranches();
@@ -92,6 +94,75 @@ const Branches: React.FC = () => {
   const openIPModal = (branch: any) => {
     setSelectedBranchForIP(branch);
     setShowIPModal(true);
+  };
+
+  const parseCoordinatesFromGoogleMapsUrl = (url: string): { lat: number; lng: number } | null => {
+    try {
+      // Pattern 1: @lat,lng (most common in Google Maps share links)
+      const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if (atMatch) {
+        const lat = parseFloat(atMatch[1]);
+        const lng = parseFloat(atMatch[2]);
+        if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+          return { lat, lng };
+        }
+      }
+      // Pattern 2: ?q=lat,lng
+      const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if (qMatch) {
+        const lat = parseFloat(qMatch[1]);
+        const lng = parseFloat(qMatch[2]);
+        if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+          return { lat, lng };
+        }
+      }
+      // Pattern 3: ll=lat,lng
+      const llMatch = url.match(/[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if (llMatch) {
+        const lat = parseFloat(llMatch[1]);
+        const lng = parseFloat(llMatch[2]);
+        if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+          return { lat, lng };
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleParseGoogleMapsLink = async () => {
+    if (!googleMapsLink.trim()) return;
+    setParseLinkLoading(true);
+    try {
+      const coords = parseCoordinatesFromGoogleMapsUrl(googleMapsLink);
+      if (!coords) {
+        setToast({ message: 'لم يتمكن من استخراج الإحداثيات. تأكد أن الرابط يحتوي على إحداثيات وليس رابطاً مختصراً', type: 'error', isOpen: true });
+        return;
+      }
+      // Fill lat/lng inputs via DOM (same approach as existing location button)
+      const latInput = document.querySelector('[name="latitude"]') as HTMLInputElement;
+      const lngInput = document.querySelector('[name="longitude"]') as HTMLInputElement;
+      if (latInput) latInput.value = coords.lat.toString();
+      if (lngInput) lngInput.value = coords.lng.toString();
+      // Try reverse geocoding with Nominatim (free, no API key needed)
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}&accept-language=ar`,
+          { headers: { 'User-Agent': 'GymawyApp/1.0' } }
+        );
+        const data = await response.json();
+        if (data.display_name) {
+          const addressInput = document.querySelector('[name="address"]') as HTMLInputElement;
+          if (addressInput) addressInput.value = data.display_name;
+        }
+      } catch {
+        // Geocoding failed - coords still filled
+      }
+      setToast({ message: `تم استخراج الموقع بنجاح: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`, type: 'success', isOpen: true });
+    } finally {
+      setParseLinkLoading(false);
+    }
   };
 
   // قائمة بجميع الصفحات المتاحة في النظام
@@ -350,7 +421,7 @@ const Branches: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mt-1">إضافة فروع وإدارة صلاحيات الأدوار</p>
         </div>
         {canWriteBranches && (
-          <Button onClick={() => { setEditingBranch(null); setShowModal(true); }}>
+          <Button onClick={() => { setEditingBranch(null); setGoogleMapsLink(''); setShowModal(true); }}>
             <Plus className="w-4 h-4" />
             إضافة فرع
           </Button>
@@ -409,6 +480,7 @@ const Branches: React.FC = () => {
                             return;
                           }
                           setEditingBranch(branch);
+                          setGoogleMapsLink('');
                           setShowModal(true);
                         }}
                         className="text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20"
@@ -486,7 +558,7 @@ const Branches: React.FC = () => {
       </div>
 
       {/* Add/Edit Branch Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingBranch ? 'تعديل فرع' : 'إضافة فرع جديد'}>
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setGoogleMapsLink(''); }} title={editingBranch ? 'تعديل فرع' : 'إضافة فرع جديد'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اسم الفرع *</label>
@@ -497,6 +569,38 @@ const Branches: React.FC = () => {
               required
               className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             />
+          </div>
+
+          {/* Google Maps Link */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              رابط Google Maps (اختياري)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={googleMapsLink}
+                onChange={(e) => setGoogleMapsLink(e.target.value)}
+                placeholder="https://www.google.com/maps/place/.../@30.0444,31.2357,..."
+                className="flex-1 px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              />
+              <button
+                type="button"
+                onClick={handleParseGoogleMapsLink}
+                disabled={parseLinkLoading || !googleMapsLink.trim()}
+                className="px-4 py-3 flex items-center gap-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors whitespace-nowrap text-sm font-medium"
+              >
+                {parseLinkLoading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <MapPin className="w-4 h-4" />
+                )}
+                استخراج
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              الصق رابط الموقع من Google Maps لاستخراج الإحداثيات والعنوان تلقائياً (يعمل مع روابط maps.google.com وليس الروابط المختصرة)
+            </p>
           </div>
 
           <button
