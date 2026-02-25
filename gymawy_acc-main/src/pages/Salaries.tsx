@@ -215,10 +215,12 @@ const Salaries: React.FC = () => {
 
     try {
       setLoading(true);
-      // Delete all existing salaries for this month/year
-      await Promise.all(salaries.map(salary => api.delete(`/salaries/${salary._id}`)));
+      // Delete ALL salary records for this month/year from DB (including orphaned records from deleted employees)
+      await api.delete('/salaries/clear-month', {
+        data: { month: selectedMonth, year: selectedYear, companyId: user?.companyId }
+      });
 
-      // Regenerate new ones
+      // Regenerate based on current active employees
       await api.post('/salaries/generate', {
         month: selectedMonth,
         year: selectedYear,

@@ -340,6 +340,32 @@ export const togglePaymentStatus = async (req: Request, res: Response) => {
   }
 };
 
+// Delete ALL salaries for a specific month/year (used in reset & regenerate)
+export const deleteMonthSalaries = async (req: any, res: Response) => {
+  try {
+    const { month, year } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({ message: 'Month and year are required' });
+    }
+
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const query: any = {
+      month: Number(month),
+      year: Number(year)
+    };
+
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
+
+    const result = await Salary.deleteMany(query);
+    res.json({ message: 'Month salaries cleared', deleted: result.deletedCount });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Delete salary
 export const deleteSalary = async (req: Request, res: Response) => {
   try {
@@ -376,7 +402,10 @@ export const getSalaryStatistics = async (req: any, res: Response) => {
       query.companyId = req.user?.companyId;
     }
 
-    const salaries = await Salary.find(query);
+    const allSalaries = await Salary.find(query).populate('employeeId', '_id');
+
+    // Filter out orphaned salary records (employee was hard-deleted from DB)
+    const salaries = allSalaries.filter(s => s.employeeId !== null);
 
     const stats = {
       totalEmployees: salaries.length,

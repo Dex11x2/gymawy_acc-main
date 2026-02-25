@@ -7,6 +7,7 @@ import {
   updateSalary,
   togglePaymentStatus,
   deleteSalary,
+  deleteMonthSalaries,
   getSalaryStatistics
 } from '../controllers/salary.controller';
 import { protect } from '../middleware/auth.middleware';
@@ -25,6 +26,9 @@ router.get('/statistics', getSalaryStatistics);
 
 // Generate monthly salaries for all employees
 router.post('/generate', generateMonthlySalaries);
+
+// Delete all salaries for a specific month/year (for reset & regenerate)
+router.delete('/clear-month', deleteMonthSalaries);
 
 // Get salary by ID
 router.get('/:id', validateObjectId(), getSalaryById);
