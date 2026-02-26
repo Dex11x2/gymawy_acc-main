@@ -543,7 +543,7 @@ const MediaSalaries: React.FC = () => {
       await api.put(`/media-prices/employee/${selectedEmployeeForPrices}/${editingPrice.id}`, {
         price: Number(priceFormData.price),
         currency: priceFormData.currency,
-        nameAr: CONTENT_TYPES[priceFormData.type].split(' (')[0]
+        nameAr: editingPrice.nameAr || priceFormData.type
       });
 
       setCurrentEmployeePrices(prev => prev.map(p =>
