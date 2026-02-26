@@ -9,8 +9,9 @@ import { Card, StatCard, Badge, Button, Input, Textarea } from '../components/ui
 import {
   Wallet, Plus, Edit2, Trash2, Check, X,
   TrendingUp, TrendingDown, Users, AlertCircle,
-  ChevronDown, ChevronUp, FileText, RefreshCw
+  ChevronDown, ChevronUp, FileText, RefreshCw, FileDown, Sheet
 } from 'lucide-react';
+import { exportSalariesToPDF, exportSalariesToExcel } from '../utils/exportUtils';
 
 type Currency = 'EGP' | 'SAR' | 'USD' | 'AED';
 
@@ -359,7 +360,27 @@ const Salaries: React.FC = () => {
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">الرواتب الشهرية</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة رواتب الموظفين</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {salaries.length > 0 && (
+            <>
+              <Button
+                onClick={() => exportSalariesToExcel(salaries, selectedMonth, selectedYear, statistics)}
+                variant="outline"
+                className="gap-2 border-success-300 text-success-700 hover:bg-success-50 dark:border-success-700 dark:text-success-400 dark:hover:bg-success-900/20"
+              >
+                <Sheet className="w-4 h-4" />
+                تصدير Excel
+              </Button>
+              <Button
+                onClick={() => exportSalariesToPDF(salaries, selectedMonth, selectedYear, statistics)}
+                variant="outline"
+                className="gap-2 border-brand-300 text-brand-700 hover:bg-brand-50 dark:border-brand-700 dark:text-brand-400 dark:hover:bg-brand-900/20"
+              >
+                <FileDown className="w-4 h-4" />
+                تصدير PDF
+              </Button>
+            </>
+          )}
           {canEdit && salaries.length > 0 && (
             <Button
               onClick={() => setShowResetDialog(true)}
