@@ -81,6 +81,8 @@ const Salaries: React.FC = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [editingSalary, setEditingSalary] = useState<Salary | null>(null);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<'name' | 'baseSalary' | 'netSalary'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error' | 'info' | 'warning'; isOpen: boolean}>({
     message: '',
     type: 'success',
@@ -414,6 +416,25 @@ const Salaries: React.FC = () => {
         <Card.Body className="p-4">
           <div className="flex flex-wrap gap-4 items-end">
             <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ترتيب حسب</label>
+              <select
+                value={`${sortField}-${sortDir}`}
+                onChange={(e) => {
+                  const [field, dir] = e.target.value.split('-') as [typeof sortField, typeof sortDir];
+                  setSortField(field);
+                  setSortDir(dir);
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-brand-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                <option value="name-asc">الاسم (أ-ي)</option>
+                <option value="name-desc">الاسم (ي-أ)</option>
+                <option value="netSalary-desc">أعلى صافي</option>
+                <option value="netSalary-asc">أقل صافي</option>
+                <option value="baseSalary-desc">أعلى أساسي</option>
+                <option value="baseSalary-asc">أقل أساسي</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
               <select
                 value={selectedMonth}
@@ -532,7 +553,16 @@ const Salaries: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {salaries.map((salary) => (
+                  {[...salaries].sort((a, b) => {
+                    if (sortField === 'name') {
+                      const aName = a.employeeId?.name || '';
+                      const bName = b.employeeId?.name || '';
+                      return sortDir === 'asc' ? aName.localeCompare(bName, 'ar') : bName.localeCompare(aName, 'ar');
+                    }
+                    const aVal = a[sortField] ?? 0;
+                    const bVal = b[sortField] ?? 0;
+                    return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+                  }).map((salary) => (
                     <React.Fragment key={salary._id}>
                       <tr className="hover:bg-brand-100/50 dark:hover:bg-gray-800/50 transition-colors">
                         <td className="px-6 py-4">

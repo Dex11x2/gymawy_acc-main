@@ -383,7 +383,7 @@ router.post('/:id/sync-payroll', protect, async (req: any, res) => {
       // تحديث الراتب الموجود
       payroll.bonuses = (payroll.bonuses || 0) + achievement.totalAmount;
       payroll.netSalary = payroll.baseSalary + payroll.bonuses - (payroll.deductions || 0);
-      payroll.notes = `${payroll.notes || ''}\nمكافأة ميديا: ${achievement.totalAmount} ر.س`.trim();
+      payroll.notes = `${payroll.notes || ''}\nمكافأة ميديا: ${achievement.totalAmount} ج.م`.trim();
       await payroll.save();
     } else {
       // إنشاء راتب جديد
@@ -396,9 +396,9 @@ router.post('/:id/sync-payroll', protect, async (req: any, res) => {
         bonuses: achievement.totalAmount,
         deductions: 0,
         netSalary: baseSalary + achievement.totalAmount,
-        currency: 'SAR',
+        currency: 'EGP',
         status: 'pending',
-        notes: `مكافأة ميديا: ${achievement.totalAmount} ر.س`
+        notes: `مكافأة ميديا: ${achievement.totalAmount} ج.م`
       });
     }
 
@@ -455,6 +455,89 @@ router.get('/summary/:month/:year', protect, async (req: any, res) => {
     res.json(summary);
   } catch (error: any) {
     console.error('Error fetching summary:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// مزامنة جميع الإنجازات غير المتزامنة لشهر معين مع الرواتب
+router.post('/sync-all', protect, async (req: any, res) => {
+  try {
+    const { month, year } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({ message: 'يرجى تحديد الشهر والسنة' });
+    }
+
+    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const query: any = {
+      month: parseInt(month),
+      year: parseInt(year),
+      syncedToPayroll: false
+    };
+
+    if (!managerRoles.includes(req.user?.role)) {
+      query.companyId = req.user?.companyId;
+    }
+
+    const unsynced = await MediaAchievement.find(query);
+
+    if (unsynced.length === 0) {
+      return res.json({ message: 'لا توجد إنجازات غير متزامنة لهذا الشهر', synced: 0, skipped: 0 });
+    }
+
+    let syncedCount = 0;
+    let errorCount = 0;
+
+    for (const achievement of unsynced) {
+      try {
+        const employee = await Employee.findById(achievement.employeeId);
+        const baseSalary = employee?.salary || 0;
+
+        let payroll = await Payroll.findOne({
+          employeeId: achievement.employeeId,
+          month: achievement.month.toString(),
+          year: achievement.year
+        });
+
+        if (payroll) {
+          payroll.bonuses = (payroll.bonuses || 0) + achievement.totalAmount;
+          payroll.netSalary = payroll.baseSalary + payroll.bonuses - (payroll.deductions || 0);
+          payroll.notes = `${payroll.notes || ''}\nمكافأة ميديا: ${achievement.totalAmount} ج.م`.trim();
+          await payroll.save();
+        } else {
+          await Payroll.create({
+            employeeId: achievement.employeeId,
+            companyId: achievement.companyId,
+            month: achievement.month.toString(),
+            year: achievement.year,
+            baseSalary,
+            bonuses: achievement.totalAmount,
+            deductions: 0,
+            netSalary: baseSalary + achievement.totalAmount,
+            currency: 'EGP',
+            status: 'pending',
+            notes: `مكافأة ميديا: ${achievement.totalAmount} ج.م`
+          });
+        }
+
+        achievement.syncedToPayroll = true;
+        achievement.syncedAt = new Date();
+        await achievement.save();
+        syncedCount++;
+      } catch (err) {
+        console.error(`Error syncing achievement ${achievement._id}:`, err);
+        errorCount++;
+      }
+    }
+
+    console.log(`✅ Bulk sync complete: ${syncedCount} synced, ${errorCount} errors`);
+    res.json({
+      message: `تم مزامنة ${syncedCount} إنجاز مع الرواتب بنجاح`,
+      synced: syncedCount,
+      skipped: errorCount
+    });
+  } catch (error: any) {
+    console.error('Error in bulk sync:', error);
     res.status(500).json({ message: error.message });
   }
 });

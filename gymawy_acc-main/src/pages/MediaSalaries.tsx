@@ -189,7 +189,7 @@ const MediaSalaries: React.FC = () => {
   const [priceFormData, setPriceFormData] = useState({
     type: 'short_video' as ContentType,
     price: '' as number | '',
-    currency: 'SAR' as 'SAR' | 'USD' | 'EGP'
+    currency: 'EGP' as 'SAR' | 'USD' | 'EGP'
   });
 
   const [achievementFormData, setAchievementFormData] = useState<{
@@ -899,6 +899,21 @@ const MediaSalaries: React.FC = () => {
     }
   };
 
+  const handleSyncAllAchievements = async () => {
+    try {
+      const response = await api.post('/media-achievements/sync-all', {
+        month: selectedMonth,
+        year: selectedYear
+      });
+      showToast(response.data.message || 'تمت مزامنة جميع الإنجازات بنجاح', 'success');
+      await fetchAchievements();
+      await loadPayrolls();
+    } catch (error: any) {
+      console.error('Error syncing all achievements:', error);
+      showToast(error.response?.data?.message || 'حدث خطأ أثناء مزامنة الإنجازات', 'error');
+    }
+  };
+
   // ==================== PERMISSION GUARD ====================
   if (!canViewMedia) {
     return (
@@ -1163,7 +1178,7 @@ const MediaSalaries: React.FC = () => {
                     <div>
                       <p className="text-sm text-green-700 dark:text-green-300">إجمالي الشهر</p>
                       <p className="text-2xl font-bold text-green-800 dark:text-green-200">
-                        {monthlySummary.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                        {monthlySummary.totalAmount.toFixed(2)} {getCurrencySymbol('EGP')}
                       </p>
                     </div>
                   </div>
@@ -1239,10 +1254,21 @@ const MediaSalaries: React.FC = () => {
             </div>
 
             {isAdmin && (
-              <Button onClick={openAddAchievement}>
-                <Plus className="w-4 h-4" />
-                إضافة إنجازات
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={handleSyncAllAchievements}
+                  disabled={achievements.every(a => a.syncedToPayroll)}
+                  title="مزامنة جميع الإنجازات غير المتزامنة مع الرواتب"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  مزامنة للرواتب
+                </Button>
+                <Button onClick={openAddAchievement}>
+                  <Plus className="w-4 h-4" />
+                  إضافة إنجازات
+                </Button>
+              </div>
             )}
           </div>
 
@@ -1303,7 +1329,7 @@ const MediaSalaries: React.FC = () => {
                           </Table.Cell>
                           <Table.Cell>
                             <span className="text-success-600 dark:text-success-400 font-bold">
-                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('EGP')}
                             </span>
                           </Table.Cell>
                           <Table.Cell>
@@ -1408,7 +1434,7 @@ const MediaSalaries: React.FC = () => {
                         </div>
                         <div className="text-center">
                           <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي الراتب</p>
-                          <p className="text-lg font-bold text-success-600 dark:text-success-400">{data.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}</p>
+                          <p className="text-lg font-bold text-success-600 dark:text-success-400">{data.totalAmount.toFixed(2)} {getCurrencySymbol('EGP')}</p>
                         </div>
                       </div>
                     </div>
@@ -1426,7 +1452,7 @@ const MediaSalaries: React.FC = () => {
                               )}
                             </div>
                             <span className="text-sm font-bold text-success-600 dark:text-success-400">
-                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('EGP')}
                             </span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -1466,7 +1492,7 @@ const MediaSalaries: React.FC = () => {
                     <div>
                       <p className="text-sm text-green-700 dark:text-green-300">إجمالي إنجازاتي</p>
                       <p className="text-2xl font-bold text-green-800 dark:text-green-200">
-                        {myAchievements.reduce((sum, a) => sum + a.totalAmount, 0).toFixed(2)} {getCurrencySymbol('SAR')}
+                        {myAchievements.reduce((sum, a) => sum + a.totalAmount, 0).toFixed(2)} {getCurrencySymbol('EGP')}
                       </p>
                     </div>
                   </div>
@@ -1595,7 +1621,7 @@ const MediaSalaries: React.FC = () => {
                           </Table.Cell>
                           <Table.Cell>
                             <span className="text-success-600 dark:text-success-400 font-bold">
-                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                              {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('EGP')}
                             </span>
                           </Table.Cell>
                           <Table.Cell>
@@ -1653,7 +1679,7 @@ const MediaSalaries: React.FC = () => {
                         )}
                       </div>
                       <span className="text-lg font-bold text-success-600 dark:text-success-400">
-                        {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('SAR')}
+                        {achievement.totalAmount.toFixed(2)} {getCurrencySymbol('EGP')}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -1661,7 +1687,7 @@ const MediaSalaries: React.FC = () => {
                         <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
                           <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{CONTENT_TYPES[item.contentType].split(' (')[0]}</p>
                           <p className="text-lg font-bold text-gray-900 dark:text-white">{item.quantity}</p>
-                          <p className="text-sm text-success-600 dark:text-success-400">{item.total.toFixed(0)} {getCurrencySymbol('SAR')}</p>
+                          <p className="text-sm text-success-600 dark:text-success-400">{item.total.toFixed(0)} {getCurrencySymbol('EGP')}</p>
                         </div>
                       ))}
                     </div>
@@ -1993,7 +2019,7 @@ const MediaSalaries: React.FC = () => {
                 <div className="text-left">
                   <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي المبلغ</p>
                   <p className="text-xl font-bold text-success-600 dark:text-success-400">
-                    {formTotal.toFixed(2)} {getCurrencySymbol('SAR')}
+                    {formTotal.toFixed(2)} {getCurrencySymbol('EGP')}
                   </p>
                 </div>
               </div>

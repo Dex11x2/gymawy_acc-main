@@ -82,9 +82,30 @@ const Employees: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  const filteredEmployees = filterDepartment
-    ? employees.filter((emp) => emp.departmentId === filterDepartment)
-    : employees;
+  const [sortField, setSortField] = useState<'name' | 'salary' | 'hireDate'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const filteredEmployees = (() => {
+    const base = filterDepartment
+      ? employees.filter((emp) => emp.departmentId === filterDepartment)
+      : employees;
+    return [...base].sort((a, b) => {
+      if (sortField === 'name') {
+        return sortDir === 'asc'
+          ? a.name.localeCompare(b.name, 'ar')
+          : b.name.localeCompare(a.name, 'ar');
+      }
+      if (sortField === 'hireDate') {
+        const aD = new Date(a.hireDate).getTime();
+        const bD = new Date(b.hireDate).getTime();
+        return sortDir === 'asc' ? aD - bD : bD - aD;
+      }
+      // salary
+      const aVal = a.salary ?? 0;
+      const bVal = b.salary ?? 0;
+      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -402,6 +423,27 @@ const Employees: React.FC = () => {
                 {getDepartmentName(filterDepartment)}
               </Badge>
             )}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                ترتيب حسب:
+              </label>
+              <select
+                value={`${sortField}-${sortDir}`}
+                onChange={(e) => {
+                  const [field, dir] = e.target.value.split('-') as [typeof sortField, typeof sortDir];
+                  setSortField(field);
+                  setSortDir(dir);
+                }}
+                className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+              >
+                <option value="name-asc">الاسم (أ-ي)</option>
+                <option value="name-desc">الاسم (ي-أ)</option>
+                <option value="salary-desc">أعلى راتب</option>
+                <option value="salary-asc">أقل راتب</option>
+                <option value="hireDate-desc">أحدث توظيف</option>
+                <option value="hireDate-asc">أقدم توظيف</option>
+              </select>
+            </div>
           </div>
         </Card.Body>
       </Card>
