@@ -64,7 +64,8 @@ const Layout: React.FC = () => {
       '/instructions': 'جيماوي - التعليمات',
       '/occasions': 'جيماوي - المناسبات',
       '/profile': 'جيماوي - الملف الشخصي',
-      '/dev-tasks': 'جيماوي - مهام التطوير'
+      '/dev-tasks': 'جيماوي - مهام التطوير',
+      '/content-calendar': 'جيماوي - تقويم المحتوى'
     };
     document.title = pageTitles[location.pathname] || 'جيماوي - نظام المحاسبة';
   }, [location.pathname]);
@@ -206,6 +207,7 @@ const Layout: React.FC = () => {
     { id: 'ads-funding' as IconName, name: language === 'ar' ? 'تقرير تمويل الإعلانات' : 'Ads Funding Report', path: '/ads-funding', show: user?.role === 'super_admin' || hasPermission('ads_funding') },
     { id: 'complaints' as IconName, name: language === 'ar' ? 'الشكاوى والمقترحات' : 'Complaints', path: '/complaints', show: user?.role === 'super_admin' || hasPermission('complaints') },
     { id: 'instructions' as IconName, name: language === 'ar' ? 'التعليمات' : 'Instructions', path: '/instructions', show: user?.role === 'super_admin' || hasPermission('instructions') },
+    { id: 'content-calendar' as IconName, name: language === 'ar' ? 'تقويم المحتوى' : 'Content Calendar', path: '/content-calendar', show: user?.role === 'super_admin' || hasPermission('content_calendar') },
     { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: user?.role === 'super_admin' || hasPermission('occasions') },
   ].filter(item => item.show);
 

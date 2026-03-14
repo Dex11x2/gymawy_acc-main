@@ -17,6 +17,7 @@ export const AVAILABLE_MODULES = [
   { id: 'reviews', name: 'تقييمات الموظفين', nameEn: 'Employee Reviews' },
   { id: 'reports', name: 'التقارير', nameEn: 'Reports' },
   { id: 'ads_funding', name: 'تقرير عمليات تمويل الإعلانات', nameEn: 'Ads Funding Report' },
+  { id: 'content_calendar', name: 'تقويم المحتوى', nameEn: 'Content Calendar' },
 ];
 
 export const AVAILABLE_ACTIONS = ['view', 'read', 'create', 'update', 'delete'];
@@ -26,4 +27,5 @@ export const DEFAULT_EMPLOYEE_PERMISSIONS = [
   { module: 'tasks', actions: ['view', 'read', 'create', 'update'] },
   { module: 'chat', actions: ['view', 'read', 'create'] },
   { module: 'posts', actions: ['view', 'read'] },
+  { module: 'content_calendar', actions: ['view', 'read'] },
 ];

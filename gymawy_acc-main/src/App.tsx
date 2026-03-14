@@ -34,6 +34,7 @@ import OccasionsPopup from './components/OccasionsPopup';
 import ReportSettings from './pages/ReportSettings';
 import AdsFundingReport from './pages/AdsFundingReport';
 import MediaSalaries from './pages/MediaSalaries';
+import ContentCalendar from './pages/ContentCalendar';
 
 const App: React.FC = () => {
   const { isAuthenticated, initAuth, user } = useAuthStore();
@@ -115,6 +116,7 @@ const App: React.FC = () => {
             <Route path="/report-settings" element={<ReportSettings />} />
             <Route path="/ads-funding" element={<AdsFundingReport />} />
             <Route path="/media-salaries" element={<MediaSalaries />} />
+            <Route path="/content-calendar" element={<ContentCalendar />} />
             <Route path="/test" element={<TestConnection />} />
 
           </Route>

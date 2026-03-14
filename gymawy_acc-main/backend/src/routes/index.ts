@@ -91,6 +91,9 @@ router.use('/media-achievements', mediaAchievementRoutes);
 import contentTypeRoutes from './contentType.routes';
 router.use('/content-types', contentTypeRoutes);
 
+import contentRoutes from './content.routes';
+router.use('/content', contentRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

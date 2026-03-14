@@ -380,3 +380,46 @@ export interface LeaveRequest {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ========== Content Calendar ==========
+
+export interface ContentAccount {
+  id: string;
+  _id?: string;
+  name: string;
+  companyId?: string;
+  description?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type ContentType = 'reel' | 'post' | 'podcast' | 'long_video' | 'ad' | 'rest' | 'other';
+export type ContentStatus = 'open' | 'in_progress' | 'done' | 'published';
+export type ContentPlatform = 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'twitter' | 'other';
+
+export interface ContentItem {
+  id: string;
+  _id?: string;
+  accountId: string | { _id: string; name: string };
+  companyId?: string;
+  title: string;
+  contentType: ContentType;
+  status: ContentStatus;
+  publishDate: string;
+  dueDate?: string;
+  videoLink?: string;
+  footageLink?: string;
+  script?: string;
+  platforms: ContentPlatform[];
+  assignedTo: Array<{ _id: string; name: string; email?: string }> | string[];
+  collaborators?: string;
+  notes?: string;
+  campaignCategory?: string;
+  isDone: boolean;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

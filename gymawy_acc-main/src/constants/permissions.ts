@@ -30,6 +30,7 @@ export const MODULES = {
   INSTRUCTIONS: 'instructions',
   SUBSCRIPTIONS: 'subscriptions',
   PERMISSIONS: 'permissions',
+  CONTENT_CALENDAR: 'content_calendar',
 } as const;
 
 export const ACTIONS = {
@@ -351,6 +352,17 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
     ],
   },
   {
+    module: MODULES.CONTENT_CALENDAR,
+    label: 'تقويم المحتوى',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض' },
+      { action: ACTIONS.WRITE, label: 'إضافة' },
+      { action: ACTIONS.EDIT, label: 'تعديل' },
+      { action: ACTIONS.DELETE, label: 'حذف' },
+      { action: ACTIONS.EXPORT, label: 'تصدير' },
+    ],
+  },
+  {
     module: MODULES.PERMISSIONS,
     label: 'إدارة الصلاحيات',
     actions: [
@@ -396,5 +408,6 @@ export const DEFAULT_PERMISSIONS = {
     { module: MODULES.COMMUNICATION, actions: [ACTIONS.VIEW] },
     { module: MODULES.INSTRUCTIONS, actions: [ACTIONS.VIEW] },
     { module: MODULES.OCCASIONS, actions: [ACTIONS.VIEW] },
+    { module: MODULES.CONTENT_CALENDAR, actions: [ACTIONS.VIEW] },
   ],
 };
