@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nتنظيف المشروع: إزالة الملفات غير المستخدمة\n\nتم إزالة:\n- 8 صفحات قديمة/مكررة (Chat, Posts, Dashboard, إلخ)\n- 2 مكونات غير مستخدمة (GlobalSearch, CurrencyManager)\n- 9 أدوات/هوكس غير مستخدمة\n- مجلد الصور imgs/ (1.6MB)\n- 3 ملفات backend مكررة\n- 3 سكريبتات مؤقتة\n- 48 ملف توثيق مكرر\n\nالمجموع: 75 ملف تم إزالتها\nتوفير المساحة: ~4-5 ميجابايت\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nتنظيف ملفات التوثيق: إزالة ملفات .md و .txt غير المستخدمة\n\nتم إزالة:\n- ملفات توثيق التحديثات المطبقة بالفعل\n- ملفات الإعداد المكررة\n- أدلة التفعيل القديمة\n\nالملفات المحذوفة (10):\n- MANAGER_PERMISSIONS.md\n- EMPLOYEE_PASSWORDS.md\n- ACCOUNT_MANAGEMENT_UPDATE.md\n- DASHBOARD_SWITCH.md\n- COMPANYID_REMOVAL.md\n- SETUP_DAILY_REPORTS.md\n- README_REPORTS_COMPLETE.md\n- ADD_ADS_FUNDING_PERMISSION.md\n- README_ADS_FUNDING.md\n- QUICK_START_REPORTS.txt\n\nالملفات المحتفظ بها:\n- README.md (الملف الرئيسي)\n- CHANGELOG.md (سجل التغييرات)\n- PRE_DEPLOYMENT_CHECK.md (فحص ما قبل النشر)\n- DOCKER_DEPLOY.md (دليل النشر)\n- SETUP_SSL_GUIDE.md (دليل SSL)\n- ROLES_SYSTEM.md (نظام الأدوار)\n- EMPLOYEE_ACCOUNT_MANAGEMENT.md (إدارة الحسابات)\n- DAILY_REPORTS_GUIDE.md (دليل التقارير)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(temp_custody.txt)",
+      "Bash(git checkout:*)",
+      "Bash(rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nإصلاح: استرجاع ملفات Custody و Advances المطلوبة\n\nتم استرجاع:\n- src/pages/Custody.tsx\n- src/pages/Advances.tsx\n\nالسبب: ملف CustodyAndAdvances.tsx يعتمد على هذين الملفين\nكمكونات منفصلة ويستوردهما لعرضها في tabs.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nإصلاح: استرجاع ملفات Dashboard و EmployeeDashboard المطلوبة\n\nتم استرجاع:\n- src/pages/Dashboard.tsx\n- src/pages/EmployeeDashboard.tsx\n\nالسبب: ملف DashboardWrapper.tsx يعتمد على هذين الملفين\nللتبديل بين لوحة المدير ولوحة الموظف.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nإصلاح: استرجاع مكون GlobalSearch المطلوب\n\nتم استرجاع:\n- src/components/GlobalSearch.tsx\n\nالسبب: ملف Layout.tsx يستخدم هذا المكون لميزة البحث\nالعام في النظام (Ctrl+K).\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nإصلاح: استرجاع ملف backup.ts المطلوب\n\nتم استرجاع:\n- src/utils/backup.ts\n\nالسبب: ملف Layout.tsx يستخدم دالة autoBackup من هذا\nالملف لإجراء النسخ الاحتياطي التلقائي.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(node test-connections.js:*)",
+      "Bash(cat:*)",
+      "Bash(node fix-pages-layout.js:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(PORT=3000 npm run dev:*)",
+      "Bash(PORT=5000 npm run dev:*)",
+      "Bash(PORT=4000 npm run dev:*)",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(set PORT=5000)",
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(timeout /t 8 /nobreak)",
+      "Bash(git config:*)",
+      "Bash(git push)",
+      "Bash(move:*)",
+      "Bash(cmd /c move test-email.js backendtest-email.js)",
+      "Bash(git pull:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
