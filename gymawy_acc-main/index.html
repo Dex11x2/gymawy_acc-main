@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💼</text></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/branding/gymmawy-logo.png" />
+    <meta name="theme-color" content="#6d28d9" />
+    <meta property="og:title" content="Gymmawy Accounting System" />
+    <meta property="og:image" content="/branding/gymmawy-logo.png" />
+    <meta property="og:type" content="website" />
+    <title>جيماوي - نظام المحاسبة المتكامل</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Suppress all browser extension errors completely
+      (function() {
+        const originalError = console.error;
+        console.error = function(...args) {
+          const msg = args.join(' ');
+          if (msg.includes('Could not establish connection') || 
+              msg.includes('Receiving end does not exist') ||
+              msg.includes('runtime.lastError')) {
+            return;
+          }
+          originalError.apply(console, args);
+        };
+        
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+          const msg = args.join(' ');
+          if (msg.includes('Could not establish connection') || 
+              msg.includes('Receiving end does not exist') ||
+              msg.includes('runtime.lastError')) {
+            return;
+          }
+          originalWarn.apply(console, args);
+        };
+      })();
+    </script>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
