@@ -37,8 +37,7 @@ const ContentTypeSchema = new Schema({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
-// Indexes
-ContentTypeSchema.index({ key: 1 }, { unique: true });
+// Indexes (the unique index on `key` is auto-created by `unique: true` on the field)
 ContentTypeSchema.index({ companyId: 1, isActive: 1 });
 ContentTypeSchema.index({ displayOrder: 1 });
 
