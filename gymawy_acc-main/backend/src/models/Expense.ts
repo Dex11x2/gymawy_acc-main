@@ -28,4 +28,9 @@ const ExpenseSchema = new Schema({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false }
 }, { timestamps: true });
 
+ExpenseSchema.index({ companyId: 1, date: -1 });
+ExpenseSchema.index({ departmentId: 1, date: -1 });
+ExpenseSchema.index({ category: 1 });
+ExpenseSchema.index({ createdBy: 1 });
+
 export default mongoose.model<IExpense>('Expense', ExpenseSchema);

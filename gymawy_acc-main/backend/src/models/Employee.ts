@@ -55,4 +55,10 @@ const EmployeeSchema = new Schema({
   }
 }, { timestamps: true });
 
+EmployeeSchema.index({ userId: 1 });
+EmployeeSchema.index({ companyId: 1, isActive: 1 });
+EmployeeSchema.index({ departmentId: 1 });
+EmployeeSchema.index({ email: 1 });
+EmployeeSchema.index({ phone: 1 });
+
 export default mongoose.model<IEmployee>('Employee', EmployeeSchema);

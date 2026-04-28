@@ -50,19 +50,22 @@ app.use(cors({
       callback(null, true);
       return;
     }
-    
+
     const isAllowed = allowedOrigins.some(allowed => {
       if (typeof allowed === 'string') {
         return allowed === origin;
       }
       return allowed.test(origin);
     });
-    
+
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('⚠️ CORS blocked origin:', origin);
-      callback(null, true); // Allow anyway in development
+      if (process.env.NODE_ENV === 'production') {
+        callback(new Error('Not allowed by CORS'));
+      } else {
+        callback(null, true);
+      }
     }
   },
   credentials: true
@@ -72,13 +75,25 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('dev')); // Logging
 
-// Rate limiting
+// Rate limiting - general API
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10000, // limit each IP to 10000 requests per minute
-  message: 'Too many requests from this IP, please try again later.'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // 1000 requests per 15 min per IP
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
 });
 app.use('/api/', limiter);
+
+// Stricter rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 login attempts per 15 min per IP
+  message: 'Too many login attempts, please try again in 15 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+});
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
@@ -121,16 +136,18 @@ import apiRoutes from './routes/index';
 import { listUsers, resetAllPasswords, resetUserPassword, createUserForEmployee } from './controllers/debug.controller';
 
 // Use routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api', apiRoutes);
 
-// Debug endpoints (remove in production)
-app.get('/api/debug/users', listUsers);
-app.get('/api/debug/reset-all-passwords', resetAllPasswords);
-app.post('/api/debug/reset-all-passwords', resetAllPasswords);
-app.post('/api/debug/reset-password/:email', resetUserPassword);
-app.get('/api/debug/create-users-for-employees', createUserForEmployee);
-app.post('/api/debug/create-users-for-employees', createUserForEmployee);
+// Debug endpoints - only available in development
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/debug/users', listUsers);
+  app.get('/api/debug/reset-all-passwords', resetAllPasswords);
+  app.post('/api/debug/reset-all-passwords', resetAllPasswords);
+  app.post('/api/debug/reset-password/:email', resetUserPassword);
+  app.get('/api/debug/create-users-for-employees', createUserForEmployee);
+  app.post('/api/debug/create-users-for-employees', createUserForEmployee);
+}
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -208,10 +225,10 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDatabase();
-    await createDefaultSuperAdmin();
+    await ensureSuperAdminExists();
     startDailyReportJob();
     startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
-    
+
     httpServer.listen(PORT, () => {
       console.log('');
       console.log('🚀 ========================================');
@@ -228,28 +245,27 @@ const startServer = async () => {
   }
 };
 
-async function createDefaultSuperAdmin() {
+async function ensureSuperAdminExists() {
   try {
     const User = (await import('./models/User')).default;
-    
-    await User.deleteMany({ email: 'dexter11x2@gmail.com' });
-    
-    const superAdmin = new User({
-      name: 'Developer',
-      email: 'dexter11x2@gmail.com',
-      phone: '+201234567890',
-      password: 'Dex036211#',
-      role: 'super_admin',
-      isActive: true
-    });
-    
-    await superAdmin.save();
-    
-    console.log('✅ Super Admin created!');
-    console.log('📧 Email: Dexter11x2@gmail.com');
-    console.log('🔑 Password: Dex036211#');
+
+    const existing = await User.findOne({ role: 'super_admin' });
+    if (existing) return;
+
+    const email = process.env.SUPER_ADMIN_EMAIL;
+    const password = process.env.SUPER_ADMIN_PASSWORD;
+    const name = process.env.SUPER_ADMIN_NAME || 'Super Admin';
+    const phone = process.env.SUPER_ADMIN_PHONE;
+
+    if (!email || !password) {
+      console.warn('⚠️ No super admin found. Set SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD env vars to bootstrap one.');
+      return;
+    }
+
+    await new User({ name, email, phone, password, role: 'super_admin', isActive: true }).save();
+    console.log(`✅ Super admin bootstrapped (${email}). Change the password immediately.`);
   } catch (error: any) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Failed to ensure super admin:', error.message);
   }
 }
 

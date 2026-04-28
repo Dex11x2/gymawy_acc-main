@@ -41,4 +41,8 @@ const TaskSchema = new Schema({
   comments: [TaskCommentSchema]
 }, { timestamps: true });
 
+TaskSchema.index({ assignedTo: 1, status: 1 });
+TaskSchema.index({ assignedBy: 1 });
+TaskSchema.index({ companyId: 1, status: 1, dueDate: 1 });
+
 export default mongoose.model<ITask>('Task', TaskSchema);

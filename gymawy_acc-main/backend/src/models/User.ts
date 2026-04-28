@@ -47,18 +47,20 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
+UserSchema.index({ phone: 1 });
+UserSchema.index({ companyId: 1, role: 1 });
+UserSchema.index({ departmentId: 1 });
+UserSchema.index({ branchId: 1 });
+UserSchema.index({ isActive: 1 });
+
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  // Check if password is already hashed (starts with $2)
   if (this.password.startsWith("$2")) {
     return next();
   }
 
-  // ALWAYS save plain password before hashing
   this.plainPassword = this.password;
-  console.log('💾 Saving plainPassword:', this.plainPassword);
-
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });

@@ -28,4 +28,9 @@ const RevenueSchema = new Schema({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false }
 }, { timestamps: true });
 
+RevenueSchema.index({ companyId: 1, date: -1 });
+RevenueSchema.index({ departmentId: 1, date: -1 });
+RevenueSchema.index({ category: 1 });
+RevenueSchema.index({ createdBy: 1 });
+
 export default mongoose.model<IRevenue>('Revenue', RevenueSchema);

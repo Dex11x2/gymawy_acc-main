@@ -1,17 +1,29 @@
 import { Request, Response } from 'express';
 import Employee from '../models/Employee';
 
+const MAX_LIMIT = 1000;
+
 export const getAll = async (req: any, res: Response) => {
   try {
-    // ✅ FIXED: Managers see ALL employees, regular employees see only their company's employees
     const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
-      ? {}  // Managers see all employees
-      : { companyId: req.user?.companyId }; // Regular employees see only their company
+      ? {}
+      : { companyId: req.user?.companyId };
 
-    const employees = await Employee.find(filter).populate('userId').populate('departmentId');
+    const wantsPagination = req.query.page !== undefined || req.query.limit !== undefined;
+    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(req.query.limit as string) || MAX_LIMIT));
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const skip = (page - 1) * limit;
 
-    // إضافة الصلاحيات من User إلى Employee
+    const query = Employee.find(filter)
+      .populate('userId')
+      .populate('departmentId')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const employees = await query;
+
     const employeesWithPermissions = employees.map(emp => {
       const empObj: any = emp.toObject();
       if (empObj.userId && typeof empObj.userId === 'object' && 'permissions' in empObj.userId) {
@@ -20,59 +32,60 @@ export const getAll = async (req: any, res: Response) => {
       return empObj;
     });
 
+    if (wantsPagination) {
+      const total = await Employee.countDocuments(filter);
+      return res.json({
+        data: employeesWithPermissions,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+      });
+    }
+
     res.json(employeesWithPermissions);
   } catch (error: any) {
-    console.error('Error fetching employees:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching employees:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const create = async (req: any, res: Response) => {
   try {
-    console.log('Creating employee with data:', req.body);
     const User = (await import('../models/User')).default;
     const Employee = (await import('../models/Employee')).default;
-    
+
     const currentUser = await User.findById(req.user.userId);
     const isCreatingGeneralManager = req.body.isGeneralManager;
     const isCreatingAdministrativeManager = req.body.isAdministrativeManager;
-    
-    // التحقق من صلاحية إنشاء مدير عام
+
     if (isCreatingGeneralManager) {
       if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'general_manager') {
-        return res.status(403).json({ 
-          message: 'فقط السوبر أدمن والمدير العام يمكنهم إنشاء مدير عام' 
+        return res.status(403).json({
+          message: 'فقط السوبر أدمن والمدير العام يمكنهم إنشاء مدير عام'
         });
       }
     }
-    
-    // التحقق من صلاحية إنشاء مدير إداري
+
     if (isCreatingAdministrativeManager) {
       if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'general_manager') {
-        return res.status(403).json({ 
-          message: 'فقط السوبر أدمن والمدير العام يمكنهم إنشاء مدير إداري' 
+        return res.status(403).json({
+          message: 'فقط السوبر أدمن والمدير العام يمكنهم إنشاء مدير إداري'
         });
       }
     }
-    
+
     const existingUser = await User.findOne({ email: req.body.email });
     let user;
-    
+
     if (existingUser) {
       user = existingUser;
       let needsSave = false;
 
       if (req.body.departmentId) {
-        console.log('Updating existing user with departmentId:', req.body.departmentId);
         user.departmentId = req.body.departmentId;
         needsSave = true;
       }
 
-      // تحديث كلمة المرور إذا تم تمريرها
       if (req.body.password) {
-        console.log('Updating existing user password');
         user.password = req.body.password;
-        user.plainPassword = req.body.password;
         needsSave = true;
       }
 
@@ -81,47 +94,33 @@ export const create = async (req: any, res: Response) => {
       }
     } else {
       const plainPassword = req.body.password || 'employee123';
-      
-      // تحديد الدور بناءً على نوع الموظف
+
       let userRole = 'employee';
       if (req.body.isGeneralManager) {
         userRole = 'general_manager';
       } else if (req.body.isAdministrativeManager) {
         userRole = 'administrative_manager';
       }
-      
+
       const userData = {
         name: req.body.name,
         email: req.body.email,
         phone: req.body.phone,
         password: plainPassword,
-        plainPassword: plainPassword,
         role: userRole,
         companyId: req.user?.companyId || null,
         departmentId: req.body.departmentId || null,
         isActive: true,
         permissions: []
       };
-      console.log('Creating new user with userData:', { ...userData, password: '***' });
       user = await User.create(userData);
-      console.log('✅ User created successfully:');
-      console.log('   - Email:', user.email);
-      console.log('   - plainPassword in DB:', user.plainPassword);
-      console.log('   - password hashed:', user.password?.substring(0, 20) + '...');
-
-      // التحقق من حفظ كلمة المرور
-      const verifyUser = await User.findById(user._id);
-      console.log('🔍 Verify saved user:');
-      console.log('   - plainPassword saved:', verifyUser?.plainPassword);
-      console.log('   - isActive:', verifyUser?.isActive);
     }
-    
-    // Convert departmentId to ObjectId if it's a string
+
     const mongoose = await import('mongoose');
-    const departmentId = req.body.departmentId ? 
-      (typeof req.body.departmentId === 'string' ? new mongoose.Types.ObjectId(req.body.departmentId) : req.body.departmentId) 
+    const departmentId = req.body.departmentId ?
+      (typeof req.body.departmentId === 'string' ? new mongoose.Types.ObjectId(req.body.departmentId) : req.body.departmentId)
       : null;
-    
+
     const employeeData = {
       userId: user._id,
       companyId: req.user?.companyId || null,
@@ -137,14 +136,12 @@ export const create = async (req: any, res: Response) => {
       isAdministrativeManager: req.body.isAdministrativeManager || false,
       isActive: true
     };
-    
-    console.log('Creating employee with employeeData:', employeeData);
+
     const employee = await Employee.create(employeeData);
-    console.log('Employee created successfully with departmentId:', employee.departmentId);
     res.status(201).json(employee);
   } catch (error: any) {
     console.error('Employee creation error:', error.message);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to create employee' });
   }
 };
 
@@ -167,14 +164,9 @@ export const getById = async (req: Request, res: Response) => {
 
 export const update = async (req: Request, res: Response) => {
   try {
-    console.log('\n=== UPDATING EMPLOYEE ===');
-    console.log('Employee ID:', req.params.id);
-    console.log('Update data:', req.body);
-
     const employee = await Employee.findById(req.params.id);
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
-    // حفظ الإيميل القديم لتحديث ReportSettings
     const oldEmail = employee.email;
     const oldName = employee.name;
 
@@ -182,23 +174,20 @@ export const update = async (req: Request, res: Response) => {
     const departmentId = req.body.departmentId ?
       (typeof req.body.departmentId === 'string' ? new mongoose.Types.ObjectId(req.body.departmentId) : req.body.departmentId)
       : null;
-    
-    // Update User data (name, email, phone, role, departmentId)
+
     if (employee.userId) {
       const User = (await import('../models/User')).default;
       const userUpdateData: any = {};
-      
-      // Update basic info
+
       if (req.body.name) userUpdateData.name = req.body.name;
       if (req.body.email) userUpdateData.email = req.body.email;
       if (req.body.phone) userUpdateData.phone = req.body.phone;
       if (departmentId) userUpdateData.departmentId = departmentId;
-      
-      // Update role based on manager status
+
       if (req.body.isGeneralManager !== undefined || req.body.isAdministrativeManager !== undefined) {
         const isGeneralManager = req.body.isGeneralManager ?? employee.isGeneralManager;
         const isAdministrativeManager = req.body.isAdministrativeManager ?? employee.isAdministrativeManager;
-        
+
         if (isGeneralManager) {
           userUpdateData.role = 'general_manager';
         } else if (isAdministrativeManager) {
@@ -207,32 +196,28 @@ export const update = async (req: Request, res: Response) => {
           userUpdateData.role = 'employee';
         }
       }
-      
+
       if (Object.keys(userUpdateData).length > 0) {
-        const updatedUser = await User.findByIdAndUpdate(employee.userId, userUpdateData, { new: true });
-        console.log('✅ User updated:', updatedUser);
+        await User.findByIdAndUpdate(employee.userId, userUpdateData, { new: true });
       }
     }
-    
-    // Update Employee
+
     const updateData = { ...req.body };
     if (departmentId) {
       updateData.departmentId = departmentId;
     }
-    
+
     const updatedEmployee = await Employee.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
     ).populate('userId').populate('departmentId');
 
-    // مزامنة ReportSettings - تحديث الإيميل والاسم في قائمة المستلمين
     if (req.body.email || req.body.name) {
       const ReportSettings = (await import('../models/ReportSettings')).default;
       const newEmail = req.body.email || oldEmail;
       const newName = req.body.name || oldName;
 
-      // البحث عن المستلم بالإيميل القديم وتحديثه
       await ReportSettings.updateMany(
         { 'recipients.email': oldEmail },
         {
@@ -242,16 +227,12 @@ export const update = async (req: Request, res: Response) => {
           }
         }
       );
-      console.log(`✅ ReportSettings synced: ${oldEmail} → ${newEmail}`);
     }
-
-    console.log('✅ Employee updated successfully');
-    console.log('=========================\n');
 
     res.json(updatedEmployee);
   } catch (error: any) {
-    console.error('❌ Error updating employee:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error updating employee:', error.message);
+    res.status(500).json({ message: 'Failed to update employee' });
   }
 };
 
@@ -379,39 +360,26 @@ export const toggleActive = async (req: Request, res: Response) => {
 export const updatePermissions = async (req: Request, res: Response) => {
   try {
     const { permissions } = req.body;
-    console.log('\n=== UPDATING PERMISSIONS ===');
-    console.log('📝 Employee ID:', req.params.id);
-    console.log('📝 New permissions:', JSON.stringify(permissions, null, 2));
-    
+
     const employee = await Employee.findById(req.params.id);
-    
     if (!employee) {
-      console.log('❌ Employee not found');
       return res.status(404).json({ message: 'Employee not found' });
     }
-    
+
     const User = (await import('../models/User')).default;
     const user = await User.findById(employee.userId);
-    
+
     if (!user) {
-      console.error('❌ User not found for employee:', employee.email);
       return res.status(404).json({ message: 'User account not found' });
     }
-    
-    console.log('👤 Found user:', user.email, '(ID:', user._id, ')');
-    console.log('📋 Old permissions in DB:', JSON.stringify(user.permissions, null, 2));
-    
+
     user.permissions = permissions;
     const savedUser = await user.save();
-    
-    console.log('✅ Permissions SAVED to MongoDB successfully!');
-    console.log('📋 New permissions in DB:', JSON.stringify(savedUser.permissions, null, 2));
-    console.log('=========================\n');
-    
+
     res.json({ message: 'تم تحديث الصلاحيات بنجاح', permissions: savedUser.permissions });
   } catch (error: any) {
-    console.error('❌ Error updating permissions:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error updating permissions:', error.message);
+    res.status(500).json({ message: 'Failed to update permissions' });
   }
 };
 
