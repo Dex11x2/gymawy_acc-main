@@ -5,25 +5,26 @@ const MAX_LIMIT = 1000;
 
 export const getAll = async (req: any, res: Response) => {
   try {
+    // ✅ Managers see ALL employees, regular employees see only their company's employees
     const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
-      ? {}
-      : { companyId: req.user?.companyId };
+      ? {}  // Managers see all employees
+      : { companyId: req.user?.companyId }; // Regular employees see only their company
 
+    // Optional pagination via ?page=N&limit=M; default returns up to MAX_LIMIT records as before
     const wantsPagination = req.query.page !== undefined || req.query.limit !== undefined;
     const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(req.query.limit as string) || MAX_LIMIT));
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const skip = (page - 1) * limit;
 
-    const query = Employee.find(filter)
+    const employees = await Employee.find(filter)
       .populate('userId')
       .populate('departmentId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const employees = await query;
-
+    // إضافة الصلاحيات من User إلى Employee
     const employeesWithPermissions = employees.map(emp => {
       const empObj: any = emp.toObject();
       if (empObj.userId && typeof empObj.userId === 'object' && 'permissions' in empObj.userId) {
@@ -56,6 +57,7 @@ export const create = async (req: any, res: Response) => {
     const isCreatingGeneralManager = req.body.isGeneralManager;
     const isCreatingAdministrativeManager = req.body.isAdministrativeManager;
 
+    // التحقق من صلاحية إنشاء مدير عام
     if (isCreatingGeneralManager) {
       if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'general_manager') {
         return res.status(403).json({
@@ -64,6 +66,7 @@ export const create = async (req: any, res: Response) => {
       }
     }
 
+    // التحقق من صلاحية إنشاء مدير إداري
     if (isCreatingAdministrativeManager) {
       if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'general_manager') {
         return res.status(403).json({
@@ -84,6 +87,7 @@ export const create = async (req: any, res: Response) => {
         needsSave = true;
       }
 
+      // تحديث كلمة المرور إذا تم تمريرها
       if (req.body.password) {
         user.password = req.body.password;
         needsSave = true;
@@ -95,6 +99,7 @@ export const create = async (req: any, res: Response) => {
     } else {
       const plainPassword = req.body.password || 'employee123';
 
+      // تحديد الدور بناءً على نوع الموظف
       let userRole = 'employee';
       if (req.body.isGeneralManager) {
         userRole = 'general_manager';
@@ -167,6 +172,7 @@ export const update = async (req: Request, res: Response) => {
     const employee = await Employee.findById(req.params.id);
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
+    // حفظ الإيميل القديم لتحديث ReportSettings
     const oldEmail = employee.email;
     const oldName = employee.name;
 
@@ -175,6 +181,7 @@ export const update = async (req: Request, res: Response) => {
       (typeof req.body.departmentId === 'string' ? new mongoose.Types.ObjectId(req.body.departmentId) : req.body.departmentId)
       : null;
 
+    // Update User data (name, email, phone, role, departmentId)
     if (employee.userId) {
       const User = (await import('../models/User')).default;
       const userUpdateData: any = {};
@@ -184,6 +191,7 @@ export const update = async (req: Request, res: Response) => {
       if (req.body.phone) userUpdateData.phone = req.body.phone;
       if (departmentId) userUpdateData.departmentId = departmentId;
 
+      // Update role based on manager status
       if (req.body.isGeneralManager !== undefined || req.body.isAdministrativeManager !== undefined) {
         const isGeneralManager = req.body.isGeneralManager ?? employee.isGeneralManager;
         const isAdministrativeManager = req.body.isAdministrativeManager ?? employee.isAdministrativeManager;
@@ -213,6 +221,7 @@ export const update = async (req: Request, res: Response) => {
       { new: true, runValidators: true }
     ).populate('userId').populate('departmentId');
 
+    // مزامنة ReportSettings - تحديث الإيميل والاسم في قائمة المستلمين
     if (req.body.email || req.body.name) {
       const ReportSettings = (await import('../models/ReportSettings')).default;
       const newEmail = req.body.email || oldEmail;
