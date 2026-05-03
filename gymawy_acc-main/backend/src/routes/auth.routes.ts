@@ -130,6 +130,7 @@ router.post('/login', async (req, res) => {
     
     const token = generateToken((user._id as any).toString());
     
+    const { computePermissions } = await import('../utils/permissions.util');
     res.json({
       token,
       user: {
@@ -138,7 +139,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         role: user.role,
         companyId: user.companyId,
-        permissions: user.permissions
+        permissions: await computePermissions(user.roleId)
       }
     });
   } catch (error: any) {
@@ -149,8 +150,22 @@ router.post('/login', async (req, res) => {
 // Get current user
 router.get('/me', protect, async (req: any, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password -plainPassword');
-    res.json(user);
+    const user = await User.findById(req.user.id).select('-password').lean();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const { computePermissions } = await import('../utils/permissions.util');
+    res.json({
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      roleId: user.roleId,
+      companyId: user.companyId,
+      departmentId: user.departmentId,
+      branchId: user.branchId,
+      phone: user.phone,
+      isActive: user.isActive,
+      permissions: await computePermissions(user.roleId),
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

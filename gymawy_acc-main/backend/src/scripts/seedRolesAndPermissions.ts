@@ -40,18 +40,31 @@ async function seed() {
     await mongoose.connect(process.env.MONGODB_URI!);
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing data
-    await Role.deleteMany({});
-    await Page.deleteMany({});
+    // Idempotent upsert: preserve existing _ids so User.roleId references stay valid
+    const insertedRoles = [];
+    for (const r of roles) {
+      const role = await Role.findOneAndUpdate(
+        { nameEn: r.nameEn },
+        { $set: r },
+        { upsert: true, new: true }
+      );
+      insertedRoles.push(role!);
+    }
+    console.log(`✅ Roles upserted (${insertedRoles.length})`);
+
+    const insertedPages = [];
+    for (const p of pages) {
+      const page = await Page.findOneAndUpdate(
+        { module: p.module },
+        { $set: p },
+        { upsert: true, new: true }
+      );
+      insertedPages.push(page!);
+    }
+    console.log(`✅ Pages upserted (${insertedPages.length})`);
+
+    // RolePermissions are derived; safe to recompute every run
     await RolePermission.deleteMany({});
-
-    // Insert roles
-    const insertedRoles = await Role.insertMany(roles);
-    console.log('✅ Roles created');
-
-    // Insert pages
-    const insertedPages = await Page.insertMany(pages);
-    console.log('✅ Pages created');
 
     // Create permissions
     const permissions = [];

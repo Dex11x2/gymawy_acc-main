@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { verifyToken } from '../utils/jwt.util';
 import User, { IUser } from '../models/User';
+import { computePermissions, PermissionEntry } from '../utils/permissions.util';
 
 export interface AuthenticatedUser {
   userId: mongoose.Types.ObjectId;
@@ -10,11 +11,12 @@ export interface AuthenticatedUser {
   email: string;
   name: string;
   role: IUser['role'];
+  roleId?: mongoose.Types.ObjectId;
   companyId?: mongoose.Types.ObjectId;
   departmentId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
   isActive: boolean;
-  permissions?: IUser['permissions'];
+  permissions?: PermissionEntry[];
 }
 
 export interface AuthRequest extends Request {
@@ -47,7 +49,8 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     req.user = {
       ...(user.toObject() as IUser),
       userId: user._id as mongoose.Types.ObjectId,
-      id: (user._id as mongoose.Types.ObjectId).toString()
+      id: (user._id as mongoose.Types.ObjectId).toString(),
+      permissions: await computePermissions(user.roleId),
     } as AuthenticatedUser;
 
     next();

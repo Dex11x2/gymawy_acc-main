@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 export interface IUser extends Document {
   email: string;
   password: string;
-  plainPassword?: string;
   phone?: string;
   name: string;
   role: "super_admin" | "general_manager" | "administrative_manager" | "employee";
@@ -14,9 +13,15 @@ export interface IUser extends Document {
   branchId?: mongoose.Types.ObjectId;
   birthDate?: Date;
   isActive: boolean;
-  permissions?: any[];
   comparePassword(password: string): Promise<boolean>;
 }
+
+const ROLE_LEVEL_BY_ENUM: Record<string, number> = {
+  super_admin: 4,
+  general_manager: 3,
+  administrative_manager: 2,
+  employee: 1,
+};
 
 const UserSchema = new Schema(
   {
@@ -29,7 +34,6 @@ const UserSchema = new Schema(
     },
     phone: { type: String },
     password: { type: String, required: true, minlength: 6 },
-    plainPassword: { type: String },
     name: { type: String, required: true },
     role: {
       type: String,
@@ -42,7 +46,6 @@ const UserSchema = new Schema(
     branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
     birthDate: { type: Date },
     isActive: { type: Boolean, default: true },
-    permissions: [{ module: String, actions: [String] }],
   },
   { timestamps: true }
 );
@@ -54,14 +57,19 @@ UserSchema.index({ branchId: 1 });
 UserSchema.index({ isActive: 1 });
 
 UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  if (this.password.startsWith("$2")) {
-    return next();
+  if (this.isModified("password") && !this.password.startsWith("$2")) {
+    this.password = await bcrypt.hash(this.password, 10);
   }
 
-  this.plainPassword = this.password;
-  this.password = await bcrypt.hash(this.password, 10);
+  if (!this.roleId && this.role) {
+    const Role = mongoose.model("Role");
+    const level = ROLE_LEVEL_BY_ENUM[this.role];
+    if (level) {
+      const role = await Role.findOne({ level });
+      if (role) this.roleId = role._id as mongoose.Types.ObjectId;
+    }
+  }
+
   next();
 });
 

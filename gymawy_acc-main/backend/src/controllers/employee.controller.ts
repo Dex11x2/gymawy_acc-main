@@ -24,14 +24,14 @@ export const getAll = async (req: any, res: Response) => {
       .skip(skip)
       .limit(limit);
 
-    // إضافة الصلاحيات من User إلى Employee
-    const employeesWithPermissions = employees.map(emp => {
+    // إضافة الصلاحيات المحسوبة من Role
+    const { computePermissions } = await import('../utils/permissions.util');
+    const employeesWithPermissions = await Promise.all(employees.map(async (emp) => {
       const empObj: any = emp.toObject();
-      if (empObj.userId && typeof empObj.userId === 'object' && 'permissions' in empObj.userId) {
-        empObj.permissions = empObj.userId.permissions || [];
-      }
+      const roleId = empObj.userId && typeof empObj.userId === 'object' ? empObj.userId.roleId : undefined;
+      empObj.permissions = await computePermissions(roleId);
       return empObj;
-    });
+    }));
 
     if (wantsPagination) {
       const total = await Employee.countDocuments(filter);
@@ -155,12 +155,12 @@ export const getById = async (req: Request, res: Response) => {
     const employee = await Employee.findById(req.params.id).populate('userId departmentId');
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
     
-    // إضافة الصلاحيات من User
+    // إضافة الصلاحيات المحسوبة من Role
+    const { computePermissions } = await import('../utils/permissions.util');
     const empObj: any = employee.toObject();
-    if (empObj.userId && typeof empObj.userId === 'object' && 'permissions' in empObj.userId) {
-      empObj.permissions = empObj.userId.permissions || [];
-    }
-    
+    const roleId = empObj.userId && typeof empObj.userId === 'object' ? empObj.userId.roleId : undefined;
+    empObj.permissions = await computePermissions(roleId);
+
     res.json(empObj);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -382,10 +382,11 @@ export const updatePermissions = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    user.permissions = permissions;
-    const savedUser = await user.save();
-
-    res.json({ message: 'تم تحديث الصلاحيات بنجاح', permissions: savedUser.permissions });
+    // الصلاحيات بقت مستندة لـ Role (مش per-user). للتعديل، استخدم RolePermissionsManager
+    return res.status(410).json({
+      message: 'تم نقل إدارة الصلاحيات لمستوى الدور. عدّل صلاحيات الدور من شاشة "إدارة صلاحيات الأدوار".',
+      hint: 'PATCH /api/role-permissions/:roleId'
+    });
   } catch (error: any) {
     console.error('Error updating permissions:', error.message);
     res.status(500).json({ message: 'Failed to update permissions' });

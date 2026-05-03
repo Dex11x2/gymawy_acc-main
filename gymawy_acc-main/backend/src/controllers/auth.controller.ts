@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt.util';
+import { computePermissions } from '../utils/permissions.util';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -67,7 +68,7 @@ export const login = async (req: Request, res: Response) => {
       departmentId: user.departmentId,
       phone: user.phone,
       isActive: user.isActive,
-      permissions: user.permissions || []
+      permissions: await computePermissions(user.roleId)
     };
     res.json({ token, user: userData });
   } catch (error: any) {
@@ -90,9 +91,9 @@ export const getMe = async (req: any, res: Response) => {
       departmentId: user.departmentId,
       phone: user.phone,
       isActive: user.isActive,
-      permissions: user.permissions || []
+      permissions: await computePermissions(user.roleId)
     };
-    
+
     res.json(userData);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
