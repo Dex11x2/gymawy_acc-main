@@ -32,16 +32,8 @@ const TestConnection: React.FC = () => {
   };
 
   const checkToken = () => {
-    const auth = localStorage.getItem('gemawi-auth');
-    if (auth) {
-      try {
-        const parsed = JSON.parse(auth);
-        return parsed.token ? '✅ Token موجود' : '❌ Token مفقود';
-      } catch (e) {
-        return '❌ خطأ في قراءة Token';
-      }
-    }
-    return '❌ لا يوجد بيانات تسجيل دخول';
+    const token = sessionStorage.getItem('gemawi-token');
+    return token ? '✅ Token موجود' : '❌ لا يوجد بيانات تسجيل دخول';
   };
 
   return (

@@ -24,7 +24,7 @@ const LoginForm: React.FC = () => {
     setError('');
 
     // Clear old auth data
-    localStorage.removeItem('gemawi-auth');
+    sessionStorage.removeItem('gemawi-token');
 
     try {
       await login(emailOrPhone, password);

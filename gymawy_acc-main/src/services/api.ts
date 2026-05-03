@@ -23,21 +23,9 @@ api.interceptors.request.use(
       fullURL: `${config.baseURL}${config.url}`
     });
 
-    const auth = localStorage.getItem('gemawi-auth');
-    if (auth) {
-      try {
-        const { token } = JSON.parse(auth);
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-          console.log('🔐 Token added to request (first 50 chars):', token.substring(0, 50) + '...');
-        } else {
-          console.warn('⚠️ No token found in auth object');
-        }
-      } catch (error) {
-        console.error('❌ Error parsing auth token:', error);
-      }
-    } else {
-      console.warn('⚠️ No auth found in localStorage');
+    const token = sessionStorage.getItem('gemawi-token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -50,7 +38,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Only logout and redirect if not already on login page
       if (!window.location.pathname.includes('/login')) {
-        localStorage.removeItem('gemawi-auth');
+        sessionStorage.removeItem('gemawi-token');
         window.location.href = '/login';
       }
     }
