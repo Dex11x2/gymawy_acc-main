@@ -14,7 +14,22 @@ const ROLE_LEVEL_BY_ENUM: Record<string, number> = {
   employee: 1,
 };
 
+/**
+ * Resolve permissions for a user. If `userOverride` is a non-empty array we
+ * trust it as the authoritative set for that user (per-employee customisation).
+ * Otherwise we fall back to the permissions configured for their role.
+ */
 export async function computePermissions(
+  roleId: mongoose.Types.ObjectId | string | undefined | null,
+  userOverride?: PermissionEntry[] | null
+): Promise<PermissionEntry[]> {
+  if (Array.isArray(userOverride) && userOverride.length > 0) {
+    return userOverride.map((p) => ({ module: p.module, actions: [...p.actions] }));
+  }
+  return computeRolePermissions(roleId);
+}
+
+export async function computeRolePermissions(
   roleId: mongoose.Types.ObjectId | string | undefined | null
 ): Promise<PermissionEntry[]> {
   if (!roleId) return [];

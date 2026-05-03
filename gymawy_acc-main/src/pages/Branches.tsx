@@ -207,45 +207,29 @@ const Branches: React.FC = () => {
     }
   };
 
-  const handleEmployeeSelect = async (employee: any) => {
+  const handleEmployeeSelect = (employee: any) => {
     setSelectedEmployee(employee);
-
-    // محاولة الحصول على userId من مصادر مختلفة
-    let userId = null;
-    if (employee.userId) {
-      userId = typeof employee.userId === 'object' ? employee.userId._id : employee.userId;
-    }
-
-    // إذا لم يتم العثور على userId، ابحث عن المستخدم بالبريد
-    if (!userId && employee.email) {
-      try {
-        const usersRes = await api.get('/all-users');
-        const foundUser = usersRes.data.find((u: any) => u.email === employee.email);
-        if (foundUser) userId = foundUser._id;
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    if (!userId) {
-      setToast({ message: 'لم يتم العثور على معرف المستخدم', type: 'error', isOpen: true });
-      return;
-    }
-
-    try {
-      const response = await api.get(`/users/${userId}`);
-      const userPermissions = response.data.permissions || [];
-      const permsMap: any = {};
-      userPermissions.forEach((p: any) => {
-        p.actions.forEach((action: string) => {
-          permsMap[`${p.module}_${action}`] = true;
-        });
+    // الموظف بييجي بالصلاحيات المحسوبة (override أو role default) من الـ backend
+    const effective = employee.permissions || [];
+    const permsMap: any = {};
+    effective.forEach((p: any) => {
+      p.actions.forEach((action: string) => {
+        permsMap[`${p.module}_${action}`] = true;
       });
-      setEmployeePermissions(permsMap);
-      setShowPermissionsModal(true);
+    });
+    setEmployeePermissions(permsMap);
+    setShowPermissionsModal(true);
+  };
+
+  const resetEmployeePermissions = async () => {
+    const employeeId = selectedEmployee.id || selectedEmployee._id;
+    try {
+      await api.put(`/employees/${employeeId}/permissions`, { permissions: [] });
+      setToast({ message: 'تم رجوع الموظف لصلاحيات الدور الافتراضية', type: 'success', isOpen: true });
+      setShowPermissionsModal(false);
+      loadEmployees();
     } catch (error: any) {
-      console.error(error);
-      setToast({ message: 'فشل تحميل الصلاحيات: ' + (error.response?.data?.message || error.message), type: 'error', isOpen: true });
+      setToast({ message: 'فشل الإزالة', type: 'error', isOpen: true });
     }
   };
 
@@ -267,26 +251,31 @@ const Branches: React.FC = () => {
   };
 
   const saveEmployeePermissions = async () => {
-    const userId = selectedEmployee.userId?._id || selectedEmployee.userId;
+    const employeeId = selectedEmployee.id || selectedEmployee._id;
     try {
       const newPermissions: any[] = [];
 
       pages.forEach((page) => {
         const actions: string[] = [];
         if (employeePermissions[`${page.module}_view`]) actions.push('view');
-        if (employeePermissions[`${page.module}_write`] || employeePermissions[`${page.module}_create`] || employeePermissions[`${page.module}_edit`]) {
-          actions.push('write', 'create', 'edit');
+        if (employeePermissions[`${page.module}_create`]) actions.push('create');
+        if (employeePermissions[`${page.module}_edit`]) actions.push('edit');
+        if (employeePermissions[`${page.module}_write`]) {
+          if (!actions.includes('create')) actions.push('create');
+          if (!actions.includes('edit')) actions.push('edit');
         }
         if (employeePermissions[`${page.module}_delete`]) actions.push('delete');
+        if (employeePermissions[`${page.module}_export`]) actions.push('export');
 
         if (actions.length > 0) {
           newPermissions.push({ module: page.module, actions });
         }
       });
 
-      await api.put(`/users/${userId}`, { permissions: newPermissions });
-      setToast({ message: 'تم حفظ الصلاحيات بنجاح', type: 'success', isOpen: true });
+      await api.put(`/employees/${employeeId}/permissions`, { permissions: newPermissions });
+      setToast({ message: 'تم حفظ الصلاحيات الخاصة بهذا الموظف', type: 'success', isOpen: true });
       setShowPermissionsModal(false);
+      loadEmployees();
     } catch (error: any) {
       setToast({ message: 'فشل الحفظ', type: 'error', isOpen: true });
     }
@@ -429,22 +418,42 @@ const Branches: React.FC = () => {
         )}
       </div>
 
-      {/* Permissions are now managed at the role level */}
+      {/* Per-employee permissions (override the role default for individuals) */}
       <Card>
         <Card.Header>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-            <Shield className="w-5 h-5 text-brand-500" />
-            إدارة الصلاحيات
-          </h2>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <Shield className="w-5 h-5 text-brand-500" />
+              صلاحيات الموظفين
+            </h2>
+            <Link to="/role-permissions">
+              <Button variant="outline">إدارة صلاحيات الأدوار</Button>
+            </Link>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            افتراضياً كل موظف بياخد صلاحيات دوره. اضغط على موظف لتخصيص صلاحياته بشكل مستقل.
+          </p>
         </Card.Header>
         <Card.Body>
-          <div className="bg-info-50 dark:bg-info-900/30 border border-info-200 dark:border-info-700 rounded-lg p-4 flex items-center justify-between gap-4">
-            <p className="text-sm text-info-800 dark:text-info-300">
-              الصلاحيات بقت مرتبطة بالدور (Role) مش بكل موظف لوحده. عدّل صلاحيات أي دور وهتسري على كل الموظفين اللي معاهم نفس الدور.
-            </p>
-            <Link to="/role-permissions">
-              <Button>اذهب لإدارة صلاحيات الأدوار</Button>
-            </Link>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {employees.map((employee: any, index: number) => (
+              <button
+                key={employee.id || employee._id || index}
+                onClick={() => handleEmployeeSelect(employee)}
+                className="relative p-4 bg-gradient-to-br from-brand-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-center group"
+              >
+                {employee.hasCustomPermissions && (
+                  <span className="absolute top-1 right-1 text-[10px] bg-white/30 rounded-full px-2 py-0.5">
+                    مخصصة
+                  </span>
+                )}
+                <div className="w-12 h-12 mx-auto mb-2 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <User className="w-6 h-6" />
+                </div>
+                <div className="font-bold text-sm truncate">{employee.name}</div>
+                <div className="text-xs opacity-80 truncate">{employee.position}</div>
+              </button>
+            ))}
           </div>
         </Card.Body>
       </Card>
@@ -684,8 +693,12 @@ const Branches: React.FC = () => {
       {/* Permissions Modal */}
       <Modal isOpen={showPermissionsModal} onClose={() => setShowPermissionsModal(false)} title={`صلاحيات: ${selectedEmployee?.name}`} size="xl">
         <div className="space-y-4">
-          <div className="bg-info-50 dark:bg-info-900/20 p-4 rounded-lg border border-info-200 dark:border-info-800">
-            <p className="text-sm text-info-800 dark:text-info-300">اختر الصلاحيات المناسبة لكل صفحة من خلال الأزرار التالية:</p>
+          <div className={`p-4 rounded-lg border ${selectedEmployee?.hasCustomPermissions ? 'bg-warning-50 dark:bg-warning-900/20 border-warning-200 dark:border-warning-800' : 'bg-info-50 dark:bg-info-900/20 border-info-200 dark:border-info-800'}`}>
+            <p className={`text-sm ${selectedEmployee?.hasCustomPermissions ? 'text-warning-800 dark:text-warning-300' : 'text-info-800 dark:text-info-300'}`}>
+              {selectedEmployee?.hasCustomPermissions
+                ? '⚙️ هذا الموظف عنده صلاحيات مخصصة (override) منفصلة عن دوره. التعديلات هتسري عليه فقط.'
+                : `الموظف دلوقتي بياخد صلاحيات دوره (${selectedEmployee?.userId?.role || ''}). أي تعديل هيخلق نسخة مخصصة له فقط.`}
+            </p>
           </div>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -764,11 +777,16 @@ const Branches: React.FC = () => {
             })}
           </div>
         </div>
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-3 mt-6 flex-wrap">
           <Button onClick={saveEmployeePermissions} className="flex-1">
             <Save className="w-4 h-4" />
             حفظ الصلاحيات
           </Button>
+          {selectedEmployee?.hasCustomPermissions && (
+            <Button variant="outline" onClick={resetEmployeePermissions}>
+              ↺ رجوع لصلاحيات الدور
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowPermissionsModal(false)}>
             إلغاء
           </Button>

@@ -24,12 +24,13 @@ export const getAll = async (req: any, res: Response) => {
       .skip(skip)
       .limit(limit);
 
-    // إضافة الصلاحيات المحسوبة من Role
+    // إضافة الصلاحيات المحسوبة (override للموظف لو موجود، أو الدور الافتراضي)
     const { computePermissions } = await import('../utils/permissions.util');
     const employeesWithPermissions = await Promise.all(employees.map(async (emp) => {
       const empObj: any = emp.toObject();
-      const roleId = empObj.userId && typeof empObj.userId === 'object' ? empObj.userId.roleId : undefined;
-      empObj.permissions = await computePermissions(roleId);
+      const u = empObj.userId && typeof empObj.userId === 'object' ? empObj.userId : null;
+      empObj.permissions = await computePermissions(u?.roleId, u?.permissions);
+      empObj.hasCustomPermissions = Array.isArray(u?.permissions) && u.permissions.length > 0;
       return empObj;
     }));
 
@@ -155,11 +156,12 @@ export const getById = async (req: Request, res: Response) => {
     const employee = await Employee.findById(req.params.id).populate('userId departmentId');
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
     
-    // إضافة الصلاحيات المحسوبة من Role
+    // إضافة الصلاحيات المحسوبة (override للموظف لو موجود، أو الدور الافتراضي)
     const { computePermissions } = await import('../utils/permissions.util');
     const empObj: any = employee.toObject();
-    const roleId = empObj.userId && typeof empObj.userId === 'object' ? empObj.userId.roleId : undefined;
-    empObj.permissions = await computePermissions(roleId);
+    const u = empObj.userId && typeof empObj.userId === 'object' ? empObj.userId : null;
+    empObj.permissions = await computePermissions(u?.roleId, u?.permissions);
+    empObj.hasCustomPermissions = Array.isArray(u?.permissions) && u.permissions.length > 0;
 
     res.json(empObj);
   } catch (error: any) {
@@ -382,10 +384,22 @@ export const updatePermissions = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    // الصلاحيات بقت مستندة لـ Role (مش per-user). للتعديل، استخدم RolePermissionsManager
-    return res.status(410).json({
-      message: 'تم نقل إدارة الصلاحيات لمستوى الدور. عدّل صلاحيات الدور من شاشة "إدارة صلاحيات الأدوار".',
-      hint: 'PATCH /api/role-permissions/:roleId'
+    // Per-employee override. Empty/missing array = clear override and fall back to role defaults.
+    const cleaned = Array.isArray(permissions)
+      ? permissions
+          .filter((p: any) => p && p.module && Array.isArray(p.actions) && p.actions.length > 0)
+          .map((p: any) => ({ module: p.module, actions: p.actions }))
+      : [];
+
+    user.set('permissions', cleaned.length > 0 ? cleaned : undefined);
+    await user.save();
+
+    return res.json({
+      message: cleaned.length > 0
+        ? 'تم حفظ الصلاحيات الخاصة بهذا الموظف'
+        : 'تم إزالة الصلاحيات الخاصة. الموظف يستخدم صلاحيات الدور الآن',
+      hasCustomPermissions: cleaned.length > 0,
+      permissions: cleaned,
     });
   } catch (error: any) {
     console.error('Error updating permissions:', error.message);

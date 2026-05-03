@@ -50,7 +50,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       ...(user.toObject() as IUser),
       userId: user._id as mongoose.Types.ObjectId,
       id: (user._id as mongoose.Types.ObjectId).toString(),
-      permissions: await computePermissions(user.roleId),
+      permissions: await computePermissions(user.roleId, user.permissions),
     } as AuthenticatedUser;
 
     next();

@@ -68,7 +68,7 @@ export const login = async (req: Request, res: Response) => {
       departmentId: user.departmentId,
       phone: user.phone,
       isActive: user.isActive,
-      permissions: await computePermissions(user.roleId)
+      permissions: await computePermissions(user.roleId, user.permissions)
     };
     res.json({ token, user: userData });
   } catch (error: any) {
@@ -91,7 +91,7 @@ export const getMe = async (req: any, res: Response) => {
       departmentId: user.departmentId,
       phone: user.phone,
       isActive: user.isActive,
-      permissions: await computePermissions(user.roleId)
+      permissions: await computePermissions(user.roleId, user.permissions)
     };
 
     res.json(userData);

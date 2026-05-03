@@ -27,15 +27,29 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    if ('permissions' in req.body) {
-      return res.status(410).json({
-        message: 'تم نقل إدارة الصلاحيات لمستوى الدور. عدّل صلاحيات الدور من شاشة "إدارة صلاحيات الأدوار".',
-        hint: 'PATCH /api/permissions/update with roleId',
-      });
+    const update: any = { ...req.body };
+
+    // Normalise per-user permission override: empty array means clear override
+    if ('permissions' in update) {
+      if (Array.isArray(update.permissions)) {
+        const cleaned = update.permissions
+          .filter((p: any) => p && p.module && Array.isArray(p.actions) && p.actions.length > 0)
+          .map((p: any) => ({ module: p.module, actions: p.actions }));
+        if (cleaned.length === 0) {
+          delete update.permissions;
+          update.$unset = { ...(update.$unset || {}), permissions: '' };
+        } else {
+          update.permissions = cleaned;
+        }
+      } else {
+        delete update.permissions;
+        update.$unset = { ...(update.$unset || {}), permissions: '' };
+      }
     }
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      update,
       { new: true, runValidators: true }
     ).select('-password');
 

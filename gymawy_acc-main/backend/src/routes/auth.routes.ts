@@ -139,7 +139,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         role: user.role,
         companyId: user.companyId,
-        permissions: await computePermissions(user.roleId)
+        permissions: await computePermissions(user.roleId, user.permissions)
       }
     });
   } catch (error: any) {
@@ -164,7 +164,8 @@ router.get('/me', protect, async (req: any, res) => {
       branchId: user.branchId,
       phone: user.phone,
       isActive: user.isActive,
-      permissions: await computePermissions(user.roleId),
+      hasCustomPermissions: Array.isArray(user.permissions) && user.permissions.length > 0,
+      permissions: await computePermissions(user.roleId, user.permissions),
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

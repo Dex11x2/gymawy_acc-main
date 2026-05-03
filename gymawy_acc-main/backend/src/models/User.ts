@@ -1,6 +1,11 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
+export interface PermissionOverride {
+  module: string;
+  actions: string[];
+}
+
 export interface IUser extends Document {
   email: string;
   password: string;
@@ -9,6 +14,9 @@ export interface IUser extends Document {
   name: string;
   role: "super_admin" | "general_manager" | "administrative_manager" | "employee";
   roleId?: mongoose.Types.ObjectId;
+  // Per-user override. If non-empty array, replaces role-based permissions
+  // entirely for this user. Empty/missing => fall back to role defaults.
+  permissions?: PermissionOverride[];
   companyId?: mongoose.Types.ObjectId;
   departmentId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
@@ -43,6 +51,10 @@ const UserSchema = new Schema(
       default: "employee",
     },
     roleId: { type: Schema.Types.ObjectId, ref: "Role" },
+    permissions: {
+      type: [{ module: String, actions: [String] }],
+      default: undefined, // distinguish "no override" (undefined) from "explicit empty" ([])
+    },
     companyId: { type: Schema.Types.ObjectId, ref: "Company" },
     departmentId: { type: Schema.Types.ObjectId, ref: "Department" },
     branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
