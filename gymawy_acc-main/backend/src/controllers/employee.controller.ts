@@ -368,7 +368,7 @@ export const toggleActive = async (req: Request, res: Response) => {
   }
 };
 
-export const updatePermissions = async (req: Request, res: Response) => {
+export const updatePermissions = async (req: any, res: Response) => {
   try {
     const { permissions } = req.body;
 
@@ -382,6 +382,16 @@ export const updatePermissions = async (req: Request, res: Response) => {
 
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
+    }
+
+    // Hierarchy: editor can only modify permissions of users strictly below them
+    const { getRoleLevel, canEditTargetLevel } = await import('../utils/permissions.util');
+    const editorLevel = getRoleLevel(req.user?.role);
+    const targetLevel = getRoleLevel(user.role);
+    if (!canEditTargetLevel(editorLevel, targetLevel)) {
+      return res.status(403).json({
+        message: 'لا يمكنك تعديل صلاحيات موظف بنفس مستواك أو أعلى',
+      });
     }
 
     // Per-employee override. Empty/missing array = clear override and fall back to role defaults.

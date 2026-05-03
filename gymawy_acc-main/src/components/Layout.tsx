@@ -190,7 +190,7 @@ const Layout: React.FC = () => {
     { id: 'attendance-map' as IconName, name: language === 'ar' ? 'تسجيل الحضور' : 'Check In', path: '/attendance-map', show: true },
     { id: 'attendance-management' as IconName, name: language === 'ar' ? 'إدارة الحضور' : 'Attendance Management', path: '/attendance-management', show: ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
     { id: 'branches' as IconName, name: language === 'ar' ? 'الفروع والصلاحيات' : 'Branches & Permissions', path: '/branches', show: ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
-    { id: 'role-permissions' as IconName, name: language === 'ar' ? 'إدارة الصلاحيات' : 'Role Permissions', path: '/role-permissions', show: ['super_admin', 'general_manager'].includes(user?.role || '') },
+    { id: 'role-permissions' as IconName, name: language === 'ar' ? 'إدارة الصلاحيات' : 'Role Permissions', path: '/role-permissions', show: ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
     { id: 'departments' as IconName, name: t.departments, path: '/departments', show: user?.role === 'super_admin' || hasPermission('departments') },
     { id: 'employees' as IconName, name: t.employees, path: '/employees', show: user?.role === 'super_admin' || hasPermission('employees') },
     { id: 'payroll' as IconName, name: language === 'ar' ? 'الرواتب الشهرية' : 'Monthly Salaries', path: '/payroll', show: user?.role === 'super_admin' || hasPermission('salaries') },

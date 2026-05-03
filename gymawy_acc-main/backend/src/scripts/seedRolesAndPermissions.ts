@@ -66,40 +66,28 @@ async function seed() {
     // RolePermissions are derived; safe to recompute every run
     await RolePermission.deleteMany({});
 
-    // Create permissions
+    // On fresh install, only the super admin (level 4) starts with full access.
+    // Lower roles begin with no permissions; the super admin distributes them
+    // through the RolePermissionsManager screen, and managers redistribute to
+    // those below them via the same screen.
     const permissions = [];
-    
     for (const role of insertedRoles) {
       for (const page of insertedPages) {
-        let canView = false, canCreate = false, canEdit = false, canDelete = false, canExport = false;
-
-        if (role.level === 4) { // Super Admin
-          canView = canCreate = canEdit = canDelete = canExport = true;
-        } else if (role.level === 3) { // General Manager
-          canView = canCreate = canEdit = canDelete = canExport = true;
-        } else if (role.level === 2) { // Administrative Manager
-          canView = canCreate = canEdit = canExport = true;
-          canDelete = ['tasks', 'chat', 'posts'].includes(page.module);
-        } else if (role.level === 1) { // Employee
-          canView = ['dashboard', 'attendance_system', 'employees', 'payroll', 'custody', 'tasks', 'chat', 'posts', 'reviews', 'complaints', 'instructions', 'occasions', 'ads_funding'].includes(page.module);
-          canCreate = ['attendance_system', 'custody', 'tasks', 'chat', 'posts', 'complaints'].includes(page.module);
-          canEdit = ['tasks'].includes(page.module);
-        }
-
+        const isSuperAdmin = role.level === 4;
         permissions.push({
           roleId: role._id,
           pageId: page._id,
-          canView,
-          canCreate,
-          canEdit,
-          canDelete,
-          canExport
+          canView: isSuperAdmin,
+          canCreate: isSuperAdmin,
+          canEdit: isSuperAdmin,
+          canDelete: isSuperAdmin,
+          canExport: isSuperAdmin,
         });
       }
     }
 
     await RolePermission.insertMany(permissions);
-    console.log('✅ Permissions created');
+    console.log(`✅ Permissions created (${permissions.length}) — super admin only on fresh install`);
 
     console.log('\n🎉 Seed completed successfully!');
     process.exit(0);

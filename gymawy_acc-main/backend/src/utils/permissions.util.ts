@@ -14,6 +14,20 @@ const ROLE_LEVEL_BY_ENUM: Record<string, number> = {
   employee: 1,
 };
 
+export function getRoleLevel(roleEnum: string | undefined | null): number {
+  if (!roleEnum) return 0;
+  return ROLE_LEVEL_BY_ENUM[roleEnum] || 0;
+}
+
+/**
+ * Editor can grant permissions only to roles strictly below their own level.
+ * Super admin (4) can edit general manager (3) and below; general manager
+ * can edit administrative manager (2) and below; etc.
+ */
+export function canEditTargetLevel(editorLevel: number, targetLevel: number): boolean {
+  return editorLevel > 0 && editorLevel > targetLevel;
+}
+
 /**
  * Resolve permissions for a user. If `userOverride` is a non-empty array we
  * trust it as the authoritative set for that user (per-employee customisation).

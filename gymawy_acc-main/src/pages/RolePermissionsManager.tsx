@@ -13,7 +13,46 @@ const RolePermissionsManager: React.FC = () => {
   const [permissions, setPermissions] = useState<any[]>([]);
   const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
 
-  const isAdmin = ['super_admin', 'general_manager'].includes(user?.role || '');
+  const ROLE_LEVELS: Record<string, number> = {
+    super_admin: 4, general_manager: 3, administrative_manager: 2, employee: 1,
+  };
+  const myLevel = ROLE_LEVELS[user?.role || ''] || 0;
+  const isAdmin = myLevel >= 2; // Anyone who can manage someone below them
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  // Only show roles strictly below the current user's level
+  const editableRoles = roles.filter((r: any) => (r.level || 0) < myLevel);
+
+  const [showAddPage, setShowAddPage] = useState(false);
+  const [newPage, setNewPage] = useState({ name: '', nameEn: '', path: '', icon: '📄', module: '' });
+
+  const handleAddPage = async () => {
+    if (!newPage.name || !newPage.nameEn || !newPage.path || !newPage.module) {
+      setToast({ message: 'الاسم بالعربي/الإنجليزي والمسار والـ module مطلوبين', type: 'error', isOpen: true });
+      return;
+    }
+    try {
+      await api.post('/permissions/pages', newPage);
+      setToast({ message: 'تمت إضافة الصفحة. كل الأدوار يبدأوا بصلاحيات صفر عليها — وزّعها من فضلك', type: 'success', isOpen: true });
+      setShowAddPage(false);
+      setNewPage({ name: '', nameEn: '', path: '', icon: '📄', module: '' });
+      loadData();
+    } catch (e: any) {
+      setToast({ message: e.response?.data?.message || 'فشل الإضافة', type: 'error', isOpen: true });
+    }
+  };
+
+  const handleDeletePage = async (pageId: string, pageName: string) => {
+    if (!window.confirm(`متأكد من حذف "${pageName}"؟ كل صلاحياتها على كل الأدوار هتتمسح كمان.`)) return;
+    try {
+      await api.delete(`/permissions/pages/${pageId}`);
+      setToast({ message: 'تم الحذف', type: 'success', isOpen: true });
+      loadData();
+      if (selectedRole) loadRolePermissions(idOf(selectedRole));
+    } catch (e: any) {
+      setToast({ message: e.response?.data?.message || 'فشل الحذف', type: 'error', isOpen: true });
+    }
+  };
 
   useEffect(() => {
     if (isAdmin) loadData();
@@ -88,15 +127,41 @@ const RolePermissionsManager: React.FC = () => {
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
-            <Shield className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-          </div>
-          إدارة الصلاحيات
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">تحديد صلاحيات كل دور على الصفحات</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
+              <Shield className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+            </div>
+            إدارة الصلاحيات
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            تحديد صلاحيات كل دور على الصفحات. تقدر تعدّل الأدوار اللي تحت مستواك فقط.
+          </p>
+        </div>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setShowAddPage(!showAddPage)}
+            className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg flex items-center gap-2 text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            إضافة صفحة جديدة
+          </button>
+        )}
       </div>
+
+      {showAddPage && isSuperAdmin && (
+        <div className="bg-white dark:bg-gray-800 border-2 border-brand-200 dark:border-brand-700 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <input className="px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600" placeholder="الاسم العربي *" value={newPage.name} onChange={(e) => setNewPage({ ...newPage, name: e.target.value })} />
+          <input className="px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600" placeholder="Name (English) *" value={newPage.nameEn} onChange={(e) => setNewPage({ ...newPage, nameEn: e.target.value })} />
+          <input className="px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600" placeholder="المسار /path *" value={newPage.path} onChange={(e) => setNewPage({ ...newPage, path: e.target.value })} />
+          <input className="px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600" placeholder="module key *" value={newPage.module} onChange={(e) => setNewPage({ ...newPage, module: e.target.value })} />
+          <div className="flex gap-2">
+            <input className="px-3 py-2 border rounded w-16 dark:bg-gray-700 dark:border-gray-600 text-center" placeholder="📄" value={newPage.icon} onChange={(e) => setNewPage({ ...newPage, icon: e.target.value })} />
+            <button onClick={handleAddPage} className="flex-1 bg-success-500 hover:bg-success-600 text-white rounded-lg text-sm">حفظ</button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Roles List */}
@@ -106,7 +171,7 @@ const RolePermissionsManager: React.FC = () => {
           </Card.Header>
           <Card.Body className="p-4">
             <div className="space-y-2">
-              {roles.map((role) => (
+              {editableRoles.map((role) => (
                 <button
                   key={role._id}
                   onClick={() => handleRoleSelect(role)}
@@ -181,10 +246,19 @@ const RolePermissionsManager: React.FC = () => {
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <span className="text-xl">{page.icon}</span>
-                                <div>
+                                <div className="flex-1">
                                   <p className="font-medium text-gray-800 dark:text-white">{page.name}</p>
                                   <p className="text-xs text-gray-500 dark:text-gray-400">{page.path}</p>
                                 </div>
+                                {isSuperAdmin && (
+                                  <button
+                                    onClick={() => handleDeletePage(idOf(page), page.name)}
+                                    title="حذف الصفحة من الكتالوج"
+                                    className="p-1 text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20 rounded"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                             <td className="px-6 py-4 text-center">

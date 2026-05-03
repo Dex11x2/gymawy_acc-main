@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { usePermissions } from '../hooks/usePermissions';
+import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
+
+const ROLE_LEVELS: Record<string, number> = {
+  super_admin: 4, general_manager: 3, administrative_manager: 2, employee: 1,
+};
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import { Card, Button } from '../components/ui';
@@ -26,6 +31,14 @@ import {
 
 const Branches: React.FC = () => {
   const { canRead, canWrite, canDelete } = usePermissions();
+  const { user: currentUser } = useAuthStore();
+  const myLevel = ROLE_LEVELS[currentUser?.role || ''] || 0;
+
+  const canEditEmployee = (emp: any): boolean => {
+    const empRole = emp?.userId?.role || emp?.role;
+    const empLevel = ROLE_LEVELS[empRole || ''] || 0;
+    return myLevel > 0 && myLevel > empLevel;
+  };
 
   const canViewBranches = canRead('branches');
   const canWriteBranches = canWrite('branches');
@@ -436,24 +449,33 @@ const Branches: React.FC = () => {
         </Card.Header>
         <Card.Body>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {employees.map((employee: any, index: number) => (
-              <button
-                key={employee.id || employee._id || index}
-                onClick={() => handleEmployeeSelect(employee)}
-                className="relative p-4 bg-gradient-to-br from-brand-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-center group"
-              >
-                {employee.hasCustomPermissions && (
-                  <span className="absolute top-1 right-1 text-[10px] bg-white/30 rounded-full px-2 py-0.5">
-                    مخصصة
-                  </span>
-                )}
-                <div className="w-12 h-12 mx-auto mb-2 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <User className="w-6 h-6" />
-                </div>
-                <div className="font-bold text-sm truncate">{employee.name}</div>
-                <div className="text-xs opacity-80 truncate">{employee.position}</div>
-              </button>
-            ))}
+            {employees.map((employee: any, index: number) => {
+              const editable = canEditEmployee(employee);
+              return (
+                <button
+                  key={employee.id || employee._id || index}
+                  onClick={() => editable && handleEmployeeSelect(employee)}
+                  disabled={!editable}
+                  title={editable ? '' : 'لا يمكنك تعديل صلاحيات هذا الموظف (نفس مستواك أو أعلى)'}
+                  className={`relative p-4 rounded-xl text-center group transition-all duration-200 ${
+                    editable
+                      ? 'bg-gradient-to-br from-brand-500 to-purple-600 text-white hover:shadow-lg cursor-pointer'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  {employee.hasCustomPermissions && (
+                    <span className="absolute top-1 right-1 text-[10px] bg-white/30 rounded-full px-2 py-0.5">
+                      مخصصة
+                    </span>
+                  )}
+                  <div className={`w-12 h-12 mx-auto mb-2 ${editable ? 'bg-white/20' : 'bg-gray-300 dark:bg-gray-600'} rounded-full flex items-center justify-center ${editable ? 'group-hover:scale-110' : ''} transition-transform`}>
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div className="font-bold text-sm truncate">{employee.name}</div>
+                  <div className={`text-xs truncate ${editable ? 'opacity-80' : ''}`}>{employee.position}</div>
+                </button>
+              );
+            })}
           </div>
         </Card.Body>
       </Card>
