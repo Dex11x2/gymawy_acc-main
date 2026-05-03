@@ -36,11 +36,26 @@ import AdsFundingReport from './pages/AdsFundingReport';
 import MediaSalaries from './pages/MediaSalaries';
 
 const App: React.FC = () => {
-  const { isAuthenticated, initAuth, user } = useAuthStore();
+  const { isAuthenticated, isLoading, initAuth, user } = useAuthStore();
 
   useEffect(() => {
     initAuth();
   }, [initAuth]);
+
+  if (isLoading) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#f8fafc', zIndex: 9999
+      }}>
+        <div style={{
+          width: 48, height: 48, border: '4px solid #e2e8f0', borderTopColor: '#3b82f6',
+          borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+        }} />
+        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+      </div>
+    );
+  }
 
   // Socket.IO connection
   useEffect(() => {
