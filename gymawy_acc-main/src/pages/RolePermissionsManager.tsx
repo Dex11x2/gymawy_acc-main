@@ -41,20 +41,22 @@ const RolePermissionsManager: React.FC = () => {
     }
   };
 
+  const idOf = (obj: any) => obj?.id || obj?._id;
+
   const handleRoleSelect = (role: any) => {
     setSelectedRole(role);
-    loadRolePermissions(role._id);
+    loadRolePermissions(idOf(role));
   };
 
   const getPermission = (pageId: string) => {
-    return permissions.find(p => p.pageId?._id === pageId) || {};
+    return permissions.find(p => idOf(p.pageId) === pageId) || {};
   };
 
   const togglePermission = async (pageId: string, field: string, value: boolean) => {
     try {
       const existing = getPermission(pageId);
       await api.put('/permissions/update', {
-        roleId: selectedRole._id,
+        roleId: idOf(selectedRole),
         pageId,
         canView: field === 'canView' ? value : existing.canView || false,
         canCreate: field === 'canCreate' ? value : existing.canCreate || false,
@@ -62,7 +64,7 @@ const RolePermissionsManager: React.FC = () => {
         canDelete: field === 'canDelete' ? value : existing.canDelete || false,
         canExport: field === 'canExport' ? value : existing.canExport || false
       });
-      loadRolePermissions(selectedRole._id);
+      loadRolePermissions(idOf(selectedRole));
       setToast({ message: 'تم التحديث', type: 'success', isOpen: true });
     } catch (error: any) {
       setToast({ message: 'فشل التحديث', type: 'error', isOpen: true });
@@ -173,9 +175,9 @@ const RolePermissionsManager: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {pages.map((page) => {
-                        const perm = getPermission(page._id);
+                        const perm = getPermission(idOf(page));
                         return (
-                          <tr key={page._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <tr key={idOf(page)} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <span className="text-xl">{page.icon}</span>
@@ -189,7 +191,7 @@ const RolePermissionsManager: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={perm.canView || false}
-                                onChange={(e) => togglePermission(page._id, 'canView', e.target.checked)}
+                                onChange={(e) => togglePermission(idOf(page), 'canView', e.target.checked)}
                                 className="w-5 h-5 text-info-600 rounded border-gray-300 dark:border-gray-600 focus:ring-info-500"
                               />
                             </td>
@@ -197,7 +199,7 @@ const RolePermissionsManager: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={perm.canCreate || false}
-                                onChange={(e) => togglePermission(page._id, 'canCreate', e.target.checked)}
+                                onChange={(e) => togglePermission(idOf(page), 'canCreate', e.target.checked)}
                                 className="w-5 h-5 text-success-600 rounded border-gray-300 dark:border-gray-600 focus:ring-success-500"
                               />
                             </td>
@@ -205,7 +207,7 @@ const RolePermissionsManager: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={perm.canEdit || false}
-                                onChange={(e) => togglePermission(page._id, 'canEdit', e.target.checked)}
+                                onChange={(e) => togglePermission(idOf(page), 'canEdit', e.target.checked)}
                                 className="w-5 h-5 text-warning-600 rounded border-gray-300 dark:border-gray-600 focus:ring-warning-500"
                               />
                             </td>
@@ -213,7 +215,7 @@ const RolePermissionsManager: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={perm.canDelete || false}
-                                onChange={(e) => togglePermission(page._id, 'canDelete', e.target.checked)}
+                                onChange={(e) => togglePermission(idOf(page), 'canDelete', e.target.checked)}
                                 className="w-5 h-5 text-error-600 rounded border-gray-300 dark:border-gray-600 focus:ring-error-500"
                               />
                             </td>
@@ -221,7 +223,7 @@ const RolePermissionsManager: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={perm.canExport || false}
-                                onChange={(e) => togglePermission(page._id, 'canExport', e.target.checked)}
+                                onChange={(e) => togglePermission(idOf(page), 'canExport', e.target.checked)}
                                 className="w-5 h-5 text-brand-600 rounded border-gray-300 dark:border-gray-600 focus:ring-brand-500"
                               />
                             </td>
