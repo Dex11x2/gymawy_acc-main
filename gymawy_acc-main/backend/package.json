@@ -17,7 +17,9 @@
     "add:ads-funding": "ts-node src/scripts/addAdsFundingPage.ts",
     "add:media-salaries-pages": "ts-node src/scripts/addMediaSalariesPages.ts",
     "fix:media-price-index": "ts-node src/scripts/fixMediaPriceIndex.ts",
-    "migrate:content-types": "ts-node src/scripts/migrateContentTypes.ts"
+    "migrate:content-types": "ts-node src/scripts/migrateContentTypes.ts",
+    "backup": "ts-node src/scripts/backupMongo.ts",
+    "restore": "ts-node src/scripts/restoreMongo.ts"
   },
   "keywords": [
     "accounting",

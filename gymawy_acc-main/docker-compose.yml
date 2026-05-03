@@ -1,10 +1,33 @@
 services:
+  mongo:
+    image: mongo:7
+    container_name: gemawi-mongodb
+    restart: always
+    command: ["mongod", "--auth", "--bind_ip_all"]
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "-u", "${MONGO_ROOT_USER}", "-p", "${MONGO_ROOT_PASSWORD}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - gemawi-network
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
     container_name: gemawi-backend
     restart: always
+    depends_on:
+      mongo:
+        condition: service_healthy
     ports:
       - "5000:5000"
     environment:
@@ -31,10 +54,10 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: gemawi-frontend
     restart: always
-    ports:
-      - "8080:80"
     depends_on:
       - backend
+    ports:
+      - "8080:80"
     networks:
       - gemawi-network
     volumes:
@@ -43,3 +66,8 @@ services:
 networks:
   gemawi-network:
     driver: bridge
+
+volumes:
+  mongodb_data:
+    name: mongodb_data
+    external: true
