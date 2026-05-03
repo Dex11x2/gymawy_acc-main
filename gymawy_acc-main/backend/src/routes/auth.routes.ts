@@ -149,7 +149,7 @@ router.post('/login', async (req, res) => {
 // Get current user
 router.get('/me', protect, async (req: any, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select('-password -plainPassword');
     res.json(user);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
