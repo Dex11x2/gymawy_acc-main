@@ -407,7 +407,7 @@ const Layout: React.FC = () => {
                     {user?.name}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {user?.role === 'super_admin' ? 'Super Admin' :
+                    {user?.role === 'super_admin' ? 'Dev' :
                      user?.role === 'general_manager' ? 'مدير عام' :
                      user?.role === 'administrative_manager' ? 'مدير إداري' : 'موظف'}
                   </p>

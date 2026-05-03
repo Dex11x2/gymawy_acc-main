@@ -10,7 +10,7 @@ const roles = [
   { name: 'موظف', nameEn: 'Employee', level: 1 },
   { name: 'مدير إداري', nameEn: 'Administrative Manager', level: 2 },
   { name: 'مدير عام', nameEn: 'General Manager', level: 3 },
-  { name: 'سوبر أدمِن', nameEn: 'Super Admin', level: 4 }
+  { name: 'Dev', nameEn: 'Dev', level: 4 }
 ];
 
 const pages = [
