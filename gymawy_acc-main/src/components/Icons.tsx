@@ -14,6 +14,13 @@ export const DashboardIcon: React.FC<IconProps> = ({ className = '', size = 20 }
   </svg>
 );
 
+export const LockIcon: React.FC<IconProps> = ({ className = '', size = 20 }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
 export const AttendanceIcon: React.FC<IconProps> = ({ className = '', size = 20 }) => (
   <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
@@ -187,6 +194,7 @@ export const iconComponents = {
   instructions: InstructionIcon,
   occasions: OccasionIcon,
   'dev-tasks': DevTasksIcon,
+  'role-permissions': LockIcon,
 };
 
 export type IconName = keyof typeof iconComponents;

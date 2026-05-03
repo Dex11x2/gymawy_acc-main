@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { usePermissions } from '../hooks/usePermissions';
 import api from '../services/api';
 import Toast from '../components/Toast';
@@ -428,29 +429,22 @@ const Branches: React.FC = () => {
         )}
       </div>
 
-      {/* Employees Section */}
+      {/* Permissions are now managed at the role level */}
       <Card>
         <Card.Header>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
             <Shield className="w-5 h-5 text-brand-500" />
-            إدارة صلاحيات الموظفين
+            إدارة الصلاحيات
           </h2>
         </Card.Header>
         <Card.Body>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {employees.map((employee: any, index: number) => (
-              <button
-                key={employee.id || employee._id || index}
-                onClick={() => handleEmployeeSelect(employee)}
-                className="p-4 bg-gradient-to-br from-brand-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-center group"
-              >
-                <div className="w-12 h-12 mx-auto mb-2 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <User className="w-6 h-6" />
-                </div>
-                <div className="font-bold text-sm truncate">{employee.name}</div>
-                <div className="text-xs opacity-80 truncate">{employee.position}</div>
-              </button>
-            ))}
+          <div className="bg-info-50 dark:bg-info-900/30 border border-info-200 dark:border-info-700 rounded-lg p-4 flex items-center justify-between gap-4">
+            <p className="text-sm text-info-800 dark:text-info-300">
+              الصلاحيات بقت مرتبطة بالدور (Role) مش بكل موظف لوحده. عدّل صلاحيات أي دور وهتسري على كل الموظفين اللي معاهم نفس الدور.
+            </p>
+            <Link to="/role-permissions">
+              <Button>اذهب لإدارة صلاحيات الأدوار</Button>
+            </Link>
           </div>
         </Card.Body>
       </Card>
