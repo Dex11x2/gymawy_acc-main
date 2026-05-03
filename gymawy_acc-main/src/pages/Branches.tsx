@@ -240,7 +240,7 @@ const Branches: React.FC = () => {
       await api.patch(`/employees/${employeeId}/permissions`, { permissions: [] });
       setToast({ message: 'تم رجوع الموظف لصلاحيات الدور الافتراضية', type: 'success', isOpen: true });
       setShowPermissionsModal(false);
-      loadEmployees();
+      loadEmployeesAndPages();
     } catch (error: any) {
       setToast({ message: 'فشل الإزالة', type: 'error', isOpen: true });
     }
@@ -288,7 +288,7 @@ const Branches: React.FC = () => {
       await api.patch(`/employees/${employeeId}/permissions`, { permissions: newPermissions });
       setToast({ message: 'تم حفظ الصلاحيات الخاصة بهذا الموظف', type: 'success', isOpen: true });
       setShowPermissionsModal(false);
-      loadEmployees();
+      loadEmployeesAndPages();
     } catch (error: any) {
       setToast({ message: 'فشل الحفظ', type: 'error', isOpen: true });
     }
