@@ -5,6 +5,7 @@ import User, { IUser } from '../models/User';
 
 export interface AuthenticatedUser {
   userId: mongoose.Types.ObjectId;
+  id: string;
   _id: mongoose.Types.ObjectId;
   email: string;
   name: string;
@@ -45,7 +46,8 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     req.user = {
       ...(user.toObject() as IUser),
-      userId: user._id as mongoose.Types.ObjectId
+      userId: user._id as mongoose.Types.ObjectId,
+      id: (user._id as mongoose.Types.ObjectId).toString()
     } as AuthenticatedUser;
 
     next();
