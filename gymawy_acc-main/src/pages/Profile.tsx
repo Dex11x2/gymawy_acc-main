@@ -54,7 +54,7 @@ const Profile: React.FC = () => {
   // Get role display name
   const getRoleDisplay = (role: string) => {
     const roles: Record<string, string> = {
-      'dev': 'Super Admin',
+      'dev': 'Dev',
       'general_manager': 'General Manager',
       'administrative_manager': 'Administrative Manager',
       'employee': 'Employee'
