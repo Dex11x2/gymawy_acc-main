@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
-import { usePermissions } from '../hooks/usePermissions';
 import { Pencil, LogOut, Save, X, ChevronRight } from 'lucide-react';
 import Toast from '../components/Toast';
 
 const Profile: React.FC = () => {
   const { user, updateUser, logout } = useAuthStore();
   const { departments } = useDataStore();
-  const { canRead, canWrite } = usePermissions();
 
-  const canViewProfile = canRead('profile');
-  const canEditProfile = canWrite('profile');
+  // Profile page always renders the LOGGED-IN user's own profile, so no
+  // permission gate is needed. Permissions decide cross-user access elsewhere.
+  const canEditProfile = true;
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error' | 'info' | 'warning'; isOpen: boolean}>({message: '', type: 'success', isOpen: false});
@@ -66,25 +65,6 @@ const Profile: React.FC = () => {
   const getAvatarUrl = (name: string) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3B82F6&color=fff&size=200`;
   };
-
-  // Permission denied view
-  if (!canViewProfile) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-danger/10">
-            <span className="text-3xl">🔒</span>
-          </div>
-          <h2 className="text-xl font-semibold text-black dark:text-white mb-2">
-            Access Denied
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            You don't have permission to view this profile
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (!user) {
     return (
