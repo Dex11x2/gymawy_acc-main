@@ -3,7 +3,7 @@ import AdOperation from '../models/AdOperation';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const filter = req.user?.role === 'super_admin' ? {} : { companyId: req.user?.companyId };
+    const filter = req.user?.role === 'dev' ? {} : { companyId: req.user?.companyId };
     const operations = await AdOperation.find(filter).populate('createdBy').sort({ date: -1 });
     res.json(operations);
   } catch (error: any) {

@@ -361,7 +361,7 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
 ];
 
 export const DEFAULT_PERMISSIONS = {
-  super_admin: ALL_PERMISSIONS.map(m => ({
+  dev: ALL_PERMISSIONS.map(m => ({
     module: m.module,
     actions: m.actions.map(a => a.action),
   })),

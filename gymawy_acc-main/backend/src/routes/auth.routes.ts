@@ -24,7 +24,7 @@ router.post('/seed-super-admin', async (req, res) => {
       return res.status(400).json({ message: 'email, password and name are required' });
     }
 
-    const user = await User.create({ email, password, name, role: 'super_admin' });
+    const user = await User.create({ email, password, name, role: 'dev' });
     const token = generateToken((user._id as any).toString());
 
     res.status(201).json({
@@ -51,8 +51,8 @@ router.post('/register', protect, async (req: any, res) => {
       return res.status(400).json({ message: 'email, password and name are required' });
     }
 
-    // Only allow super_admin to create admins/employees. Admin can only create employees in their company.
-    if (req.user.role === 'super_admin') {
+    // Only allow dev to create admins/employees. Admin can only create employees in their company.
+    if (req.user.role === 'dev') {
       if (!['admin', 'employee'].includes(role)) {
         return res.status(400).json({ message: 'role must be admin or employee' });
       }

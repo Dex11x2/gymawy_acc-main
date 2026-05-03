@@ -18,7 +18,7 @@ const AttendanceSystem: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [toast, setToast] = useState({ message: "", type: "success" as any, isOpen: false });
 
-  const isAdmin = user?.role === "super_admin" || user?.role === "administrative_manager";
+  const isAdmin = user?.role === "dev" || user?.role === "administrative_manager";
 
   useEffect(() => {
     if (viewMode === "daily") {

@@ -38,7 +38,7 @@ const createSuperAdmin = async () => {
       email: 'Dexter11x2@gmail.com',
       phone: '+201234567890',
       password: hashedPassword,
-      role: 'super_admin',
+      role: 'dev',
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date()

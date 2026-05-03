@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'super_admin' | 'general_manager' | 'administrative_manager' | 'employee';
+  role: 'dev' | 'general_manager' | 'administrative_manager' | 'employee';
   companyId?: string;
   departmentId?: string;
   isActive: boolean;
@@ -300,7 +300,7 @@ export interface RegistrationRequest {
   email: string;
   phone: string;
   password: string;
-  role: 'super_admin' | 'general_manager' | 'administrative_manager' | 'employee';
+  role: 'dev' | 'general_manager' | 'administrative_manager' | 'employee';
   status: 'pending' | 'approved' | 'rejected';
   attempts?: number;
   createdAt: Date;

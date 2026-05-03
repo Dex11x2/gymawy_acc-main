@@ -374,7 +374,7 @@ export const getTodayRecord = async (req: any, res: Response) => {
 
     // ✅ PRIVACY FIX: Filter sensitive data based on user role
     const userRole = req.user?.role;
-    const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(userRole);
+    const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(userRole);
 
     if (!isManager && record) {
       // For regular employees, hide exact times but send flags
@@ -415,7 +415,7 @@ export const getAllTodayRecords = async (req: any, res: Response) => {
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
     // ✅ FIXED: Managers see ALL records, regular employees see only their company's records
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = { date: { $gte: todayUTC, $lt: tomorrow } };
 
     if (!managerRoles.includes(req.user?.role)) {
@@ -545,7 +545,7 @@ export const getMonthlyReport = async (req: any, res: Response) => {
 
     // إضافة فلترة حسب الدور
     const userRole = req.user?.role;
-    const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(userRole);
+    const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(userRole);
 
     // إذا تم تحديد userId في الطلب، استخدمه (للمديرين الذين يريدون فلترة موظف معين)
     if (userId) {

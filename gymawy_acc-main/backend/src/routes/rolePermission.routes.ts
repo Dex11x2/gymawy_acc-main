@@ -10,11 +10,11 @@ router.get('/roles', controller.getAllRoles);
 router.get('/pages', controller.getAllPages);
 router.get('/role/:roleId', controller.getRolePermissions);
 router.get('/my-permissions', controller.getUserPermissions);
-router.put('/update', authorize('super_admin', 'general_manager', 'administrative_manager'), controller.updateRolePermissions);
+router.put('/update', authorize('dev', 'general_manager', 'administrative_manager'), controller.updateRolePermissions);
 
 // Pages catalog management — super admin only
-router.post('/pages', authorize('super_admin'), controller.createPage);
-router.put('/pages/:id', authorize('super_admin'), controller.updatePage);
-router.delete('/pages/:id', authorize('super_admin'), controller.deletePage);
+router.post('/pages', authorize('dev'), controller.createPage);
+router.put('/pages/:id', authorize('dev'), controller.updatePage);
+router.delete('/pages/:id', authorize('dev'), controller.deletePage);
 
 export default router;

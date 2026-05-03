@@ -6,7 +6,7 @@ export const getAll = async (req: any, res: Response) => {
     const { month, year } = req.query;
 
     // ✅ FIXED: Managers see ALL attendance, regular employees see only their company's attendance
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all attendance
       : { companyId: req.user?.companyId }; // Regular employees see only their company

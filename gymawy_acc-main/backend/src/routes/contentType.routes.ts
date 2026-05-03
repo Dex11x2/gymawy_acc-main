@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(protect);
 
 // فقط المديرون يمكنهم إدارة أنواع المحتوى
-const managerRoles = ['super_admin', 'general_manager', 'administrative_manager'];
+const managerRoles = ['dev', 'general_manager', 'administrative_manager'];
 
 // جلب جميع أنواع المحتوى - متاح لجميع المستخدمين المسجلين
 router.get('/', controller.getAll);

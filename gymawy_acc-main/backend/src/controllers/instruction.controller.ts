@@ -16,7 +16,7 @@ export const create = async (req: any, res: Response) => {
     const currentUser = await User.findById(req.user.userId);
     
     // التحقق من الصلاحيات
-    if (currentUser?.role !== 'super_admin' && 
+    if (currentUser?.role !== 'dev' && 
         currentUser?.role !== 'general_manager' && 
         currentUser?.role !== 'administrative_manager') {
       return res.status(403).json({ message: 'ليس لديك صلاحية لإضافة تعليمات' });
@@ -39,7 +39,7 @@ export const update = async (req: any, res: Response) => {
     const currentUser = await User.findById(req.user.userId);
     
     // التحقق من الصلاحيات
-    if (currentUser?.role !== 'super_admin' && 
+    if (currentUser?.role !== 'dev' && 
         currentUser?.role !== 'general_manager' && 
         currentUser?.role !== 'administrative_manager') {
       return res.status(403).json({ message: 'ليس لديك صلاحية لتعديل التعليمات' });
@@ -67,7 +67,7 @@ export const remove = async (req: any, res: Response) => {
     const currentUser = await User.findById(req.user.userId);
     
     // التحقق من الصلاحيات
-    if (currentUser?.role !== 'super_admin' && 
+    if (currentUser?.role !== 'dev' && 
         currentUser?.role !== 'general_manager' && 
         currentUser?.role !== 'administrative_manager') {
       return res.status(403).json({ message: 'ليس لديك صلاحية لحذف التعليمات' });

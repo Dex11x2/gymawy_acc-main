@@ -38,7 +38,7 @@ const PasswordManagement: React.FC = () => {
     isOpen: false
   });
 
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'dev';
   const isManager = user?.role === 'general_manager' || user?.role === 'administrative_manager';
 
   const allUsers = isSuperAdmin
@@ -96,7 +96,7 @@ const PasswordManagement: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'super_admin':
+      case 'dev':
         return <Badge variant="error">Super Admin</Badge>;
       case 'general_manager':
         return <Badge variant="info">مدير عام</Badge>;

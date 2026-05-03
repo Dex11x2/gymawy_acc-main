@@ -147,7 +147,7 @@ router.get('/', protect, async (req: any, res) => {
     const { month, year } = req.query;
 
     // ✅ FIXED: Managers see ALL achievements, regular employees see only their company's achievements
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all achievements
       : { companyId: req.user?.companyId }; // Regular employees see only their company
@@ -174,7 +174,7 @@ router.get('/employee/:employeeId', protect, async (req: any, res) => {
     const { month, year } = req.query;
 
     // ✅ SECURITY FIX: Verify employee belongs to user's company (unless manager)
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     if (!managerRoles.includes(req.user?.role)) {
       const employee = await Employee.findById(employeeId);
       if (!employee) {
@@ -212,7 +212,7 @@ router.get('/:id', protect, async (req: any, res) => {
     }
 
     // ✅ SECURITY FIX: Verify achievement belongs to user's company (unless manager)
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     if (!managerRoles.includes(req.user?.role)) {
       if (achievement.companyId?.toString() !== req.user?.companyId?.toString()) {
         return res.status(403).json({ message: 'غير مصرح' });
@@ -425,7 +425,7 @@ router.get('/summary/:month/:year', protect, async (req: any, res) => {
     const { month, year } = req.params;
 
     // ✅ FIXED: Managers see ALL summaries, regular employees see only their company's summary
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = {
       month: parseInt(month),
       year: parseInt(year)
@@ -468,7 +468,7 @@ router.post('/sync-all', protect, async (req: any, res) => {
       return res.status(400).json({ message: 'يرجى تحديد الشهر والسنة' });
     }
 
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = {
       month: parseInt(month),
       year: parseInt(year),

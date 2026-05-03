@@ -29,7 +29,7 @@ const createTestUser = async () => {
         phone: '01234567890',
         password: password,
         plainPassword: password,
-        role: 'super_admin',
+        role: 'dev',
         isActive: true
       });
       console.log('✅ Test user created');

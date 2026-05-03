@@ -39,10 +39,10 @@ const Advances: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // For super_admin, use a default company ObjectId
+    // For dev, use a default company ObjectId
     let companyId = user?.companyId || (user as any)?.companyId;
 
-    if (!companyId && user?.role === 'super_admin') {
+    if (!companyId && user?.role === 'dev') {
       companyId = '507f1f77bcf86cd799439011'; // Valid ObjectId for super admin
     }
 

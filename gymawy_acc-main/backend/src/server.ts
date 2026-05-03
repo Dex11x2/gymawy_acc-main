@@ -249,7 +249,7 @@ async function ensureSuperAdminExists() {
   try {
     const User = (await import('./models/User')).default;
 
-    const existing = await User.findOne({ role: 'super_admin' });
+    const existing = await User.findOne({ role: 'dev' });
     if (existing) return;
 
     const email = process.env.SUPER_ADMIN_EMAIL;
@@ -262,7 +262,7 @@ async function ensureSuperAdminExists() {
       return;
     }
 
-    await new User({ name, email, phone, password, role: 'super_admin', isActive: true }).save();
+    await new User({ name, email, phone, password, role: 'dev', isActive: true }).save();
     console.log(`✅ Super admin bootstrapped (${email}). Change the password immediately.`);
   } catch (error: any) {
     console.error('❌ Failed to ensure super admin:', error.message);

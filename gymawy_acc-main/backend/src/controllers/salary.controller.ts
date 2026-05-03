@@ -9,7 +9,7 @@ export const getSalaries = async (req: any, res: Response) => {
     const { month, year } = req.query;
 
     // ✅ FIXED: Managers see ALL salaries, regular employees see only their company's salaries
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = {};
 
     if (month) query.month = Number(month);
@@ -86,7 +86,7 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
     }
 
     // ✅ FIXED: Managers see ALL employees, regular employees see only their company's employees
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = { isActive: true };
 
     // Force companyId filter unless user is a manager
@@ -349,7 +349,7 @@ export const deleteMonthSalaries = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Month and year are required' });
     }
 
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = {
       month: Number(month),
       year: Number(year)
@@ -391,7 +391,7 @@ export const getSalaryStatistics = async (req: any, res: Response) => {
     const { month, year } = req.query;
 
     // ✅ FIXED: Managers see ALL statistics, regular employees see only their company's statistics
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const query: any = {};
 
     if (month) query.month = Number(month);

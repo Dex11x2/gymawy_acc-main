@@ -61,7 +61,7 @@ export const notifyUsersByPermission = async (
     // جلب المستخدمين الذين لديهم صلاحية معينة
     const users = await User.find({
       $or: [
-        { role: 'super_admin' },
+        { role: 'dev' },
         {
           'permissions': {
             $elemMatch: {
@@ -96,7 +96,7 @@ export const notifyManagers = async (
 ) => {
   try {
     const managers = await User.find({
-      role: { $in: ['super_admin', 'general_manager', 'administrative_manager'] }
+      role: { $in: ['dev', 'general_manager', 'administrative_manager'] }
     }).select('_id');
 
     const userIds = managers.map(m => (m._id as any).toString());

@@ -19,8 +19,8 @@ export const getAll = async (req: any, res: Response) => {
       }))
     );
 
-    // ✅ FIXED: Allow super_admin and managers to see all expenses
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    // ✅ FIXED: Allow dev and managers to see all expenses
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all expenses
       : { companyId: req.user?.companyId }; // Regular employees see only their company's expenses

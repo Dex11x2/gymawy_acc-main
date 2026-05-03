@@ -2,7 +2,7 @@ export const APP_NAME = 'نظام محاسبة جيماوي برو';
 export const APP_VERSION = '1.0.0';
 
 export const USER_ROLES = {
-  SUPER_ADMIN: 'super_admin',
+  SUPER_ADMIN: 'dev',
   ADMIN: 'admin',
   EMPLOYEE: 'employee'
 } as const;

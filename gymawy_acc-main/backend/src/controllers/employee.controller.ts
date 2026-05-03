@@ -6,7 +6,7 @@ const MAX_LIMIT = 1000;
 export const getAll = async (req: any, res: Response) => {
   try {
     // ✅ Managers see ALL employees, regular employees see only their company's employees
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all employees
       : { companyId: req.user?.companyId }; // Regular employees see only their company
@@ -60,7 +60,7 @@ export const create = async (req: any, res: Response) => {
 
     // التحقق من صلاحية إنشاء مدير عام
     if (isCreatingGeneralManager) {
-      if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'general_manager') {
+      if (currentUser?.role !== 'dev' && currentUser?.role !== 'general_manager') {
         return res.status(403).json({
           message: 'فقط السوبر أدمن والمدير العام يمكنهم إنشاء مدير عام'
         });
@@ -69,7 +69,7 @@ export const create = async (req: any, res: Response) => {
 
     // التحقق من صلاحية إنشاء مدير إداري
     if (isCreatingAdministrativeManager) {
-      if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'general_manager') {
+      if (currentUser?.role !== 'dev' && currentUser?.role !== 'general_manager') {
         return res.status(403).json({
           message: 'فقط السوبر أدمن والمدير العام يمكنهم إنشاء مدير إداري'
         });
@@ -328,7 +328,7 @@ export const updatePassword = async (req: any, res: Response) => {
       return res.status(403).json({ message: 'المدير الإداري يمكنه فقط تعديل كلمات مرور الموظفين' });
     }
     
-    if (currentUser?.role === 'general_manager' && targetUser.role === 'super_admin') {
+    if (currentUser?.role === 'general_manager' && targetUser.role === 'dev') {
       return res.status(403).json({ message: 'لا يمكن تعديل كلمة مرور السوبر أدمن' });
     }
     

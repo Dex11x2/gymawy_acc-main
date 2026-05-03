@@ -98,7 +98,7 @@ const Layout: React.FC = () => {
       const now = new Date();
       const overdueTasks = devTasks.filter(task => {
         if (task.status === 'completed' || task.status === 'blocked') return false;
-        if (task.assignedTo !== user.id && user.role !== 'super_admin' && user.role !== 'general_manager' && user.role !== 'administrative_manager') return false;
+        if (task.assignedTo !== user.id && user.role !== 'dev' && user.role !== 'general_manager' && user.role !== 'administrative_manager') return false;
         const dueDate = new Date(task.dueDate);
         return dueDate < now;
       });
@@ -178,7 +178,7 @@ const Layout: React.FC = () => {
   }, []);
 
   const hasPermission = (module: string) => {
-    if (user?.role === 'super_admin') return true;
+    if (user?.role === 'dev') return true;
     if (!user?.permissions || user.permissions.length === 0) return false;
     const modulePermission = user.permissions.find(p => p.module === module);
     if (!modulePermission) return false;
@@ -186,28 +186,28 @@ const Layout: React.FC = () => {
   };
 
   const menuItems = [
-    { id: 'dashboard' as IconName, name: t.dashboard, path: '/dashboard', show: user?.role === 'super_admin' || hasPermission('dashboard') },
+    { id: 'dashboard' as IconName, name: t.dashboard, path: '/dashboard', show: user?.role === 'dev' || hasPermission('dashboard') },
     { id: 'attendance-map' as IconName, name: language === 'ar' ? 'تسجيل الحضور' : 'Check In', path: '/attendance-map', show: true },
-    { id: 'attendance-management' as IconName, name: language === 'ar' ? 'إدارة الحضور' : 'Attendance Management', path: '/attendance-management', show: ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
-    { id: 'branches' as IconName, name: language === 'ar' ? 'الفروع والصلاحيات' : 'Branches & Permissions', path: '/branches', show: ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
-    { id: 'role-permissions' as IconName, name: language === 'ar' ? 'إدارة الصلاحيات' : 'Role Permissions', path: '/role-permissions', show: ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
-    { id: 'departments' as IconName, name: t.departments, path: '/departments', show: user?.role === 'super_admin' || hasPermission('departments') },
-    { id: 'employees' as IconName, name: t.employees, path: '/employees', show: user?.role === 'super_admin' || hasPermission('employees') },
-    { id: 'payroll' as IconName, name: language === 'ar' ? 'الرواتب الشهرية' : 'Monthly Salaries', path: '/payroll', show: user?.role === 'super_admin' || hasPermission('salaries') },
-    { id: 'payroll' as IconName, name: language === 'ar' ? 'رواتب الميديا' : 'Media Salaries', path: '/media-salaries', show: user?.role === 'super_admin' || hasPermission('media_salaries') },
-    { id: 'revenues' as IconName, name: t.revenues, path: '/revenues', show: user?.role === 'super_admin' || hasPermission('revenues') },
-    { id: 'expenses' as IconName, name: t.expenses, path: '/expenses', show: user?.role === 'super_admin' || hasPermission('expenses') },
-    { id: 'custody' as IconName, name: language === 'ar' ? 'العهد والسلف' : 'Custody & Advances', path: '/custody', show: user?.role === 'super_admin' || hasPermission('custody') },
-    { id: 'tasks' as IconName, name: t.tasks, path: '/tasks', show: user?.role === 'super_admin' || hasPermission('tasks') },
-    { id: 'dev-tasks' as IconName, name: language === 'ar' ? 'مهام التطوير' : 'Dev Tasks', path: '/dev-tasks', show: user?.role === 'super_admin' || hasPermission('dev_tasks') },
+    { id: 'attendance-management' as IconName, name: language === 'ar' ? 'إدارة الحضور' : 'Attendance Management', path: '/attendance-management', show: ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
+    { id: 'branches' as IconName, name: language === 'ar' ? 'الفروع والصلاحيات' : 'Branches & Permissions', path: '/branches', show: ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
+    { id: 'role-permissions' as IconName, name: language === 'ar' ? 'إدارة الصلاحيات' : 'Role Permissions', path: '/role-permissions', show: ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
+    { id: 'departments' as IconName, name: t.departments, path: '/departments', show: user?.role === 'dev' || hasPermission('departments') },
+    { id: 'employees' as IconName, name: t.employees, path: '/employees', show: user?.role === 'dev' || hasPermission('employees') },
+    { id: 'payroll' as IconName, name: language === 'ar' ? 'الرواتب الشهرية' : 'Monthly Salaries', path: '/payroll', show: user?.role === 'dev' || hasPermission('salaries') },
+    { id: 'payroll' as IconName, name: language === 'ar' ? 'رواتب الميديا' : 'Media Salaries', path: '/media-salaries', show: user?.role === 'dev' || hasPermission('media_salaries') },
+    { id: 'revenues' as IconName, name: t.revenues, path: '/revenues', show: user?.role === 'dev' || hasPermission('revenues') },
+    { id: 'expenses' as IconName, name: t.expenses, path: '/expenses', show: user?.role === 'dev' || hasPermission('expenses') },
+    { id: 'custody' as IconName, name: language === 'ar' ? 'العهد والسلف' : 'Custody & Advances', path: '/custody', show: user?.role === 'dev' || hasPermission('custody') },
+    { id: 'tasks' as IconName, name: t.tasks, path: '/tasks', show: user?.role === 'dev' || hasPermission('tasks') },
+    { id: 'dev-tasks' as IconName, name: language === 'ar' ? 'مهام التطوير' : 'Dev Tasks', path: '/dev-tasks', show: user?.role === 'dev' || hasPermission('dev_tasks') },
     { id: 'chat' as IconName, name: language === 'ar' ? 'المحادثات' : 'Chat', path: '/chat', show: true },
-    { id: 'posts' as IconName, name: language === 'ar' ? 'المنشورات' : 'Posts', path: '/posts', show: user?.role === 'super_admin' || hasPermission('posts') },
-    { id: 'reviews' as IconName, name: language === 'ar' ? 'تقييمات الموظفين' : 'Employee Reviews', path: '/reviews', show: user?.role === 'super_admin' || hasPermission('reviews') },
-    { id: 'reports' as IconName, name: t.reports, path: '/reports', show: user?.role === 'super_admin' || hasPermission('reports') },
-    { id: 'ads-funding' as IconName, name: language === 'ar' ? 'تقرير تمويل الإعلانات' : 'Ads Funding Report', path: '/ads-funding', show: user?.role === 'super_admin' || hasPermission('ads_funding') },
-    { id: 'complaints' as IconName, name: language === 'ar' ? 'الشكاوى والمقترحات' : 'Complaints', path: '/complaints', show: user?.role === 'super_admin' || hasPermission('complaints') },
-    { id: 'instructions' as IconName, name: language === 'ar' ? 'التعليمات' : 'Instructions', path: '/instructions', show: user?.role === 'super_admin' || hasPermission('instructions') },
-    { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: user?.role === 'super_admin' || hasPermission('occasions') },
+    { id: 'posts' as IconName, name: language === 'ar' ? 'المنشورات' : 'Posts', path: '/posts', show: user?.role === 'dev' || hasPermission('posts') },
+    { id: 'reviews' as IconName, name: language === 'ar' ? 'تقييمات الموظفين' : 'Employee Reviews', path: '/reviews', show: user?.role === 'dev' || hasPermission('reviews') },
+    { id: 'reports' as IconName, name: t.reports, path: '/reports', show: user?.role === 'dev' || hasPermission('reports') },
+    { id: 'ads-funding' as IconName, name: language === 'ar' ? 'تقرير تمويل الإعلانات' : 'Ads Funding Report', path: '/ads-funding', show: user?.role === 'dev' || hasPermission('ads_funding') },
+    { id: 'complaints' as IconName, name: language === 'ar' ? 'الشكاوى والمقترحات' : 'Complaints', path: '/complaints', show: user?.role === 'dev' || hasPermission('complaints') },
+    { id: 'instructions' as IconName, name: language === 'ar' ? 'التعليمات' : 'Instructions', path: '/instructions', show: user?.role === 'dev' || hasPermission('instructions') },
+    { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: user?.role === 'dev' || hasPermission('occasions') },
   ].filter(item => item.show);
 
   const sidebarWidth = sidebarOpen ? 'w-[290px]' : 'w-[90px]';
@@ -407,7 +407,7 @@ const Layout: React.FC = () => {
                     {user?.name}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {user?.role === 'super_admin' ? 'Dev' :
+                    {user?.role === 'dev' ? 'Dev' :
                      user?.role === 'general_manager' ? 'مدير عام' :
                      user?.role === 'administrative_manager' ? 'مدير إداري' : 'موظف'}
                   </p>

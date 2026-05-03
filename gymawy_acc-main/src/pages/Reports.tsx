@@ -28,7 +28,7 @@ const Reports: React.FC = () => {
   const { canRead } = usePermissions();
 
   const canViewReports = canRead('reports');
-  const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+  const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

@@ -124,7 +124,7 @@ const MediaSalaries: React.FC = () => {
     const isManagerRole =
       currentEmployee?.isGeneralManager ||
       currentEmployee?.isAdministrativeManager ||
-      user?.role === 'super_admin' ||
+      user?.role === 'dev' ||
       user?.role === 'general_manager' ||
       user?.role === 'administrative_manager';
 

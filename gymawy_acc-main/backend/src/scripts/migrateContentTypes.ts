@@ -67,7 +67,7 @@ async function migrateContentTypes() {
     console.log('✅ تم الاتصال بقاعدة البيانات');
 
     // البحث عن أول super admin لاستخدامه كـ createdBy
-    const superAdmin = await User.findOne({ role: 'super_admin' });
+    const superAdmin = await User.findOne({ role: 'dev' });
 
     if (!superAdmin) {
       console.error('❌ لم يتم العثور على super admin في النظام');

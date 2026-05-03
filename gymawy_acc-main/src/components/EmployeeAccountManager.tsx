@@ -25,7 +25,7 @@ const EmployeeAccountManager: React.FC<Props> = ({ employee, onUpdate, onDelete 
   const [plainPassword, setPlainPassword] = useState('');
 
   // التحقق من الصلاحيات
-  const canManageAccounts = user?.role === 'super_admin' || 
+  const canManageAccounts = user?.role === 'dev' || 
                             user?.role === 'general_manager' || 
                             user?.role === 'administrative_manager';
 

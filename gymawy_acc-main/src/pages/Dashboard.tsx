@@ -322,7 +322,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Dev Tasks Widget - TailAdmin Style */}
-      {(user?.role === 'super_admin' || user?.role === 'general_manager' || user?.role === 'administrative_manager' || myTasks.length > 0) && (
+      {(user?.role === 'dev' || user?.role === 'general_manager' || user?.role === 'administrative_manager' || myTasks.length > 0) && (
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-r from-brand-500 to-blue-light-500 p-6">
             <div className="flex items-center justify-between mb-4">

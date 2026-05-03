@@ -10,7 +10,7 @@ const DashboardWrapper: React.FC = () => {
 
   // المديرون يمكنهم التبديل
   const isManager =
-    user?.role === "super_admin" ||
+    user?.role === "dev" ||
     user?.role === "general_manager" ||
     user?.role === "administrative_manager";
 

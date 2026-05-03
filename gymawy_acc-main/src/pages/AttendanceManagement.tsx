@@ -51,7 +51,7 @@ const AttendanceManagement: React.FC = () => {
   const { canRead, canWrite, canDelete } = usePermissions();
 
   // Check if user is a manager (can add permissions)
-  const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+  const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
   const canViewAttendance = canRead('attendance') || canRead('attendance_management');
   const canWriteAttendance = canWrite('attendance') || canWrite('attendance_management');

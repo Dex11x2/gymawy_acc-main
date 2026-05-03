@@ -7,7 +7,7 @@ export const hasPermission = (user: User | null, module: string, action: string)
   }
 
   // Super Admin لديه كل الصلاحيات
-  if (user.role === 'super_admin') {
+  if (user.role === 'dev') {
     return true;
   }
 

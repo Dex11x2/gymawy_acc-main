@@ -5,7 +5,7 @@ export const usePermissions = () => {
 
   const hasPermission = (module: string, action: string): boolean => {
     // Super admin, general manager, and administrative manager have all permissions
-    if (user?.role === 'super_admin' || user?.role === 'general_manager' || user?.role === 'administrative_manager') {
+    if (user?.role === 'dev' || user?.role === 'general_manager' || user?.role === 'administrative_manager') {
       return true;
     }
 

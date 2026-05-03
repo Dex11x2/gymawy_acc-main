@@ -7,7 +7,7 @@ const AttendanceWithMap: React.FC = () => {
   const { user } = useAuthStore();
 
   // ✅ Check if user is a manager (can see exact times)
-  const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+  const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [loading, setLoading] = useState(false);

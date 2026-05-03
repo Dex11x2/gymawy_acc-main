@@ -4,7 +4,7 @@ import Advance from '../models/Advance';
 export const getAll = async (req: any, res: Response) => {
   try {
     // ✅ FIXED: Managers see ALL advances, regular employees see only their company's advances
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all advances
       : { companyId: req.user?.companyId }; // Regular employees see only their company

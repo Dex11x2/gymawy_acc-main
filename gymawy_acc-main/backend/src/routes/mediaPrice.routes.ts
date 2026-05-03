@@ -33,7 +33,7 @@ async function getDefaultPrices(): Promise<Array<{
 // يعرض فقط الموظفين ذوي الراتب المتغير (ميديا)
 router.get('/all-employees', protect, async (req: any, res) => {
   try {
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
 
     // ===== DEBUG LOGGING =====
     console.log('🔍 DEBUG /all-employees:');
@@ -129,7 +129,7 @@ router.get('/employee/:employeeId', protect, async (req: any, res) => {
     const { employeeId } = req.params;
 
     // ✅ SECURITY FIX: Verify employee belongs to user's company (unless manager)
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const companyId = req.user?.companyId || null;
 
     if (!managerRoles.includes(req.user?.role)) {

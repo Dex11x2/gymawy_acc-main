@@ -4,7 +4,7 @@ import Post from '../models/Post';
 export const getAll = async (req: any, res: Response) => {
   try {
     // ✅ FIXED: Managers see ALL posts, regular employees see only their company's posts
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all posts
       : { companyId: req.user?.companyId }; // Regular employees see only their company

@@ -12,7 +12,7 @@ export interface IUser extends Document {
   plainPassword?: string;
   phone?: string;
   name: string;
-  role: "super_admin" | "general_manager" | "administrative_manager" | "employee";
+  role: "dev" | "general_manager" | "administrative_manager" | "employee";
   roleId?: mongoose.Types.ObjectId;
   // Per-user override. If non-empty array, replaces role-based permissions
   // entirely for this user. Empty/missing => fall back to role defaults.
@@ -26,7 +26,7 @@ export interface IUser extends Document {
 }
 
 const ROLE_LEVEL_BY_ENUM: Record<string, number> = {
-  super_admin: 4,
+  dev: 4,
   general_manager: 3,
   administrative_manager: 2,
   employee: 1,
@@ -47,7 +47,7 @@ const UserSchema = new Schema(
     name: { type: String, required: true },
     role: {
       type: String,
-      enum: ["super_admin", "general_manager", "administrative_manager", "employee"],
+      enum: ["dev", "general_manager", "administrative_manager", "employee"],
       default: "employee",
     },
     roleId: { type: Schema.Types.ObjectId, ref: "Role" },

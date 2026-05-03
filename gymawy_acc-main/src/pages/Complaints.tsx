@@ -91,7 +91,7 @@ const Complaints: React.FC = () => {
     await loadComplaints();
   };
 
-  const userComplaints = user?.role === 'super_admin'
+  const userComplaints = user?.role === 'dev'
     ? complaints
     : complaints.filter(c => c.userId === user?.id);
 

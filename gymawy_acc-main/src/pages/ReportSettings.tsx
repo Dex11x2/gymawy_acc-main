@@ -13,7 +13,7 @@ const ReportSettings: React.FC = () => {
   const [senderEmail, setSenderEmail] = useState('');
   const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
 
-  const isManager = ['super_admin', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+  const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
   useEffect(() => {
     if (isManager) {

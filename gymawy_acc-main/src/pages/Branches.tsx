@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 
 const ROLE_LEVELS: Record<string, number> = {
-  super_admin: 4, general_manager: 3, administrative_manager: 2, employee: 1,
+  dev: 4, general_manager: 3, administrative_manager: 2, employee: 1,
 };
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';

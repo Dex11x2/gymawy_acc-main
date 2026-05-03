@@ -4,7 +4,7 @@ import Complaint from '../models/Complaint';
 export const getAll = async (req: any, res: Response) => {
   try {
     // ✅ FIXED: Managers see ALL complaints, regular employees see only their company's complaints
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all complaints
       : { companyId: req.user?.companyId }; // Regular employees see only their company

@@ -4,7 +4,7 @@ import Revenue from '../models/Revenue';
 export const getAll = async (req: any, res: Response) => {
   try {
     // ✅ FIXED: All managers see ALL revenues, regular employees see only their company's revenues
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all revenues
       : { companyId: req.user?.companyId }; // Regular employees see only their company

@@ -65,14 +65,14 @@ const EmployeeReviews: React.FC = () => {
     comments: r.comments || []
   }));
 
-  const employees = user?.role === 'super_admin'
+  const employees = user?.role === 'dev'
     ? (allEmployees || [])
     : (allEmployees || []).filter((emp: any) =>
         emp.companyId === user?.companyId && emp.id !== user?.id
       );
 
   const currentEmployee = employees.find((e: any) => e.id === user?.id);
-  const isManager = currentEmployee?.isGeneralManager || currentEmployee?.isAdministrativeManager || user?.role === 'super_admin';
+  const isManager = currentEmployee?.isGeneralManager || currentEmployee?.isAdministrativeManager || user?.role === 'dev';
 
   if (!canViewReviews) {
     return (

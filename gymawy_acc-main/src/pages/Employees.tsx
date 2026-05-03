@@ -122,7 +122,7 @@ const Employees: React.FC = () => {
     const isCreatingManager = formData.isGeneralManager || formData.isAdministrativeManager;
     if (isCreatingManager && !editingEmployee) {
       const currentEmployee = employees.find(emp => emp.email === user?.email);
-      const isSuperAdmin = user?.role === 'super_admin';
+      const isSuperAdmin = user?.role === 'dev';
       const isGeneralManager = currentEmployee?.isGeneralManager || false;
       const isAdministrativeManager = currentEmployee?.isAdministrativeManager || false;
 
@@ -772,7 +772,7 @@ const Employees: React.FC = () => {
 
               {(() => {
                 const currentEmployee = employees.find(emp => emp.email === user?.email);
-                const isSuperAdmin = user?.role === 'super_admin';
+                const isSuperAdmin = user?.role === 'dev';
                 const isGeneralManager = currentEmployee?.isGeneralManager || false;
                 const isAdministrativeManager = currentEmployee?.isAdministrativeManager || false;
                 const canCreateManagers = isSuperAdmin || isGeneralManager || isAdministrativeManager;
@@ -799,7 +799,7 @@ const Employees: React.FC = () => {
                   onChange={(e) => {
                     const checked = e.target.checked;
                     const currentEmployee = employees.find(emp => emp.email === user?.email);
-                    const isSuperAdmin = user?.role === 'super_admin';
+                    const isSuperAdmin = user?.role === 'dev';
                     const isGeneralManager = currentEmployee?.isGeneralManager || false;
                     const isAdministrativeManager = currentEmployee?.isAdministrativeManager || false;
                     const canCreateManagers = isSuperAdmin || isGeneralManager || isAdministrativeManager;
@@ -812,7 +812,7 @@ const Employees: React.FC = () => {
                   }}
                   disabled={(() => {
                     const currentEmployee = employees.find(emp => emp.email === user?.email);
-                    const isSuperAdmin = user?.role === 'super_admin';
+                    const isSuperAdmin = user?.role === 'dev';
                     const isGeneralManager = currentEmployee?.isGeneralManager || false;
                     const isAdministrativeManager = currentEmployee?.isAdministrativeManager || false;
                     return !isSuperAdmin && !isGeneralManager && !isAdministrativeManager;
@@ -829,7 +829,7 @@ const Employees: React.FC = () => {
                   onChange={(e) => {
                     const checked = e.target.checked;
                     const currentEmployee = employees.find(emp => emp.email === user?.email);
-                    const isSuperAdmin = user?.role === 'super_admin';
+                    const isSuperAdmin = user?.role === 'dev';
                     const isGeneralManager = currentEmployee?.isGeneralManager || false;
                     const isAdministrativeManager = currentEmployee?.isAdministrativeManager || false;
                     const canCreateManagers = isSuperAdmin || isGeneralManager || isAdministrativeManager;
@@ -842,7 +842,7 @@ const Employees: React.FC = () => {
                   }}
                   disabled={(() => {
                     const currentEmployee = employees.find(emp => emp.email === user?.email);
-                    const isSuperAdmin = user?.role === 'super_admin';
+                    const isSuperAdmin = user?.role === 'dev';
                     const isGeneralManager = currentEmployee?.isGeneralManager || false;
                     const isAdministrativeManager = currentEmployee?.isAdministrativeManager || false;
                     return !isSuperAdmin && !isGeneralManager && !isAdministrativeManager;

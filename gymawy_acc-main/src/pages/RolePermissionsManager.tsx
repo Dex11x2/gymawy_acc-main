@@ -14,11 +14,11 @@ const RolePermissionsManager: React.FC = () => {
   const [toast, setToast] = useState({ message: '', type: 'success' as any, isOpen: false });
 
   const ROLE_LEVELS: Record<string, number> = {
-    super_admin: 4, general_manager: 3, administrative_manager: 2, employee: 1,
+    dev: 4, general_manager: 3, administrative_manager: 2, employee: 1,
   };
   const myLevel = ROLE_LEVELS[user?.role || ''] || 0;
   const isAdmin = myLevel >= 2; // Anyone who can manage someone below them
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'dev';
 
   // Only show roles strictly below the current user's level
   const editableRoles = roles.filter((r: any) => (r.level || 0) < myLevel);

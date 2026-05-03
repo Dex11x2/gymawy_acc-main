@@ -6,7 +6,7 @@ import Role from '../models/Role';
 dotenv.config();
 
 const ROLE_LEVEL_BY_ENUM: Record<string, number> = {
-  super_admin: 4,
+  dev: 4,
   general_manager: 3,
   administrative_manager: 2,
   admin: 2,

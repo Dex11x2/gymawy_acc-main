@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 
 export const checkPermission = (module: string, action: 'view' | 'create' | 'edit' | 'delete' | 'export') => {
   return (req: any, res: Response, next: NextFunction) => {
-    if (req.user?.role === 'super_admin') {
+    if (req.user?.role === 'dev') {
       return next();
     }
 

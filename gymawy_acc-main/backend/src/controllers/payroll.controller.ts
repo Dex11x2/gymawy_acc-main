@@ -4,7 +4,7 @@ import Payroll from '../models/Payroll';
 export const getAll = async (req: any, res: Response) => {
   try {
     // ✅ FIXED: Managers see ALL payrolls, regular employees see only their company's payrolls
-    const managerRoles = ['super_admin', 'administrative_manager', 'general_manager'];
+    const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
       ? {}  // Managers see all payrolls
       : { companyId: req.user?.companyId }; // Regular employees see only their company
