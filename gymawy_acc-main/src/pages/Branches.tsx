@@ -237,7 +237,7 @@ const Branches: React.FC = () => {
   const resetEmployeePermissions = async () => {
     const employeeId = selectedEmployee.id || selectedEmployee._id;
     try {
-      await api.put(`/employees/${employeeId}/permissions`, { permissions: [] });
+      await api.patch(`/employees/${employeeId}/permissions`, { permissions: [] });
       setToast({ message: 'تم رجوع الموظف لصلاحيات الدور الافتراضية', type: 'success', isOpen: true });
       setShowPermissionsModal(false);
       loadEmployees();
@@ -285,7 +285,7 @@ const Branches: React.FC = () => {
         }
       });
 
-      await api.put(`/employees/${employeeId}/permissions`, { permissions: newPermissions });
+      await api.patch(`/employees/${employeeId}/permissions`, { permissions: newPermissions });
       setToast({ message: 'تم حفظ الصلاحيات الخاصة بهذا الموظف', type: 'success', isOpen: true });
       setShowPermissionsModal(false);
       loadEmployees();
