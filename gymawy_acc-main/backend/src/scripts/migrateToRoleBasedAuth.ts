@@ -68,7 +68,7 @@ async function migrate(): Promise<void> {
       { _id: u._id },
       {
         $set: set,
-        $unset: { permissions: '', plainPassword: '' },
+        $unset: { permissions: '' },
       }
     );
 
@@ -87,7 +87,6 @@ async function migrate(): Promise<void> {
   console.log(`   role: ${sample?.role}`);
   console.log(`   roleId: ${sample?.roleId}`);
   console.log(`   permissions field present: ${'permissions' in sample}`);
-  console.log(`   plainPassword field present: ${'plainPassword' in sample}`);
 
   await mongoose.disconnect();
   console.log('\n🎉 Migration complete.');

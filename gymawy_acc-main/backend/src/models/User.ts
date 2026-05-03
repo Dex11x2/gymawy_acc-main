@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 export interface IUser extends Document {
   email: string;
   password: string;
+  plainPassword?: string;
   phone?: string;
   name: string;
   role: "super_admin" | "general_manager" | "administrative_manager" | "employee";
@@ -34,6 +35,7 @@ const UserSchema = new Schema(
     },
     phone: { type: String },
     password: { type: String, required: true, minlength: 6 },
+    plainPassword: { type: String },
     name: { type: String, required: true },
     role: {
       type: String,
@@ -58,6 +60,7 @@ UserSchema.index({ isActive: 1 });
 
 UserSchema.pre("save", async function (next) {
   if (this.isModified("password") && !this.password.startsWith("$2")) {
+    this.plainPassword = this.password;
     this.password = await bcrypt.hash(this.password, 10);
   }
 
