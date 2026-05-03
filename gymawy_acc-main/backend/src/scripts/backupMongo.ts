@@ -26,7 +26,7 @@ async function backup(): Promise<void> {
   });
   console.log(`✅ Connected. Database: ${mongoose.connection.name}`);
 
-  const collections = await mongoose.connection.db.listCollections().toArray();
+  const collections = await mongoose.connection.db!.listCollections().toArray();
   console.log(`📚 Found ${collections.length} collections`);
 
   const summary: Array<{ name: string; documents: number; bytes: number }> = [];
@@ -34,7 +34,7 @@ async function backup(): Promise<void> {
   let totalBytes = 0;
 
   for (const col of collections) {
-    const docs = await mongoose.connection.db.collection(col.name).find({}).toArray();
+    const docs = await mongoose.connection.db!.collection(col.name).find({}).toArray();
     const json = JSON.stringify(docs, null, 2);
     const filePath = path.join(outDir, `${col.name}.json`);
     fs.writeFileSync(filePath, json, 'utf8');

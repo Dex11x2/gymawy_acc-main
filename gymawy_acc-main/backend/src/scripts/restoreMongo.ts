@@ -47,7 +47,7 @@ async function restore(): Promise<void> {
       continue;
     }
     try {
-      const result = await mongoose.connection.db.collection(colName).insertMany(docs, { ordered: false });
+      const result = await mongoose.connection.db!.collection(colName).insertMany(docs, { ordered: false });
       totalInserted += result.insertedCount;
       console.log(`  ✅ ${colName.padEnd(35)} inserted ${result.insertedCount}/${docs.length}`);
     } catch (err: any) {
