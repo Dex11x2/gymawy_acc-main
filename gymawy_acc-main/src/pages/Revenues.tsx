@@ -10,6 +10,14 @@ import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar } fr
 
 type Currency = "EGP" | "USD" | "SAR" | "AED";
 
+// تنسيق التاريخ المحلي بصيغة YYYY-MM-DD لتجنب انزياحات المنطقة الزمنية
+const formatLocalDate = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 const Revenues: React.FC = () => {
   const { revenues, addRevenue, updateRevenue, deleteRevenue, loadRevenues } = useDataStore();
   const { user } = useAuthStore();
@@ -40,7 +48,7 @@ const Revenues: React.FC = () => {
     amount: "" as number | "",
     currency: "SAR" as Currency,
     description: "",
-    date: new Date().toISOString().split("T")[0],
+    date: formatLocalDate(new Date()),
     notes: "",
     source: "",
     revenueType: "subscription" as "subscription" | "clothing" | "website" | "other",
@@ -63,10 +71,10 @@ const Revenues: React.FC = () => {
     }
   };
 
-  // استخدام UTC لتجنب مشاكل التوقيت المحلي
+  // فلترة بالشهر/السنة المحليين لمطابقة الـ selectedMonth/selectedYear (المعرّفين محلياً)
   const filteredRevenues = revenues.filter(r => {
     const revenueDate = new Date(r.date);
-    return revenueDate.getUTCMonth() + 1 === selectedMonth && revenueDate.getUTCFullYear() === selectedYear;
+    return revenueDate.getMonth() + 1 === selectedMonth && revenueDate.getFullYear() === selectedYear;
   });
 
   const revenuesByCurrency = {
@@ -86,7 +94,7 @@ const Revenues: React.FC = () => {
       amount: "",
       currency: "SAR",
       description: "",
-      date: new Date().toISOString().split("T")[0],
+      date: formatLocalDate(new Date()),
       notes: "",
       source: "",
       revenueType: "subscription",
@@ -111,7 +119,7 @@ const Revenues: React.FC = () => {
       amount: r.amount,
       currency: r.currency as Currency,
       description: r.description || "",
-      date: new Date(r.date).toISOString().split("T")[0],
+      date: formatLocalDate(new Date(r.date)),
       notes: r.notes || "",
       source: r.source || "",
       revenueType: (r.category as any) || "subscription",
@@ -137,12 +145,16 @@ const Revenues: React.FC = () => {
       return;
     }
 
+    // تحويل YYYY-MM-DD إلى تاريخ بالتوقيت المحلي (لا UTC)
+    const [yy, mm, dd] = formData.date.split('-').map(Number);
+    const localDate = new Date(yy, (mm || 1) - 1, dd || 1);
+
     const payload: any = {
       title: formData.clientName || formData.description || 'إيراد',
       amount: Number(formData.amount) || 0,
       currency: formData.currency,
       description: formData.description,
-      date: new Date(formData.date),
+      date: localDate,
       category: formData.revenueType,
       notes: formData.notes,
       source: formData.clientName || formData.source || 'غير محدد',
@@ -160,6 +172,9 @@ const Revenues: React.FC = () => {
         await addRevenue(payload);
         setToast({message: 'تم إضافة الإيراد بنجاح', type: 'success', isOpen: true});
       }
+      // تحويل الفلتر تلقائياً لشهر/سنة الإيراد عشان يتأكد المستخدم إنه ظهر
+      setSelectedMonth(localDate.getMonth() + 1);
+      setSelectedYear(localDate.getFullYear());
       setShowModal(false);
     } catch (error: any) {
       console.error('Revenue error:', error);

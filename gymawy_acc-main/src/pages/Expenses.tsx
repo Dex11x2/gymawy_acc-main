@@ -11,6 +11,14 @@ import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, F
 
 type Currency = 'EGP' | 'USD' | 'SAR' | 'AED';
 
+// تنسيق التاريخ المحلي بصيغة YYYY-MM-DD لتجنب انزياحات المنطقة الزمنية
+const formatLocalDate = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 const Expenses: React.FC = () => {
   const { expenses, addExpense, updateExpense, deleteExpense, loadExpenses } = useDataStore();
   const { user } = useAuthStore();
@@ -56,7 +64,7 @@ const Expenses: React.FC = () => {
     amount: '' as number | '',
     currency: 'SAR' as Currency,
     description: '',
-    date: new Date().toISOString().split('T')[0],
+    date: formatLocalDate(new Date()),
     category: '',
     notes: '',
     type: 'operational' as 'operational' | 'capital'
@@ -72,17 +80,14 @@ const Expenses: React.FC = () => {
     }
   };
 
-  // Filter expenses: show expenses only for selected year and month
-  // استخدام UTC لتجنب مشاكل التوقيت المحلي
+  // فلترة بالشهر/السنة المحليين لمطابقة الـ selectedMonth/selectedYear (المعرّفين محلياً)
   const filteredExpenses = expenses.filter(e => {
     const expenseDate = new Date(e.date);
     if (e.type === 'capital') {
-      // Capital expenses: show only for selected year, all months up to selected month
-      return expenseDate.getUTCFullYear() === selectedYear &&
-             expenseDate.getUTCMonth() + 1 <= selectedMonth;
+      return expenseDate.getFullYear() === selectedYear &&
+             expenseDate.getMonth() + 1 <= selectedMonth;
     }
-    // Operational expenses only for selected month and year
-    return expenseDate.getUTCMonth() + 1 === selectedMonth && expenseDate.getUTCFullYear() === selectedYear;
+    return expenseDate.getMonth() + 1 === selectedMonth && expenseDate.getFullYear() === selectedYear;
   });
 
   const expensesByCurrency = {
@@ -119,12 +124,17 @@ const Expenses: React.FC = () => {
       return;
     }
 
+    // تحويل YYYY-MM-DD إلى تاريخ بالتوقيت المحلي (لا UTC)
+    // بحيث الفلتر المحلي يعرضه في نفس الشهر اللي اختاره المستخدم
+    const [yy, mm, dd] = formData.date.split('-').map(Number);
+    const localDate = new Date(yy, (mm || 1) - 1, dd || 1);
+
     const expenseData: any = {
       title: formData.description || formData.category || 'مصروف',
       amount: Number(formData.amount) || 0,
       currency: formData.currency,
       description: formData.description,
-      date: new Date(formData.date),
+      date: localDate,
       category: formData.category,
       notes: formData.notes,
       type: formData.type || 'operational',
@@ -142,6 +152,9 @@ const Expenses: React.FC = () => {
         await addExpense(expenseData);
         setToast({message: 'تم إضافة المصروف بنجاح', type: 'success', isOpen: true});
       }
+      // تحويل الفلتر تلقائياً لشهر/سنة المصروف عشان يتأكد المستخدم إنه ظهر
+      setSelectedMonth(localDate.getMonth() + 1);
+      setSelectedYear(localDate.getFullYear());
       setShowModal(false);
       setEditingExpense(null);
       resetForm();
@@ -174,7 +187,7 @@ const Expenses: React.FC = () => {
       amount: '',
       currency: 'SAR',
       description: '',
-      date: new Date().toISOString().split('T')[0],
+      date: formatLocalDate(new Date()),
       category: '',
       notes: '',
       type: 'operational'
@@ -191,7 +204,7 @@ const Expenses: React.FC = () => {
       amount: expense.amount,
       currency: expense.currency || 'SAR',
       description: expense.description,
-      date: new Date(expense.date).toISOString().split('T')[0],
+      date: formatLocalDate(new Date(expense.date)),
       category: expense.category || '',
       notes: expense.notes || '',
       type: expense.type
