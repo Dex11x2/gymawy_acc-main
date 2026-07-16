@@ -70,20 +70,24 @@ export const createMonth = async (req: AuthRequest, res: Response) => {
       createdBy: req.user!.userId,
     });
 
-    // Auto-generate rows ≈ days in month, alternating content / "راحه" rows.
+    // Auto-generate rows per account ≈ days in month, alternating content / "راحه".
     const daysInMonth = new Date(year, month, 0).getDate();
-    const entries = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      const isRest = day % 2 === 0;
-      entries.push({
-        monthId: created._id,
-        title: isRest ? 'راحه' : '',
-        contentType: isRest ? 'rest' : '',
-        publishDate: new Date(year, month - 1, day, 12, 0, 0),
-        isRest,
-        rowOrder: day,
-        platforms: [],
-      });
+    const ACCOUNT_KEYS = ['gymawya', 'gymbirch', 'gymawyz', 'youssef_ashraf'];
+    const entries: any[] = [];
+    for (const account of ACCOUNT_KEYS) {
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isRest = day % 2 === 0;
+        entries.push({
+          monthId: created._id,
+          account,
+          title: isRest ? 'راحه' : '',
+          contentType: isRest ? 'rest' : '',
+          publishDate: new Date(year, month - 1, day, 12, 0, 0),
+          isRest,
+          rowOrder: day,
+          platforms: [],
+        });
+      }
     }
     if (entries.length) await CalendarEntry.insertMany(entries);
 

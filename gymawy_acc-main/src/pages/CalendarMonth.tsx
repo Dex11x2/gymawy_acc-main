@@ -7,7 +7,7 @@ import { CONTENT_TYPES, ACCOUNTS, PLATFORMS, CalSelectOption, findOption } from 
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
-import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
 
@@ -51,6 +51,7 @@ const CalendarMonth: React.FC = () => {
   const [entries, setEntries] = useState<CalEntry[]>([]);
   const [users, setUsers] = useState<UserOpt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<string>(ACCOUNTS[0].key);
   const [editing, setEditing] = useState<CalEntry | null>(null);
   const [draft, setDraft] = useState<Partial<CalEntry>>({});
   const [commentText, setCommentText] = useState('');
@@ -80,7 +81,7 @@ const CalendarMonth: React.FC = () => {
     try {
       const res = await api.get('/users');
       const list = Array.isArray(res.data) ? res.data : res.data?.users || [];
-      setUsers(list.map((u: any) => ({ id: u.id || u.id, name: u.name })).filter((u: UserOpt) => u.id && u.name));
+      setUsers(list.map((u: any) => ({ id: u.id || u._id, name: u.name })).filter((u: UserOpt) => u.id && u.name));
     } catch {
       /* users are optional for the Person fields */
     }
@@ -92,8 +93,10 @@ const CalendarMonth: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthId]);
 
+  // Rows shown for the currently selected account tab.
+  const visibleEntries = entries.filter((e) => e.account === selectedAccount);
+
   const patchEntry = async (id: string, data: Partial<CalEntry>) => {
-    // optimistic
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...data } : e)));
     try {
       const updated = await calendarApi.updateEntry(id, data);
@@ -116,19 +119,13 @@ const CalendarMonth: React.FC = () => {
       const payload: Record<string, any> = {
         title: draft.title,
         contentType: draft.contentType,
-        account: draft.account,
         publishDate: draft.publishDate,
         videoLink: draft.videoLink,
         platforms: draft.platforms,
         assigneeId: personId(draft.assigneeId) || null,
-        editorId: personId(draft.editorId) || null,
         collaboration: draft.collaboration,
-        uploadDeadline: draft.uploadDeadline,
         filmed: draft.filmed,
         done: draft.done,
-        ytSevenDays: draft.ytSevenDays,
-        instaSevenDays: draft.instaSevenDays,
-        tiktokSevenDays: draft.tiktokSevenDays,
         script: draft.script,
         isRest: draft.contentType === 'rest',
       };
@@ -144,7 +141,12 @@ const CalendarMonth: React.FC = () => {
   const addRow = async () => {
     if (!monthId) return;
     try {
-      const created = await calendarApi.createEntry(monthId, { title: '', platforms: [] });
+      const maxOrder = visibleEntries.reduce((m, e) => Math.max(m, e.rowOrder || 0), 0);
+      const created = await calendarApi.createEntry(monthId, {
+        account: selectedAccount,
+        rowOrder: maxOrder + 1,
+        platforms: [],
+      });
       setEntries((prev) => [...prev, created]);
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل إضافة الصف', 'error');
@@ -191,7 +193,7 @@ const CalendarMonth: React.FC = () => {
   return (
     <div dir="rtl">
       {/* Breadcrumb / header */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/content-calendar')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 dark:text-gray-400">
             تقويم المحتوى
@@ -211,6 +213,25 @@ const CalendarMonth: React.FC = () => {
         )}
       </div>
 
+      {/* Account tabs */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {ACCOUNTS.map((acc) => {
+          const active = selectedAccount === acc.key;
+          const count = entries.filter((e) => e.account === acc.key).length;
+          return (
+            <button
+              key={acc.key}
+              onClick={() => setSelectedAccount(acc.key)}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${active ? 'text-white shadow' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'}`}
+              style={active ? { backgroundColor: acc.color, borderColor: acc.color } : { borderColor: acc.color + '55' }}
+            >
+              {acc.labelAr}
+              {count > 0 && <span className="mr-1 opacity-70">({count})</span>}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Database / view label (mirrors Notion) */}
       <div className="mb-2 flex items-center gap-2 text-sm text-gray-400">
         <Table2 className="h-4 w-4" />
@@ -222,39 +243,35 @@ const CalendarMonth: React.FC = () => {
         <p className="py-10 text-center text-gray-500 dark:text-gray-400">جارٍ التحميل…</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-          <table className="min-w-[1400px] w-full border-collapse">
+          <table className="min-w-[1050px] w-full border-collapse">
             <thead className="bg-gray-50 dark:bg-gray-900/60">
               <tr className="border-b border-gray-200 dark:border-gray-800">
                 <th className={thCls}>#</th>
                 <th className={thCls}>اسم الفيديو</th>
                 <th className={thCls}>نوع المحتوى</th>
-                <th className={thCls}>الحساب</th>
                 <th className={thCls}>Publish Date</th>
                 <th className={thCls}>Video link</th>
                 <th className={thCls}>المنصات</th>
                 <th className={thCls}>Assignee</th>
-                <th className={thCls}>مسؤول ثاني</th>
                 <th className={thCls}>Collaboration</th>
-                <th className={thCls}>Upload Deadline</th>
+                <th className={thCls}>الكابشن</th>
                 <th className={thCls}>اتصور؟</th>
                 <th className={thCls}>Done</th>
-                <th className={thCls}>YT 7d</th>
-                <th className={thCls}>Insta 7d</th>
-                <th className={thCls}>TikTok 7d</th>
                 <th className={thCls}></th>
               </tr>
             </thead>
             <tbody>
-              {entries.map((e) => (
+              {visibleEntries.map((e, idx) => (
                 <tr
                   key={e.id}
                   className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-800/60 dark:hover:bg-white/[0.03] ${e.contentType === 'rest' ? 'opacity-60' : ''}`}
                 >
-                  <td className={`${tdCls} text-gray-400`}>{e.rowOrder}</td>
+                  <td className={`${tdCls} text-gray-400`}>{idx + 1}</td>
                   <td className={tdCls}>
                     {canEdit ? (
                       <input
                         defaultValue={e.title}
+                        key={e.id + e.title}
                         onBlur={(ev) => { if (ev.target.value !== e.title) patchEntry(e.id, { title: ev.target.value }); }}
                         placeholder="اسم الفيديو…"
                         className="w-44 rounded-md bg-transparent px-1 py-0.5 font-medium text-gray-900 outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:text-white dark:focus:bg-gray-800"
@@ -264,7 +281,6 @@ const CalendarMonth: React.FC = () => {
                     )}
                   </td>
                   <td className={tdCls}><Tag opt={findOption(CONTENT_TYPES, e.contentType)} /></td>
-                  <td className={tdCls}><Tag opt={findOption(ACCOUNTS, e.account)} /></td>
                   <td className={`${tdCls} text-gray-500 dark:text-gray-400`}>{formatDT(e.publishDate) || '—'}</td>
                   <td className={tdCls}>
                     {e.videoLink ? (
@@ -277,18 +293,27 @@ const CalendarMonth: React.FC = () => {
                     </div>
                   </td>
                   <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{(e.assigneeId as any)?.name || '—'}</td>
-                  <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{(e.editorId as any)?.name || '—'}</td>
                   <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{e.collaboration || '—'}</td>
-                  <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{e.uploadDeadline || '—'}</td>
+                  <td className={tdCls}>
+                    <button
+                      onClick={() => openEditor(e)}
+                      className="flex max-w-[220px] items-center gap-1.5 rounded-md px-2 py-1 text-right text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+                      title={e.script || 'إضافة كابشن'}
+                    >
+                      <FileText className={`h-4 w-4 flex-shrink-0 ${e.script ? 'text-brand-500' : 'text-gray-400'}`} />
+                      {e.script ? (
+                        <span className="truncate">{e.script}</span>
+                      ) : (
+                        <span className="text-gray-400">إضافة كابشن</span>
+                      )}
+                    </button>
+                  </td>
                   <td className={`${tdCls} text-center`}>
                     <input type="checkbox" checked={!!e.filmed} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { filmed: ev.target.checked })} className="h-4 w-4 accent-brand-500" />
                   </td>
                   <td className={`${tdCls} text-center`}>
                     <input type="checkbox" checked={!!e.done} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { done: ev.target.checked })} className="h-4 w-4 accent-emerald-500" />
                   </td>
-                  <td className={`${tdCls} text-center text-gray-500`}>{e.ytSevenDays ?? '—'}</td>
-                  <td className={`${tdCls} text-center text-gray-500`}>{e.instaSevenDays ?? '—'}</td>
-                  <td className={`${tdCls} text-center text-gray-500`}>{e.tiktokSevenDays ?? '—'}</td>
                   <td className={tdCls}>
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEditor(e)} title="فتح / تعديل" className="relative rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5">
@@ -306,8 +331,8 @@ const CalendarMonth: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {entries.length === 0 && (
-                <tr><td colSpan={17} className="py-10 text-center text-gray-400">لا توجد صفوف</td></tr>
+              {visibleEntries.length === 0 && (
+                <tr><td colSpan={12} className="py-10 text-center text-gray-400">لا توجد صفوف لهذا الحساب — اضغط «صف جديد» للإضافة</td></tr>
               )}
             </tbody>
           </table>
@@ -328,17 +353,17 @@ const CalendarMonth: React.FC = () => {
                   {CONTENT_TYPES.map((o) => <option key={o.key} value={o.key}>{o.labelAr}</option>)}
                 </select>
               </Field>
-              <Field label="الحساب">
-                <select className={inputCls} value={draft.account || ''} onChange={(e) => setDraft({ ...draft, account: e.target.value })}>
-                  <option value="">—</option>
-                  {ACCOUNTS.map((o) => <option key={o.key} value={o.key}>{o.labelAr}</option>)}
-                </select>
-              </Field>
               <Field label="Publish Date">
                 <input type="datetime-local" className={inputCls} value={toLocalInput(draft.publishDate)} onChange={(e) => setDraft({ ...draft, publishDate: fromLocalInput(e.target.value) })} />
               </Field>
               <Field label="Video link">
                 <input className={inputCls} value={draft.videoLink || ''} onChange={(e) => setDraft({ ...draft, videoLink: e.target.value })} placeholder="https://drive.google.com/…" />
+              </Field>
+              <Field label="Assignee">
+                <select className={inputCls} value={personId(draft.assigneeId)} onChange={(e) => setDraft({ ...draft, assigneeId: e.target.value || undefined })}>
+                  <option value="">—</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
               </Field>
               <Field label="Collaboration">
                 <input className={inputCls} value={draft.collaboration || ''} onChange={(e) => setDraft({ ...draft, collaboration: e.target.value })} />
@@ -354,7 +379,7 @@ const CalendarMonth: React.FC = () => {
                           checked={active}
                           onChange={(e) => {
                             const set = new Set(draft.platforms || []);
-                            e.target.checked ? set.add(o.key) : set.delete(o.key);
+                            if (e.target.checked) set.add(o.key); else set.delete(o.key);
                             setDraft({ ...draft, platforms: Array.from(set) });
                           }}
                           className="h-4 w-4 accent-brand-500"
@@ -364,30 +389,6 @@ const CalendarMonth: React.FC = () => {
                     );
                   })}
                 </div>
-              </Field>
-              <Field label="Upload Deadline">
-                <input className={inputCls} value={draft.uploadDeadline || ''} onChange={(e) => setDraft({ ...draft, uploadDeadline: e.target.value })} placeholder="مثلاً: قبل يوم النشر بيومين" />
-              </Field>
-              <Field label="Assignee">
-                <select className={inputCls} value={personId(draft.assigneeId)} onChange={(e) => setDraft({ ...draft, assigneeId: e.target.value || undefined })}>
-                  <option value="">—</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </Field>
-              <Field label="مسؤول ثاني">
-                <select className={inputCls} value={personId(draft.editorId)} onChange={(e) => setDraft({ ...draft, editorId: e.target.value || undefined })}>
-                  <option value="">—</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </Field>
-              <Field label="YT 7days">
-                <input type="number" className={inputCls} value={draft.ytSevenDays ?? ''} onChange={(e) => setDraft({ ...draft, ytSevenDays: e.target.value === '' ? undefined : Number(e.target.value) })} />
-              </Field>
-              <Field label="Insta 7days">
-                <input type="number" className={inputCls} value={draft.instaSevenDays ?? ''} onChange={(e) => setDraft({ ...draft, instaSevenDays: e.target.value === '' ? undefined : Number(e.target.value) })} />
-              </Field>
-              <Field label="TikTok 7days">
-                <input type="number" className={inputCls} value={draft.tiktokSevenDays ?? ''} onChange={(e) => setDraft({ ...draft, tiktokSevenDays: e.target.value === '' ? undefined : Number(e.target.value) })} />
               </Field>
             </div>
 
@@ -400,9 +401,19 @@ const CalendarMonth: React.FC = () => {
               </label>
             </div>
 
-            <Field label="السكريبت / الكابشن">
-              <textarea rows={4} className={inputCls} value={draft.script || ''} onChange={(e) => setDraft({ ...draft, script: e.target.value })} placeholder="اكتب السكريبت أو الكابشن هنا…" />
-            </Field>
+            {/* Caption / script — prominent and large so the full text is visible */}
+            <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <FileText className="h-4 w-4 text-brand-500" /> الكابشن / السكريبت
+              </label>
+              <textarea
+                rows={8}
+                className={`${inputCls} min-h-[160px] resize-y leading-relaxed`}
+                value={draft.script || ''}
+                onChange={(e) => setDraft({ ...draft, script: e.target.value })}
+                placeholder="اكتب الكابشن أو السكريبت هنا… (يظهر كامل ويتوسّع)"
+              />
+            </div>
 
             {/* Comments */}
             <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
