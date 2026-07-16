@@ -53,7 +53,7 @@ const ContentCalendar: React.FC = () => {
       const created = await calendarApi.createMonth(form);
       setShowAdd(false);
       await load();
-      navigate(`/content-calendar/${created._id}`);
+      navigate(`/content-calendar/${created.id}`);
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل إضافة الشهر', 'error');
     }
@@ -61,8 +61,8 @@ const ContentCalendar: React.FC = () => {
 
   const toggleStatus = async (m: CalMonth) => {
     try {
-      const updated = await calendarApi.updateMonth(m._id, { status: m.status === 'active' ? 'done' : 'active' });
-      setMonths((prev) => prev.map((x) => (x._id === m._id ? { ...x, status: updated.status } : x)));
+      const updated = await calendarApi.updateMonth(m.id, { status: m.status === 'active' ? 'done' : 'active' });
+      setMonths((prev) => prev.map((x) => (x.id === m.id ? { ...x, status: updated.status } : x)));
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل التحديث', 'error');
     }
@@ -72,7 +72,7 @@ const ContentCalendar: React.FC = () => {
     if (!confirmDeleteId) return;
     try {
       await calendarApi.deleteMonth(confirmDeleteId);
-      setMonths((prev) => prev.filter((x) => x._id !== confirmDeleteId));
+      setMonths((prev) => prev.filter((x) => x.id !== confirmDeleteId));
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل الحذف', 'error');
     } finally {
@@ -94,7 +94,7 @@ const ContentCalendar: React.FC = () => {
 
   const MonthCard: React.FC<{ m: CalMonth }> = ({ m }) => (
     <div className="group relative flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition-colors hover:border-brand-400 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500">
-      <button onClick={() => navigate(`/content-calendar/${m._id}`)} className="flex flex-1 items-center gap-3 text-right">
+      <button onClick={() => navigate(`/content-calendar/${m.id}`)} className="flex flex-1 items-center gap-3 text-right">
         <span
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white shadow"
           style={{ backgroundColor: m.iconColor }}
@@ -120,7 +120,7 @@ const ContentCalendar: React.FC = () => {
         )}
         {canRemove && (
           <button
-            onClick={() => setConfirmDeleteId(m._id)}
+            onClick={() => setConfirmDeleteId(m.id)}
             title="حذف"
             className="rounded-lg p-2 text-gray-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-500/10"
           >
@@ -169,7 +169,7 @@ const ContentCalendar: React.FC = () => {
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {active.map((m) => <MonthCard key={m._id} m={m} />)}
+                {active.map((m) => <MonthCard key={m.id} m={m} />)}
               </div>
             )}
           </div>
@@ -191,7 +191,7 @@ const ContentCalendar: React.FC = () => {
               </button>
               {doneOpen && (
                 <div className="grid grid-cols-1 gap-3 border-t border-gray-100 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-gray-800">
-                  {done.map((m) => <MonthCard key={m._id} m={m} />)}
+                  {done.map((m) => <MonthCard key={m.id} m={m} />)}
                 </div>
               )}
             </div>

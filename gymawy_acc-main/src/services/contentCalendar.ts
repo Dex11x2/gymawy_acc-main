@@ -7,7 +7,7 @@ export interface PersonRef {
 }
 
 export interface CalMonth {
-  _id: string;
+  id: string;
   month: number;
   year: number;
   title: string;
@@ -27,7 +27,7 @@ export interface CalComment {
 }
 
 export interface CalEntry {
-  _id: string;
+  id: string;
   monthId: string;
   title: string;
   contentType: string;

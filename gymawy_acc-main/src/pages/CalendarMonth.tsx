@@ -67,7 +67,7 @@ const CalendarMonth: React.FC = () => {
         calendarApi.getMonths(),
         calendarApi.getEntries(monthId),
       ]);
-      setMonth(monthsData.find((m) => m._id === monthId) || null);
+      setMonth(monthsData.find((m) => m.id === monthId) || null);
       setEntries(entriesData);
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل التحميل', 'error');
@@ -80,7 +80,7 @@ const CalendarMonth: React.FC = () => {
     try {
       const res = await api.get('/users');
       const list = Array.isArray(res.data) ? res.data : res.data?.users || [];
-      setUsers(list.map((u: any) => ({ id: u._id || u.id, name: u.name })).filter((u: UserOpt) => u.id && u.name));
+      setUsers(list.map((u: any) => ({ id: u.id || u.id, name: u.name })).filter((u: UserOpt) => u.id && u.name));
     } catch {
       /* users are optional for the Person fields */
     }
@@ -94,10 +94,10 @@ const CalendarMonth: React.FC = () => {
 
   const patchEntry = async (id: string, data: Partial<CalEntry>) => {
     // optimistic
-    setEntries((prev) => prev.map((e) => (e._id === id ? { ...e, ...data } : e)));
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...data } : e)));
     try {
       const updated = await calendarApi.updateEntry(id, data);
-      setEntries((prev) => prev.map((e) => (e._id === id ? updated : e)));
+      setEntries((prev) => prev.map((e) => (e.id === id ? updated : e)));
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل الحفظ', 'error');
       load();
@@ -120,8 +120,8 @@ const CalendarMonth: React.FC = () => {
         publishDate: draft.publishDate,
         videoLink: draft.videoLink,
         platforms: draft.platforms,
-        assigneeId: (draft.assigneeId as any) || null,
-        editorId: (draft.editorId as any) || null,
+        assigneeId: personId(draft.assigneeId) || null,
+        editorId: personId(draft.editorId) || null,
         collaboration: draft.collaboration,
         uploadDeadline: draft.uploadDeadline,
         filmed: draft.filmed,
@@ -132,8 +132,8 @@ const CalendarMonth: React.FC = () => {
         script: draft.script,
         isRest: draft.contentType === 'rest',
       };
-      const updated = await calendarApi.updateEntry(editing._id, payload);
-      setEntries((prev) => prev.map((e) => (e._id === editing._id ? updated : e)));
+      const updated = await calendarApi.updateEntry(editing.id, payload);
+      setEntries((prev) => prev.map((e) => (e.id === editing.id ? updated : e)));
       setEditing(null);
       notify('تم الحفظ');
     } catch (e: any) {
@@ -155,7 +155,7 @@ const CalendarMonth: React.FC = () => {
     if (!confirmDeleteId) return;
     try {
       await calendarApi.deleteEntry(confirmDeleteId);
-      setEntries((prev) => prev.filter((e) => e._id !== confirmDeleteId));
+      setEntries((prev) => prev.filter((e) => e.id !== confirmDeleteId));
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل الحذف', 'error');
     } finally {
@@ -166,8 +166,8 @@ const CalendarMonth: React.FC = () => {
   const addComment = async () => {
     if (!editing || !commentText.trim()) return;
     try {
-      const updated = await calendarApi.addComment(editing._id, commentText.trim());
-      setEntries((prev) => prev.map((e) => (e._id === editing._id ? updated : e)));
+      const updated = await calendarApi.addComment(editing.id, commentText.trim());
+      setEntries((prev) => prev.map((e) => (e.id === editing.id ? updated : e)));
       setDraft((d) => ({ ...d, comments: updated.comments }));
       setCommentText('');
     } catch (e: any) {
@@ -247,7 +247,7 @@ const CalendarMonth: React.FC = () => {
             <tbody>
               {entries.map((e) => (
                 <tr
-                  key={e._id}
+                  key={e.id}
                   className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-800/60 dark:hover:bg-white/[0.03] ${e.contentType === 'rest' ? 'opacity-60' : ''}`}
                 >
                   <td className={`${tdCls} text-gray-400`}>{e.rowOrder}</td>
@@ -255,7 +255,7 @@ const CalendarMonth: React.FC = () => {
                     {canEdit ? (
                       <input
                         defaultValue={e.title}
-                        onBlur={(ev) => { if (ev.target.value !== e.title) patchEntry(e._id, { title: ev.target.value }); }}
+                        onBlur={(ev) => { if (ev.target.value !== e.title) patchEntry(e.id, { title: ev.target.value }); }}
                         placeholder="اسم الفيديو…"
                         className="w-44 rounded-md bg-transparent px-1 py-0.5 font-medium text-gray-900 outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:text-white dark:focus:bg-gray-800"
                       />
@@ -281,10 +281,10 @@ const CalendarMonth: React.FC = () => {
                   <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{e.collaboration || '—'}</td>
                   <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{e.uploadDeadline || '—'}</td>
                   <td className={`${tdCls} text-center`}>
-                    <input type="checkbox" checked={!!e.filmed} disabled={!canEdit} onChange={(ev) => patchEntry(e._id, { filmed: ev.target.checked })} className="h-4 w-4 accent-brand-500" />
+                    <input type="checkbox" checked={!!e.filmed} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { filmed: ev.target.checked })} className="h-4 w-4 accent-brand-500" />
                   </td>
                   <td className={`${tdCls} text-center`}>
-                    <input type="checkbox" checked={!!e.done} disabled={!canEdit} onChange={(ev) => patchEntry(e._id, { done: ev.target.checked })} className="h-4 w-4 accent-emerald-500" />
+                    <input type="checkbox" checked={!!e.done} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { done: ev.target.checked })} className="h-4 w-4 accent-emerald-500" />
                   </td>
                   <td className={`${tdCls} text-center text-gray-500`}>{e.ytSevenDays ?? '—'}</td>
                   <td className={`${tdCls} text-center text-gray-500`}>{e.instaSevenDays ?? '—'}</td>
@@ -298,7 +298,7 @@ const CalendarMonth: React.FC = () => {
                         )}
                       </button>
                       {canRemove && (
-                        <button onClick={() => setConfirmDeleteId(e._id)} title="حذف" className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10">
+                        <button onClick={() => setConfirmDeleteId(e.id)} title="حذف" className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       )}
