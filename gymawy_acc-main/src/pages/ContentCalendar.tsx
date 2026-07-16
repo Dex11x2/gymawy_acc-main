@@ -2,13 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { usePermissions } from '../hooks/usePermissions';
-import { calendarApi, CalMonth, personName } from '../services/contentCalendar';
+import { calendarApi, CalMonth, CalActivity, personName } from '../services/contentCalendar';
 import { MONTH_ICON_COLORS } from '../config/contentCalendar';
 import { Avatar } from '../components/ui';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
-import { Plus, ChevronDown, ChevronLeft, CheckCircle2, RotateCcw, Trash2, CalendarDays, Lock } from 'lucide-react';
+import { Plus, ChevronDown, ChevronLeft, CheckCircle2, RotateCcw, Trash2, CalendarDays, Lock, History } from 'lucide-react';
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const formatActivityTime = (iso: string) => {
+  const d = new Date(iso);
+  const h24 = d.getHours();
+  const ampm = h24 < 12 ? 'ص' : 'م';
+  const h = h24 % 12 || 12;
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} - ${h}:${pad2(d.getMinutes())} ${ampm}`;
+};
 
 const ContentCalendar: React.FC = () => {
   const navigate = useNavigate();
@@ -17,8 +26,10 @@ const ContentCalendar: React.FC = () => {
   const canView = canRead('content_calendar');
   const canEdit = canWrite('content_calendar');
   const canRemove = canDelete('content_calendar');
+  const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
   const [months, setMonths] = useState<CalMonth[]>([]);
+  const [activity, setActivity] = useState<CalActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [doneOpen, setDoneOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -42,8 +53,17 @@ const ContentCalendar: React.FC = () => {
     }
   };
 
+  const loadActivity = async () => {
+    try {
+      const data = await calendarApi.getActivity();
+      setActivity(data);
+    } catch {
+      /* managers only — ignore for others */
+    }
+  };
+
   useEffect(() => {
-    if (canView) load();
+    if (canView) { load(); if (isManager) loadActivity(); }
     else setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -197,6 +217,35 @@ const ContentCalendar: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Activity log — managers only */}
+      {isManager && (
+        <div className="mt-10">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-400">
+            <History className="h-4 w-4" /> سجل الأنشطة
+          </h2>
+          <div className="rounded-xl border border-gray-200 dark:border-gray-800">
+            {activity.length === 0 ? (
+              <p className="py-8 text-center text-gray-400">لا توجد أنشطة بعد</p>
+            ) : (
+              <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto dark:divide-gray-800">
+                {activity.map((a) => (
+                  <li key={a.id} className="flex items-start gap-3 px-4 py-3">
+                    <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${a.action === 'create' ? 'bg-emerald-500' : a.action === 'delete' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-gray-800 dark:text-gray-200">
+                        <span className="font-semibold">{(a.userId as any)?.name || a.userName || 'مستخدم'}</span>{' '}
+                        <span className="text-gray-500 dark:text-gray-400">{a.description}</span>
+                      </p>
+                      <p className="text-xs text-gray-400">{formatActivityTime(a.createdAt)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Add month modal */}

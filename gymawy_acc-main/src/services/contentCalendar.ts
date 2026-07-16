@@ -50,7 +50,44 @@ export interface CalEntry {
   rowOrder: number;
 }
 
+export interface CalAccount {
+  id: string;
+  key: string;
+  name: string;
+  color: string;
+  order: number;
+  isActive: boolean;
+}
+
+export interface CalActivity {
+  id: string;
+  userId?: PersonRef | string;
+  userName: string;
+  action: 'create' | 'update' | 'delete';
+  targetType: 'month' | 'entry' | 'account';
+  description: string;
+  monthId?: string;
+  createdAt: string;
+}
+
 export const calendarApi = {
+  // Accounts
+  getAccounts: (): Promise<CalAccount[]> =>
+    api.get('/content-calendar/accounts').then((r) => r.data),
+  createAccount: (data: { name: string; color?: string }): Promise<CalAccount> =>
+    api.post('/content-calendar/accounts', data).then((r) => r.data),
+  updateAccount: (id: string, data: Partial<CalAccount>): Promise<CalAccount> =>
+    api.patch(`/content-calendar/accounts/${id}`, data).then((r) => r.data),
+  deleteAccount: (id: string): Promise<any> =>
+    api.delete(`/content-calendar/accounts/${id}`).then((r) => r.data),
+
+  // Activity (managers only)
+  getActivity: (): Promise<CalActivity[]> =>
+    api.get('/content-calendar/activity').then((r) => r.data),
+
+  generateDays: (monthId: string, account: string): Promise<{ created: number }> =>
+    api.post(`/content-calendar/months/${monthId}/generate-days`, { account }).then((r) => r.data),
+
   getMonths: (): Promise<CalMonth[]> =>
     api.get('/content-calendar/months').then((r) => r.data),
   createMonth: (data: { month: number; year: number; iconColor?: string; ownerId?: string }): Promise<CalMonth> =>

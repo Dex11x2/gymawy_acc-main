@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { usePermissions } from '../hooks/usePermissions';
-import { calendarApi, CalMonth, CalEntry, personId } from '../services/contentCalendar';
-import { CONTENT_TYPES, ACCOUNTS, PLATFORMS, CalSelectOption, findOption } from '../config/contentCalendar';
+import { calendarApi, CalMonth, CalEntry, CalAccount, personId } from '../services/contentCalendar';
+import { CONTENT_TYPES, PLATFORMS, CalSelectOption, findOption, MONTH_ICON_COLORS } from '../config/contentCalendar';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
@@ -49,9 +49,12 @@ const CalendarMonth: React.FC = () => {
 
   const [month, setMonth] = useState<CalMonth | null>(null);
   const [entries, setEntries] = useState<CalEntry[]>([]);
+  const [accounts, setAccounts] = useState<CalAccount[]>([]);
   const [users, setUsers] = useState<UserOpt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAccount, setSelectedAccount] = useState<string>(ACCOUNTS[0].key);
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [accForm, setAccForm] = useState({ name: '', color: MONTH_ICON_COLORS[0] });
   const [editing, setEditing] = useState<CalEntry | null>(null);
   const [captionView, setCaptionView] = useState<CalEntry | null>(null);
   const [draft, setDraft] = useState<Partial<CalEntry>>({});
@@ -65,12 +68,15 @@ const CalendarMonth: React.FC = () => {
     if (!monthId) return;
     try {
       setLoading(true);
-      const [monthsData, entriesData] = await Promise.all([
+      const [monthsData, entriesData, accountsData] = await Promise.all([
         calendarApi.getMonths(),
         calendarApi.getEntries(monthId),
+        calendarApi.getAccounts(),
       ]);
       setMonth(monthsData.find((m) => m.id === monthId) || null);
       setEntries(entriesData);
+      setAccounts(accountsData);
+      setSelectedAccount((prev) => (prev && accountsData.some((a) => a.key === prev) ? prev : accountsData[0]?.key || ''));
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل التحميل', 'error');
     } finally {
@@ -169,6 +175,34 @@ const CalendarMonth: React.FC = () => {
     }
   };
 
+  const accColor = (key: string) => accounts.find((a) => a.key === key)?.color || '#3B82F6';
+
+  const handleGenerateDays = async () => {
+    if (!monthId || !selectedAccount) return;
+    try {
+      await calendarApi.generateDays(monthId, selectedAccount);
+      await load();
+      notify('تم توليد أيام الشهر');
+    } catch (e: any) {
+      notify(e?.response?.data?.message || 'فشل توليد الأيام', 'error');
+    }
+  };
+
+  const handleAddAccount = async () => {
+    const name = accForm.name.trim();
+    if (!name) return;
+    try {
+      const acc = await calendarApi.createAccount({ name, color: accForm.color });
+      setAccounts((prev) => [...prev, acc]);
+      setSelectedAccount(acc.key);
+      setShowAddAccount(false);
+      setAccForm({ name: '', color: MONTH_ICON_COLORS[0] });
+      notify('تم إضافة الحساب');
+    } catch (e: any) {
+      notify(e?.response?.data?.message || 'فشل إضافة الحساب', 'error');
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
     try {
@@ -229,23 +263,28 @@ const CalendarMonth: React.FC = () => {
         )}
       </div>
 
-      {/* Account tabs */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {ACCOUNTS.map((acc) => {
-          const active = selectedAccount === acc.key;
-          const count = entries.filter((e) => e.account === acc.key).length;
-          return (
-            <button
-              key={acc.key}
-              onClick={() => setSelectedAccount(acc.key)}
-              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${active ? 'text-white shadow' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'}`}
-              style={active ? { backgroundColor: acc.color, borderColor: acc.color } : { borderColor: acc.color + '55' }}
-            >
-              {acc.labelAr}
-              {count > 0 && <span className="mr-1 opacity-70">({count})</span>}
-            </button>
-          );
-        })}
+      {/* Account selector (dropdown) */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-sm text-gray-500 dark:text-gray-400">الحساب:</span>
+        <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 dark:border-gray-600 dark:bg-gray-800">
+          <span className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: accColor(selectedAccount) }} />
+          <select
+            value={selectedAccount}
+            onChange={(e) => setSelectedAccount(e.target.value)}
+            className="bg-transparent text-sm font-medium text-gray-800 outline-none dark:text-white"
+          >
+            {accounts.length === 0 && <option value="">—</option>}
+            {accounts.map((a) => {
+              const count = entries.filter((e) => e.account === a.key).length;
+              return <option key={a.key} value={a.key}>{a.name}{count > 0 ? ` (${count})` : ''}</option>;
+            })}
+          </select>
+        </div>
+        {canEdit && (
+          <button onClick={() => setShowAddAccount(true)} className="flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:border-brand-400 hover:text-brand-500 dark:border-gray-600 dark:text-gray-300 dark:hover:border-brand-500">
+            <Plus className="h-4 w-4" /> حساب جديد
+          </button>
+        )}
       </div>
 
       {/* Database / view label (mirrors Notion) */}
@@ -348,7 +387,15 @@ const CalendarMonth: React.FC = () => {
                 </tr>
               ))}
               {visibleEntries.length === 0 && (
-                <tr><td colSpan={12} className="py-10 text-center text-gray-400">لا توجد صفوف لهذا الحساب — اضغط «صف جديد» للإضافة</td></tr>
+                <tr><td colSpan={12} className="py-10 text-center">
+                  <p className="mb-3 text-gray-400">لا توجد صفوف لهذا الحساب</p>
+                  {canEdit && (
+                    <div className="flex justify-center gap-2">
+                      <button onClick={handleGenerateDays} className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">توليد أيام الشهر</button>
+                      <button onClick={addRow} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">صف واحد</button>
+                    </div>
+                  )}
+                </td></tr>
               )}
             </tbody>
           </table>
@@ -502,6 +549,39 @@ const CalendarMonth: React.FC = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Add account modal */}
+      <Modal isOpen={showAddAccount} onClose={() => setShowAddAccount(false)} title="حساب جديد" size="sm">
+        <div className="space-y-4" dir="rtl">
+          <Field label="اسم الحساب">
+            <input
+              className={inputCls}
+              value={accForm.name}
+              onChange={(e) => setAccForm({ ...accForm, name: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddAccount()}
+              placeholder="مثلاً: صفحة جديدة"
+              autoFocus
+            />
+          </Field>
+          <div>
+            <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-300">اللون</label>
+            <div className="flex flex-wrap gap-2">
+              {MONTH_ICON_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setAccForm({ ...accForm, color: c })}
+                  className={`h-8 w-8 rounded-lg border-2 ${accForm.color === c ? 'scale-110 border-gray-900 dark:border-white' : 'border-transparent'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-start gap-2 pt-1">
+            <button onClick={handleAddAccount} className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">إضافة</button>
+            <button onClick={() => setShowAddAccount(false)} className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">إلغاء</button>
+          </div>
+        </div>
       </Modal>
 
       <ConfirmDialog
