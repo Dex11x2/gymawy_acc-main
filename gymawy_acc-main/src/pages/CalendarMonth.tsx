@@ -7,7 +7,7 @@ import { CONTENT_TYPES, ACCOUNTS, PLATFORMS, CalSelectOption, findOption } from 
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
-import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText, Copy, Pencil } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
 
@@ -53,6 +53,7 @@ const CalendarMonth: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState<string>(ACCOUNTS[0].key);
   const [editing, setEditing] = useState<CalEntry | null>(null);
+  const [captionView, setCaptionView] = useState<CalEntry | null>(null);
   const [draft, setDraft] = useState<Partial<CalEntry>>({});
   const [commentText, setCommentText] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -111,6 +112,21 @@ const CalendarMonth: React.FC = () => {
     setEditing(e);
     setDraft({ ...e });
     setCommentText('');
+  };
+
+  const copyCaption = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      notify('تم نسخ الكابشن');
+    } catch {
+      notify('تعذّر النسخ — انسخه يدويًا', 'error');
+    }
+  };
+
+  const editFromCaption = () => {
+    const e = captionView;
+    setCaptionView(null);
+    if (e) openEditor(e);
   };
 
   const saveEditor = async () => {
@@ -296,7 +312,7 @@ const CalendarMonth: React.FC = () => {
                   <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{e.collaboration || '—'}</td>
                   <td className={tdCls}>
                     <button
-                      onClick={() => openEditor(e)}
+                      onClick={() => setCaptionView(e)}
                       className="flex max-w-[220px] items-center gap-1.5 rounded-md px-2 py-1 text-right text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
                       title={e.script || 'إضافة كابشن'}
                     >
@@ -448,6 +464,42 @@ const CalendarMonth: React.FC = () => {
               <button onClick={saveEditor} disabled={!canEdit} className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">حفظ</button>
               <button onClick={() => setEditing(null)} className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">إغلاق</button>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Caption viewer (read + copy) */}
+      <Modal isOpen={!!captionView} onClose={() => setCaptionView(null)} title="الكابشن" size="lg">
+        {captionView && (
+          <div dir="rtl" className="space-y-4">
+            {captionView.script ? (
+              <>
+                <div className="max-h-[60vh] select-text overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800 dark:border-gray-800 dark:bg-gray-800/50 dark:text-gray-100">
+                  {captionView.script}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => copyCaption(captionView.script)} className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+                    <Copy className="h-4 w-4" /> نسخ الكابشن
+                  </button>
+                  {canEdit && (
+                    <button onClick={editFromCaption} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
+                      <Pencil className="h-4 w-4" /> تعديل
+                    </button>
+                  )}
+                  <button onClick={() => setCaptionView(null)} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">إغلاق</button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-4 py-6 text-center">
+                <FileText className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+                <p className="text-gray-500 dark:text-gray-400">لا يوجد كابشن بعد</p>
+                {canEdit && (
+                  <button onClick={editFromCaption} className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+                    <Plus className="h-4 w-4" /> إضافة كابشن
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </Modal>
