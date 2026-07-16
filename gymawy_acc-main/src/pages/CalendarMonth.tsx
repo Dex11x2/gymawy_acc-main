@@ -233,7 +233,7 @@ const CalendarMonth: React.FC = () => {
                 <th className={thCls}>Video link</th>
                 <th className={thCls}>المنصات</th>
                 <th className={thCls}>Assignee</th>
-                <th className={thCls}>الجامد</th>
+                <th className={thCls}>مسؤول ثاني</th>
                 <th className={thCls}>Collaboration</th>
                 <th className={thCls}>Upload Deadline</th>
                 <th className={thCls}>اتصور؟</th>
@@ -374,7 +374,7 @@ const CalendarMonth: React.FC = () => {
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </Field>
-              <Field label="الجامد">
+              <Field label="مسؤول ثاني">
                 <select className={inputCls} value={personId(draft.editorId)} onChange={(e) => setDraft({ ...draft, editorId: e.target.value || undefined })}>
                   <option value="">—</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
