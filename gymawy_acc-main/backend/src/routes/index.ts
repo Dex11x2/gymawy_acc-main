@@ -91,6 +91,9 @@ router.use('/media-achievements', mediaAchievementRoutes);
 import contentTypeRoutes from './contentType.routes';
 router.use('/content-types', contentTypeRoutes);
 
+import contentCalendarRoutes from './contentCalendar.routes';
+router.use('/content-calendar', contentCalendarRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 
