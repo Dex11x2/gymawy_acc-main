@@ -21,6 +21,7 @@ export const MODULES = {
   DEV_TASKS: 'dev_tasks',
   CHAT: 'chat',
   POSTS: 'posts',
+  CONTENT_CALENDAR: 'content_calendar',
   REVIEWS: 'reviews',
   REPORTS: 'reports',
   ADS_FUNDING: 'ads_funding',
@@ -276,6 +277,16 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
       { action: ACTIONS.DELETE, label: 'حذف' },
       { action: ACTIONS.COMMENT, label: 'تعليق' },
       { action: ACTIONS.LIKE, label: 'إعجاب' },
+    ],
+  },
+  {
+    module: MODULES.CONTENT_CALENDAR,
+    label: 'تقويم المحتوى',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض' },
+      { action: ACTIONS.WRITE, label: 'إضافة' },
+      { action: ACTIONS.EDIT, label: 'تعديل' },
+      { action: ACTIONS.DELETE, label: 'حذف' },
     ],
   },
   {
