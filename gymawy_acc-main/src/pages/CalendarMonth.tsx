@@ -27,6 +27,14 @@ const formatDT = (iso?: string) => {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${h}:${pad(d.getMinutes())} ${ampm}`;
 };
 
+// True when the entry's publish date falls on `ref` (today). publishDate is
+// stored at noon so timezone offsets never roll it to an adjacent day.
+const isSameDay = (iso: string | undefined, ref: Date) => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+};
+
 const Tag: React.FC<{ opt?: CalSelectOption }> = ({ opt }) =>
   opt ? (
     <span
@@ -102,6 +110,7 @@ const CalendarMonth: React.FC = () => {
 
   // Rows shown for the currently selected account tab.
   const visibleEntries = entries.filter((e) => e.account === selectedAccount);
+  const today = new Date();
 
   const patchEntry = async (id: string, data: Partial<CalEntry>) => {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...data } : e)));
@@ -319,9 +328,18 @@ const CalendarMonth: React.FC = () => {
               {visibleEntries.map((e, idx) => (
                 <tr
                   key={e.id}
-                  className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-800/60 dark:hover:bg-white/[0.03] ${e.contentType === 'rest' ? 'opacity-60' : ''}`}
+                  className={`border-b border-gray-100 last:border-0 dark:border-gray-800/60 ${isSameDay(e.publishDate, today)
+                    ? 'bg-brand-50 ring-1 ring-inset ring-brand-400/50 dark:bg-brand-500/10'
+                    : `hover:bg-gray-50 dark:hover:bg-white/[0.03] ${e.contentType === 'rest' ? 'opacity-60' : ''}`}`}
                 >
-                  <td className={`${tdCls} text-gray-400`}>{idx + 1}</td>
+                  <td className={`${tdCls} text-gray-400`}>
+                    <div className="flex items-center gap-1.5">
+                      <span>{idx + 1}</span>
+                      {isSameDay(e.publishDate, today) && (
+                        <span className="rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">اليوم</span>
+                      )}
+                    </div>
+                  </td>
                   <td className={tdCls}>
                     {canEdit ? (
                       <input
