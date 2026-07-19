@@ -14,7 +14,7 @@ const Table: React.FC<TableProps> & {
   Cell: React.FC<TableCellProps>;
 } = ({ children, className = '' }) => {
   return (
-    <div className={`rounded-2xl border border-gray-200 bg-brand-50 dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden ${className}`}>
+    <div className={`rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table className="w-full">
           {children}

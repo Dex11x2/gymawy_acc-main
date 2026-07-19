@@ -52,7 +52,7 @@ const Card: React.FC<CardProps> & {
       onClick={onClick}
       style={style}
       className={`
-        rounded-2xl border border-gray-200 bg-brand-50
+        rounded-2xl border border-gray-200 bg-white
         dark:border-gray-800 dark:bg-white/[0.03]
         ${hover ? 'transition-all duration-300 hover:shadow-theme-xl hover:-translate-y-1 cursor-pointer' : ''}
         ${paddingClasses[padding]}

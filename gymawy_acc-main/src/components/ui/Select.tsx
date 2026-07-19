@@ -149,7 +149,7 @@ const Select: React.FC<SelectProps> = ({
           ref={listRef}
           className={`
             dropdown absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl
-            border border-gray-200 bg-brand-50 shadow-theme-lg
+            border border-gray-200 bg-white shadow-theme-lg
             dark:border-gray-800 dark:bg-gray-900
             animate-fadeIn custom-scrollbar
             ${isRTL ? 'right-0' : 'left-0'}

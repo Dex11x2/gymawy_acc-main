@@ -86,10 +86,10 @@ body {
   --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
   --shadow-tooltip: 0px 4px 6px -2px rgba(16, 24, 40, 0.05), -8px 0px 20px 8px rgba(16, 24, 40, 0.05);
 
-  /* Background */
-  --brand-bg: var(--color-brand-100);
-  --brand-surface: var(--color-brand-50);
-  --brand-surface-elevated: var(--color-brand-50);
+  /* Background: warm near-white canvas; white cards read as elevated on it */
+  --brand-bg: #F6F4F1;
+  --brand-surface: #FFFFFF;
+  --brand-surface-elevated: #FFFFFF;
   --brand-text: var(--color-gray-900);
   --brand-text-secondary: var(--color-gray-600);
   --brand-muted: var(--color-gray-500);

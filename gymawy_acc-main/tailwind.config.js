@@ -35,6 +35,8 @@ export default {
         'theme-xs': ['12px', { lineHeight: '18px' }],
       },
       colors: {
+        // App canvas: warm near-white so white cards read as elevated surfaces
+        app: '#F6F4F1',
         // Brand Colors
         brand: {
           50: '#FFF7ED',

@@ -57,7 +57,7 @@ const StatCard: React.FC<StatCardProps> = ({
   return (
     <div
       className={`
-        rounded-2xl border border-gray-200 bg-brand-50 p-5
+        rounded-2xl border border-gray-200 bg-white p-5
         dark:border-gray-800 dark:bg-white/[0.03]
         md:p-6
         ${className}

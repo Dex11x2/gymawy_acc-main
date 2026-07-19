@@ -82,7 +82,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         <div
           className={`
             absolute z-50 mt-2 min-w-[180px] rounded-xl
-            border border-gray-200 bg-brand-50 py-1.5 shadow-theme-lg
+            border border-gray-200 bg-white py-1.5 shadow-theme-lg
             dark:border-gray-800 dark:bg-gray-900
             animate-fadeIn
             ${align === 'right' ? 'right-0' : 'left-0'}

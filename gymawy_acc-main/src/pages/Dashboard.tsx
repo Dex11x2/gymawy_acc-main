@@ -324,7 +324,7 @@ const Dashboard: React.FC = () => {
       {/* Dev Tasks Widget - TailAdmin Style */}
       {(user?.role === 'dev' || user?.role === 'general_manager' || user?.role === 'administrative_manager' || myTasks.length > 0) && (
         <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-brand-500 to-blue-light-500 p-6">
+          <div className="bg-gradient-to-l from-gray-900 to-gray-800 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <TrendingUp className="h-6 w-6" />
@@ -388,7 +388,7 @@ const Dashboard: React.FC = () => {
       {/* Employee Leave Balance - TailAdmin Style */}
       {isEmployee && (
         <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-light-500 to-brand-500 p-6">
+          <div className="bg-gradient-to-l from-blue-light-500 to-blue-light-600 p-6">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Calendar className="h-6 w-6" />
               رصيد إجازاتك

@@ -227,7 +227,7 @@ const Layout: React.FC = () => {
       <aside
         className={`
           fixed lg:static inset-y-0 z-50 flex flex-col
-          bg-brand-50 dark:bg-gray-900
+          border-e border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900
           shadow-lg lg:shadow-none
           transition-all duration-300 ease-in-out
           ${isMobile
@@ -334,7 +334,7 @@ const Layout: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-brand-200 bg-brand-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900 lg:px-6">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900 lg:px-6">
           {/* Left Side */}
           <div className="flex items-center gap-4">
             {/* Mobile Menu Button */}
@@ -460,7 +460,7 @@ const Layout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <main className={`flex-1 bg-brand-50 dark:bg-gray-950 ${location.pathname === '/chat' ? 'overflow-hidden p-0' : 'overflow-auto p-4 lg:p-6'}`}>
+        <main className={`flex-1 bg-app dark:bg-gray-950 ${location.pathname === '/chat' ? 'overflow-hidden p-0' : 'overflow-auto p-4 lg:p-6'}`}>
           <div className={location.pathname === '/chat' ? 'h-full' : 'mx-auto max-w-screen-2xl'}>
             <Outlet />
           </div>
