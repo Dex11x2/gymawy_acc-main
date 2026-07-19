@@ -22,7 +22,7 @@ export const getSalaries = async (req: any, res: Response) => {
 
     const salaries = await Salary.find(query)
       .populate('employeeId', 'name email position salary salaryCurrency')
-      .populate('paidBy', 'name email')
+      .populate('paidBy', 'name email avatar')
       .sort({ 'employeeId.name': 1 });
 
     // Filter out salaries with invalid or missing employeeId
@@ -59,9 +59,9 @@ export const getSalaryById = async (req: Request, res: Response) => {
 
     const salary = await Salary.findById(req.params.id)
       .populate('employeeId', 'name email position salary salaryCurrency')
-      .populate('paidBy', 'name email')
-      .populate('createdBy', 'name email')
-      .populate('updatedBy', 'name email');
+      .populate('paidBy', 'name email avatar')
+      .populate('createdBy', 'name email avatar')
+      .populate('updatedBy', 'name email avatar');
 
     if (!salary) {
       return res.status(404).json({ message: 'Salary record not found' });

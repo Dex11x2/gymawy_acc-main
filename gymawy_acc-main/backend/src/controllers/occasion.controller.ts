@@ -10,7 +10,7 @@ export const getOccasions = async (req: AuthRequest, res: Response) => {
     console.log('👤 User info:', { id: req.user?._id, companyId: req.user?.companyId, role: req.user?.role });
     
     const occasions = await Occasion.find({ companyId })
-      .populate('createdBy', 'name')
+      .populate('createdBy', 'name avatar')
       .sort({ date: 1 });
     
     console.log('📋 Found occasions:', occasions.length);
@@ -39,7 +39,7 @@ export const getTodayOccasions = async (req: AuthRequest, res: Response) => {
     const occasions = await Occasion.find({
       companyId,
       date: { $gte: todayStart, $lte: todayEnd }
-    }).populate('createdBy', 'name');
+    }).populate('createdBy', 'name avatar');
 
     // Get birthdays
     const employees = await User.find({ companyId });

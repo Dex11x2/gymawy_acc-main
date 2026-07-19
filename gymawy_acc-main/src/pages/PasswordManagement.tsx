@@ -127,9 +127,13 @@ const PasswordManagement: React.FC = () => {
         <Card.Body className="p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-purple-500 to-brand-500 rounded-xl flex items-center justify-center text-white text-xl font-bold">
-                {user?.name?.charAt(0)}
-              </div>
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user?.name} className="w-14 h-14 flex-shrink-0 rounded-xl object-cover" />
+              ) : (
+                <div className="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-purple-500 to-brand-500 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                  {user?.name?.charAt(0)}
+                </div>
+              )}
               <div className="min-w-0">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white break-words">{user?.name}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 break-words">{user?.email}</p>
@@ -162,6 +166,7 @@ const PasswordManagement: React.FC = () => {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
                       <Avatar
+                        src={u.avatar || u.userId?.avatar}
                         alt={u.name}
                         size="medium"
                       />
@@ -218,9 +223,13 @@ const PasswordManagement: React.FC = () => {
           <div className="space-y-6">
             {/* User Info */}
             <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-brand-500 rounded-xl flex items-center justify-center text-white font-bold">
-                {selectedUser.name?.charAt(0)}
-              </div>
+              {(selectedUser.avatar || selectedUser.userId?.avatar) ? (
+                <img src={selectedUser.avatar || selectedUser.userId?.avatar} alt={selectedUser.name} className="w-12 h-12 rounded-xl object-cover" />
+              ) : (
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-brand-500 rounded-xl flex items-center justify-center text-white font-bold">
+                  {selectedUser.name?.charAt(0)}
+                </div>
+              )}
               <div>
                 <h4 className="font-semibold text-gray-800 dark:text-white">{selectedUser.name}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{selectedUser.email}</p>

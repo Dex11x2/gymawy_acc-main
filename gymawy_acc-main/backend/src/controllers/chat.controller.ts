@@ -6,7 +6,7 @@ export const getAll = async (req: any, res: Response) => {
     const chats = await Chat.find({ 
       companyId: req.user.companyId,
       participants: req.user.id 
-    }).populate('participants', 'name email').sort({ lastMessageAt: -1 });
+    }).populate('participants', 'name email avatar').sort({ lastMessageAt: -1 });
     res.json(chats);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

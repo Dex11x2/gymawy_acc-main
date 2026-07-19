@@ -539,6 +539,16 @@ const Tasks: React.FC = () => {
 
                   const displayName = activeTab === 'my' ? assignedByName : assignedToName;
 
+                  const assignedByAvatar = typeof assignedByData === 'object' && (assignedByData?.avatar || assignedByData?.userId?.avatar)
+                    ? (assignedByData.avatar || assignedByData.userId?.avatar)
+                    : ((employees || []).find((e: any) => String(e.id) === String(task.assignedBy)) as any)?.avatar;
+
+                  const assignedToAvatar = typeof assignedToData === 'object' && (assignedToData?.avatar || assignedToData?.userId?.avatar)
+                    ? (assignedToData.avatar || assignedToData.userId?.avatar)
+                    : ((employees || []).find((e: any) => String(e.id) === String(task.assignedTo)) as any)?.avatar;
+
+                  const displayAvatar = activeTab === 'my' ? assignedByAvatar : assignedToAvatar;
+
                   return (
                     <Table.Row key={task.id} className="group hover:bg-brand-50/50 dark:hover:bg-brand-500/5 transition-colors">
                       <Table.Cell className="font-medium text-gray-900 dark:text-gray-100">
@@ -552,9 +562,13 @@ const Tasks: React.FC = () => {
                       </Table.Cell>
                       <Table.Cell>
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm">
-                            {displayName?.charAt(0) || <User className="h-4 w-4" />}
-                          </div>
+                          {displayAvatar ? (
+                            <img src={displayAvatar} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm">
+                              {displayName?.charAt(0) || <User className="h-4 w-4" />}
+                            </div>
+                          )}
                           <span>{displayName}</span>
                         </div>
                       </Table.Cell>
@@ -725,9 +739,13 @@ const Tasks: React.FC = () => {
                         }}
                         label={
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm">
-                              {employee.name?.charAt(0)}
-                            </div>
+                            {(employee.avatar || employee.userId?.avatar) ? (
+                              <img src={employee.avatar || employee.userId?.avatar} alt={employee.name} className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm">
+                                {employee.name?.charAt(0)}
+                              </div>
+                            )}
                             <div>
                               <span className="text-sm font-medium block">{employee.name}</span>
                               {dept && <span className="text-xs text-gray-500 dark:text-gray-400">{dept.name}</span>}
@@ -908,22 +926,31 @@ const Tasks: React.FC = () => {
                     {selectedTask.comments.length === 0 ? (
                       <p className="text-gray-500 dark:text-gray-400 text-center py-4">لا توجد تعليقات بعد</p>
                     ) : (
-                      selectedTask.comments.map((comment) => (
-                        <div key={comment.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-xl">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm">
-                                {comment.authorName.charAt(0)}
+                      selectedTask.comments.map((comment) => {
+                        const commentAvatar = (comment as any).authorAvatar
+                          || (comment.authorId as any)?.avatar
+                          || ((employees || []).find((e: any) => String(e.id) === String(comment.authorId)) as any)?.avatar;
+                        return (
+                          <div key={comment.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-xl">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {commentAvatar ? (
+                                  <img src={commentAvatar} alt={comment.authorName} className="w-8 h-8 rounded-full object-cover" />
+                                ) : (
+                                  <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-sm">
+                                    {comment.authorName.charAt(0)}
+                                  </div>
+                                )}
+                                <span className="font-medium text-gray-800 dark:text-white/90">{comment.authorName}</span>
                               </div>
-                              <span className="font-medium text-gray-800 dark:text-white/90">{comment.authorName}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(comment.createdAt).toLocaleString('ar-EG')}
+                              </span>
                             </div>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {new Date(comment.createdAt).toLocaleString('ar-EG')}
-                            </span>
+                            <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
                           </div>
-                          <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
 

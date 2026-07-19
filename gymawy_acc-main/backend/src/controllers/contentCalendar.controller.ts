@@ -139,7 +139,7 @@ export const getActivity = async (req: AuthRequest, res: Response) => {
     const items = await CalendarActivity.find()
       .sort({ createdAt: -1 })
       .limit(150)
-      .populate('userId', 'name');
+      .populate('userId', 'name avatar');
     res.json(items);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -152,7 +152,7 @@ export const getMonths = async (req: AuthRequest, res: Response) => {
   try {
     if (!can(req, 'view')) return res.status(403).json({ message: 'ليس لديك صلاحية لعرض تقويم المحتوى' });
     const months = await CalendarMonth.find()
-      .populate('ownerId', 'name')
+      .populate('ownerId', 'name avatar')
       .sort({ status: 1, year: -1, month: -1, order: 1 });
     res.json(months);
   } catch (error: any) {
@@ -247,9 +247,9 @@ export const getEntries = async (req: AuthRequest, res: Response) => {
   try {
     if (!can(req, 'view')) return res.status(403).json({ message: 'ليس لديك صلاحية للعرض' });
     const entries = await CalendarEntry.find({ monthId: req.params.monthId })
-      .populate('assigneeId', 'name')
-      .populate('editorId', 'name')
-      .populate('comments.authorId', 'name')
+      .populate('assigneeId', 'name avatar')
+      .populate('editorId', 'name avatar')
+      .populate('comments.authorId', 'name avatar')
       .sort({ rowOrder: 1, createdAt: 1 });
     res.json(entries);
   } catch (error: any) {
@@ -325,9 +325,9 @@ export const updateEntry = async (req: AuthRequest, res: Response) => {
       pickEntryFields(req.body),
       { new: true },
     )
-      .populate('assigneeId', 'name')
-      .populate('editorId', 'name')
-      .populate('comments.authorId', 'name');
+      .populate('assigneeId', 'name avatar')
+      .populate('editorId', 'name avatar')
+      .populate('comments.authorId', 'name avatar');
     if (!updated) return res.status(404).json({ message: 'الصف غير موجود' });
     logActivity(req, 'update', 'entry', updated.title ? `عدّل صف «${updated.title}»` : 'عدّل صفًا', updated.monthId);
     res.json(updated);
@@ -367,7 +367,7 @@ export const addComment = async (req: AuthRequest, res: Response) => {
     await entry.save();
 
     logActivity(req, 'update', 'entry', 'أضاف تعليقًا', entry.monthId);
-    const populated = await CalendarEntry.findById(entry._id).populate('comments.authorId', 'name');
+    const populated = await CalendarEntry.findById(entry._id).populate('comments.authorId', 'name avatar');
     res.status(201).json(populated);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

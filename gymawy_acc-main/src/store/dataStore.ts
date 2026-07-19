@@ -235,6 +235,11 @@ export const useDataStore = create<DataState>((set, get) => ({
           ...e,
           id: e._id || e.id,
           departmentId: departmentId || null,
+          avatar:
+            e.avatar ||
+            (e.userId && typeof e.userId === "object"
+              ? e.userId.avatar
+              : undefined),
         };
       });
       console.log("✅ Employees loaded:", employees.length);

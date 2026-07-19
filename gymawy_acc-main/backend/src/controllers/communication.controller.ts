@@ -4,8 +4,8 @@ import { Communication } from '../models';
 export const getAll = async (req: any, res: Response) => {
   try {
     const communications = await Communication.find({ companyId: req.user.companyId })
-      .populate('senderId', 'name email')
-      .populate('recipientIds', 'name email')
+      .populate('senderId', 'name email avatar')
+      .populate('recipientIds', 'name email avatar')
       .sort({ createdAt: -1 });
     res.json(communications);
   } catch (error: any) {

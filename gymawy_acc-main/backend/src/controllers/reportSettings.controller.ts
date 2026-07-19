@@ -17,7 +17,7 @@ export const getSettings = async (req: Request, res: Response) => {
   try {
     let settings = await ReportSettings.findOne().populate(
       "recipients.userId",
-      "name email"
+      "name email avatar"
     );
 
     if (!settings) {

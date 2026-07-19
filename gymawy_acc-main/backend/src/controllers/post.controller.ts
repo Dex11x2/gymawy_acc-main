@@ -10,13 +10,14 @@ export const getAll = async (req: any, res: Response) => {
       : { companyId: req.user?.companyId }; // Regular employees see only their company
 
     const posts = await Post.find(filter)
-      .populate('authorId', 'name')
+      .populate('authorId', 'name avatar')
       .sort({ createdAt: -1 });
 
     const formattedPosts = posts.map(post => ({
       ...post.toObject(),
       id: post._id,
-      authorName: (post.authorId as any)?.name || 'مجهول'
+      authorName: (post.authorId as any)?.name || 'مجهول',
+      authorAvatar: (post.authorId as any)?.avatar || ''
     }));
 
     res.json(formattedPosts);

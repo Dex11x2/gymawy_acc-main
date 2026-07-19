@@ -469,8 +469,12 @@ const Branches: React.FC = () => {
                       مخصصة
                     </span>
                   )}
-                  <div className={`w-12 h-12 mx-auto mb-2 ${editable ? 'bg-white/20' : 'bg-gray-300 dark:bg-gray-600'} rounded-full flex items-center justify-center ${editable ? 'group-hover:scale-110' : ''} transition-transform`}>
-                    <User className="w-6 h-6" />
+                  <div className={`w-12 h-12 mx-auto mb-2 ${editable ? 'bg-white/20' : 'bg-gray-300 dark:bg-gray-600'} rounded-full flex items-center justify-center overflow-hidden ${editable ? 'group-hover:scale-110' : ''} transition-transform`}>
+                    {(employee.avatar || employee.userId?.avatar) ? (
+                      <img src={employee.avatar || employee.userId?.avatar} alt={employee.name} className="w-12 h-12 rounded-full object-cover" />
+                    ) : (
+                      <User className="w-6 h-6" />
+                    )}
                   </div>
                   <div className="font-bold text-sm truncate">{employee.name}</div>
                   <div className={`text-xs truncate ${editable ? 'opacity-80' : ''}`}>{employee.position}</div>

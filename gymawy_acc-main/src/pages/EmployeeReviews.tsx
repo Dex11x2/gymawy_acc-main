@@ -60,8 +60,10 @@ const EmployeeReviews: React.FC = () => {
     id: r._id || r.id,
     employeeId: String(r.employeeId?._id || r.employeeId),
     employeeName: r.employeeId?.name || r.employeeName || 'غير محدد',
+    employeeAvatar: r.employeeId?.avatar || r.employeeAvatar,
     reviewerId: String(r.reviewerId?._id || r.reviewerId),
     reviewerName: r.reviewerId?.name || r.reviewerName || 'غير محدد',
+    reviewerAvatar: r.reviewerId?.avatar || r.reviewerAvatar,
     comments: r.comments || []
   }));
 
@@ -213,7 +215,7 @@ const EmployeeReviews: React.FC = () => {
                 <div key={review.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
                   <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                     <div className="flex items-center gap-3">
-                      <Avatar alt={review.reviewerName} size="medium" />
+                      <Avatar src={review.reviewerAvatar} alt={review.reviewerName} size="medium" />
                       <div>
                         <h3 className="font-bold text-gray-800 dark:text-white">{review.reviewerName}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -286,7 +288,7 @@ const EmployeeReviews: React.FC = () => {
               <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-3">
-                    <Avatar alt={selectedReview.reviewerName} size="medium" />
+                    <Avatar src={selectedReview.reviewerAvatar} alt={selectedReview.reviewerName} size="medium" />
                     <div>
                       <h3 className="font-bold text-gray-800 dark:text-white">{selectedReview.reviewerName}</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -335,7 +337,7 @@ const EmployeeReviews: React.FC = () => {
                       <div key={idx} className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Avatar alt={comment.authorName} size="xsmall" />
+                            <Avatar src={comment.authorAvatar || comment.authorId?.avatar} alt={comment.authorName} size="xsmall" />
                             <span className="font-medium text-gray-800 dark:text-white">{comment.authorName}</span>
                           </div>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -481,7 +483,7 @@ const EmployeeReviews: React.FC = () => {
                       <Table.Row key={employee.id}>
                         <Table.Cell>
                           <div className="flex items-center gap-3">
-                            <Avatar alt={employee.name} size="small" />
+                            <Avatar src={employee.avatar || employee.userId?.avatar} alt={employee.name} size="small" />
                             <div>
                               <p className="font-medium text-gray-800 dark:text-white">{employee.name}</p>
                               <p className="text-sm text-gray-500 dark:text-gray-400">{employee.position}</p>
@@ -547,7 +549,7 @@ const EmployeeReviews: React.FC = () => {
               <div key={review.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                   <div className="flex items-center gap-3">
-                    <Avatar alt={review.employeeName} size="medium" />
+                    <Avatar src={review.employeeAvatar} alt={review.employeeName} size="medium" />
                     <div>
                       <h3 className="font-bold text-gray-800 dark:text-white">{review.employeeName}</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">

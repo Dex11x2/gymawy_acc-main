@@ -9,6 +9,7 @@ interface SearchResult {
   subtitle: string;
   link: string;
   icon: string;
+  avatar?: string;
 }
 
 export const GlobalSearch: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -36,7 +37,8 @@ export const GlobalSearch: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             title: emp.name,
             subtitle: emp.position || emp.email,
             link: `/employees`,
-            icon: '👤'
+            icon: '👤',
+            avatar: emp.avatar || emp.userId?.avatar
           });
         }
       });
@@ -123,7 +125,11 @@ export const GlobalSearch: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{result.icon}</span>
+                  {result.avatar ? (
+                    <img src={result.avatar} alt={result.title} className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <span className="text-2xl">{result.icon}</span>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-medium text-gray-800 dark:text-white break-words">{result.title}</h3>

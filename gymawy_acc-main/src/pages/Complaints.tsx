@@ -220,7 +220,15 @@ const Complaints: React.FC = () => {
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
+                          {((complaint as any).userAvatar || (complaint as any).userId?.avatar) ? (
+                            <img
+                              src={(complaint as any).userAvatar || (complaint as any).userId?.avatar}
+                              alt={complaint.userName}
+                              className="w-4 h-4 rounded-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-4 h-4" />
+                          )}
                           {complaint.userName}
                         </span>
                         <span className="flex items-center gap-1">

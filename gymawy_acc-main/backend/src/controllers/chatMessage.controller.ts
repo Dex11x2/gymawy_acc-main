@@ -13,8 +13,8 @@ export const sendMessage = async (req: Request, res: Response) => {
     });
 
     const populatedMessage = await ChatMessage.findById(message._id)
-      .populate('senderId', 'name email')
-      .populate('receiverId', 'name email');
+      .populate('senderId', 'name email avatar')
+      .populate('receiverId', 'name email avatar');
 
     res.status(201).json(populatedMessage);
   } catch (error: any) {
@@ -33,8 +33,8 @@ export const getMessages = async (req: Request, res: Response) => {
         { senderId: otherUserId, receiverId: userId }
       ]
     })
-      .populate('senderId', 'name email')
-      .populate('receiverId', 'name email')
+      .populate('senderId', 'name email avatar')
+      .populate('receiverId', 'name email avatar')
       .sort({ createdAt: 1 });
 
     res.json(messages);
@@ -50,8 +50,8 @@ export const getAllMessages = async (req: Request, res: Response) => {
     const messages = await ChatMessage.find({
       $or: [{ senderId: userId }, { receiverId: userId }]
     })
-      .populate('senderId', 'name email')
-      .populate('receiverId', 'name email')
+      .populate('senderId', 'name email avatar')
+      .populate('receiverId', 'name email avatar')
       .sort({ createdAt: 1 });
 
     res.json(messages);

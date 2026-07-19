@@ -3,7 +3,7 @@ import Instruction from '../models/Instruction';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    const instructions = await Instruction.find().populate('createdBy', 'name').sort({ createdAt: -1 });
+    const instructions = await Instruction.find().populate('createdBy', 'name avatar').sort({ createdAt: -1 });
     res.json(instructions);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

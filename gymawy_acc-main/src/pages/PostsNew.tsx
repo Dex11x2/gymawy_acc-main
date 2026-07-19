@@ -27,6 +27,7 @@ interface PostData {
   id: string;
   authorId: string;
   authorName: string;
+  authorAvatar?: string;
   content: string;
   targetDepartment?: string;
   likes: string[];
@@ -40,6 +41,7 @@ interface CommentData {
   id: string;
   authorId: string;
   authorName: string;
+  authorAvatar?: string;
   content: string;
   image?: string;
   createdAt: Date;
@@ -142,6 +144,7 @@ const Posts: React.FC = () => {
       id: Date.now().toString(),
       authorId: user?.id || '',
       authorName: user?.name || '',
+      authorAvatar: user?.avatar,
       content: formData.content,
       targetDepartment: formData.targetDepartment || undefined,
       likes: [],
@@ -199,6 +202,7 @@ const Posts: React.FC = () => {
           id: Date.now().toString(),
           authorId: user?.id || '',
           authorName: user?.name || '',
+          authorAvatar: user?.avatar,
           content: comment,
           createdAt: new Date()
         };
@@ -300,7 +304,7 @@ const Posts: React.FC = () => {
               {/* Post Header */}
               <div className="p-6 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center">
-                  <Avatar alt={post.authorName} size="medium" />
+                  <Avatar src={post.authorAvatar || (post.authorId as any)?.avatar} alt={post.authorName} size="medium" />
                   <div className="mr-4 flex-1">
                     <h3 className="font-bold text-gray-900 dark:text-white text-lg">{post.authorName}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -393,7 +397,7 @@ const Posts: React.FC = () => {
                 <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 space-y-3">
                   {post.comments.map((comment) => (
                     <div key={comment.id} className="flex items-start gap-3">
-                      <Avatar alt={comment.authorName} size="small" />
+                      <Avatar src={comment.authorAvatar || (comment.authorId as any)?.avatar} alt={comment.authorName} size="small" />
                       <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">{comment.authorName}</p>
                         <p className="text-gray-700 dark:text-gray-300 break-words">{comment.content}</p>
@@ -414,7 +418,7 @@ const Posts: React.FC = () => {
               {/* Add Comment */}
               <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
                 <div className="flex items-center gap-3">
-                  <Avatar alt={user?.name || ''} size="small" />
+                  <Avatar src={user?.avatar} alt={user?.name || ''} size="small" />
                   <div className="flex-1 relative">
                     <input
                       type="text"

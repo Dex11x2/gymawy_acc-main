@@ -6,7 +6,7 @@ export const getAll = async (req: any, res: Response) => {
   try {
     const leaveRequests = await LeaveRequest.find({ companyId: req.user.companyId })
       .populate('employeeId', 'name email')
-      .populate('reviewedBy', 'name')
+      .populate('reviewedBy', 'name avatar')
       .sort({ createdAt: -1 });
     res.json(leaveRequests);
   } catch (error: any) {

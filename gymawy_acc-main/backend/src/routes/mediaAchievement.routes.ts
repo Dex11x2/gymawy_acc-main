@@ -157,7 +157,7 @@ router.get('/', protect, async (req: any, res) => {
 
     const achievements = await MediaAchievement.find(query)
       .populate('employeeId', 'name position')
-      .populate('createdBy', 'name')
+      .populate('createdBy', 'name avatar')
       .sort({ createdAt: -1 });
 
     res.json(achievements);
@@ -205,7 +205,7 @@ router.get('/:id', protect, async (req: any, res) => {
   try {
     const achievement = await MediaAchievement.findById(req.params.id)
       .populate('employeeId', 'name position')
-      .populate('createdBy', 'name');
+      .populate('createdBy', 'name avatar');
 
     if (!achievement) {
       return res.status(404).json({ message: 'الإنجاز غير موجود' });

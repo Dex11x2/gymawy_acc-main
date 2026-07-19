@@ -423,7 +423,7 @@ export const getAllTodayRecords = async (req: any, res: Response) => {
     }
 
     const records = await AttendanceRecord.find(query)
-      .populate("userId", "name email")
+      .populate("userId", "name email avatar")
       .populate("branchId", "name");
 
     res.json({ success: true, data: records });
@@ -562,10 +562,10 @@ export const getMonthlyReport = async (req: any, res: Response) => {
     }
 
     const records = await AttendanceRecord.find(query)
-      .populate("userId", "name")
-      .populate("modifiedBy", "name") // من قام بالتعديل اليدوي
-      .populate("permissionGrantedBy", "name") // من منح الإذن
-      .populate("deduction.appliedBy", "name") // NEW: من أضاف الخصم
+      .populate("userId", "name avatar")
+      .populate("modifiedBy", "name avatar") // من قام بالتعديل اليدوي
+      .populate("permissionGrantedBy", "name avatar") // من منح الإذن
+      .populate("deduction.appliedBy", "name avatar") // NEW: من أضاف الخصم
       .sort({ date: 1 });
 
     console.log(`📊 تم إيجاد ${records.length} سجل`);

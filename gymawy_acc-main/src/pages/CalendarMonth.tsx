@@ -7,6 +7,7 @@ import { CONTENT_TYPES, PLATFORMS, CalSelectOption, findOption, MONTH_ICON_COLOR
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
+import Avatar from '../components/ui/Avatar';
 import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText, Copy, Pencil } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
@@ -575,7 +576,14 @@ const CalendarMonth: React.FC = () => {
                 {(draft.comments || []).map((c) => (
                   <div key={c.id} className="rounded-lg bg-gray-50 p-2 text-sm dark:bg-gray-800/60">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{(c.authorId as any)?.name || c.authorName || 'مستخدم'}</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          src={(c.authorId as any)?.avatar || (c as any).authorAvatar}
+                          alt={(c.authorId as any)?.name || c.authorName || 'مستخدم'}
+                          size="xsmall"
+                        />
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{(c.authorId as any)?.name || c.authorName || 'مستخدم'}</span>
+                      </div>
                       <span className="text-xs text-gray-400">{formatDT(c.createdAt)}</span>
                     </div>
                     <p className="text-gray-600 dark:text-gray-300">{c.content}</p>
@@ -683,7 +691,14 @@ const CalendarMonth: React.FC = () => {
                 {(draft.comments || []).map((c) => (
                   <div key={c.id} className="rounded-lg bg-gray-50 p-2 text-sm dark:bg-gray-800/60">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{(c.authorId as any)?.name || c.authorName || 'مستخدم'}</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          src={(c.authorId as any)?.avatar || (c as any).authorAvatar}
+                          alt={(c.authorId as any)?.name || c.authorName || 'مستخدم'}
+                          size="xsmall"
+                        />
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{(c.authorId as any)?.name || c.authorName || 'مستخدم'}</span>
+                      </div>
                       <span className="text-xs text-gray-400">{formatDT(c.createdAt)}</span>
                     </div>
                     <p className="text-gray-600 dark:text-gray-300">{c.content}</p>
