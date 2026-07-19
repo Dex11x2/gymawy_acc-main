@@ -125,7 +125,7 @@ const EmployeeAccountManager: React.FC<Props> = ({ employee, onUpdate, onDelete 
         <div className="space-y-6">
           {/* حالة الحساب */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold text-gray-800">حالة الحساب</h3>
                 <p className="text-sm text-gray-600">
@@ -153,7 +153,7 @@ const EmployeeAccountManager: React.FC<Props> = ({ employee, onUpdate, onDelete 
               {/* البريد الإلكتروني */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-sm font-medium text-gray-600">البريد الإلكتروني:</p>
-                <p className="text-lg font-medium text-gray-800 mt-1">{currentEmployee.email}</p>
+                <p className="text-lg font-medium text-gray-800 mt-1 break-words">{currentEmployee.email}</p>
               </div>
               
               {/* رقم الهاتف */}
@@ -170,10 +170,10 @@ const EmployeeAccountManager: React.FC<Props> = ({ employee, onUpdate, onDelete 
             
             {/* عرض كلمة المرور */}
             <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-700">كلمة المرور الحالية:</p>
-                  <p className="text-lg font-mono mt-1">
+                  <p className="text-lg font-mono mt-1 break-words">
                     {showPassword ? (plainPassword || (currentEmployee as any).plainPassword || 'غير متاحة') : '••••••••'}
                   </p>
                   {!plainPassword && !(currentEmployee as any).plainPassword && (
@@ -195,7 +195,7 @@ const EmployeeAccountManager: React.FC<Props> = ({ employee, onUpdate, onDelete 
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="كلمة المرور الجديدة"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handlePasswordChange}

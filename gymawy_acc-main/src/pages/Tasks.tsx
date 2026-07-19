@@ -374,7 +374,7 @@ const Tasks: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400 mt-1">إدارة المهام والأنشطة</p>
         </div>
         {canCreateTask && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => {
                 setIsPlanningTask(true);
@@ -851,7 +851,7 @@ const Tasks: React.FC = () => {
               {/* Task Info */}
               <Card className="bg-gray-50 dark:bg-gray-800/50">
                 <Card.Body>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400">الحالة:</span>
                       {getStatusBadge(selectedTask.status)}
@@ -875,7 +875,7 @@ const Tasks: React.FC = () => {
 
               {/* Status Update */}
               {isMyTask && (
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">تحديث الحالة:</span>
                   <select
                     value={selectedTask.status}

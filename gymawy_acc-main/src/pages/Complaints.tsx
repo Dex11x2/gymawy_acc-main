@@ -205,7 +205,7 @@ const Complaints: React.FC = () => {
               {userComplaints.map((complaint) => (
                 <div key={complaint.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
                         <div className="w-12 h-12 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
                           {getTypeIcon(complaint.type)}
@@ -215,10 +215,10 @@ const Complaints: React.FC = () => {
                       </div>
 
                       <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 mb-4">
-                        <p className="text-gray-600 dark:text-gray-300">{complaint.description}</p>
+                        <p className="text-gray-600 dark:text-gray-300 break-words">{complaint.description}</p>
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-1">
                           <User className="w-4 h-4" />
                           {complaint.userName}

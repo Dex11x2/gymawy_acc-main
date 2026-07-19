@@ -607,7 +607,7 @@ const Branches: React.FC = () => {
                 value={googleMapsLink}
                 onChange={(e) => setGoogleMapsLink(e.target.value)}
                 placeholder="https://www.google.com/maps/place/.../@30.0444,31.2357,..."
-                className="flex-1 px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="flex-1 min-w-0 px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
               <button
                 type="button"
@@ -650,7 +650,7 @@ const Branches: React.FC = () => {
             {currentLocation ? 'استخدام موقعي الحالي' : 'تحديد الموقع تلقائياً'}
           </button>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">خط العرض *</label>
               <input

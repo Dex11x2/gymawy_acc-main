@@ -327,7 +327,7 @@ const Posts: React.FC = () => {
 
               {/* Post Content */}
               <Card.Body className="p-6">
-                <p className="text-gray-800 dark:text-white text-lg leading-relaxed whitespace-pre-wrap mb-4">
+                <p className="text-gray-800 dark:text-white text-lg leading-relaxed whitespace-pre-wrap break-words mb-4">
                   {post.content}
                 </p>
 
@@ -357,8 +357,8 @@ const Posts: React.FC = () => {
                         className="flex items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group border border-gray-100 dark:border-gray-700"
                       >
                         <span className="mr-3">{getFileIcon(file.type)}</span>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400">{file.name}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 break-words">{file.name}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">{formatFileSize(file.size)}</p>
                         </div>
                         <Download className="w-5 h-5 text-gray-400 group-hover:text-brand-500" />
@@ -394,9 +394,9 @@ const Posts: React.FC = () => {
                   {post.comments.map((comment) => (
                     <div key={comment.id} className="flex items-start gap-3">
                       <Avatar alt={comment.authorName} size="small" />
-                      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                      <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">{comment.authorName}</p>
-                        <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
+                        <p className="text-gray-700 dark:text-gray-300 break-words">{comment.content}</p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                           {new Date(comment.createdAt).toLocaleString('ar-EG', {
                             month: 'short',
@@ -431,7 +431,7 @@ const Posts: React.FC = () => {
                       <Smile className="w-5 h-5" />
                     </button>
                     {showEmojiPicker === post.id && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-3 grid grid-cols-10 gap-1 z-10">
+                      <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-3 grid grid-cols-5 sm:grid-cols-10 gap-1 z-10 max-w-[calc(100vw-2rem)]">
                         {EMOJIS.map(emoji => (
                           <button
                             key={emoji}
@@ -479,7 +479,7 @@ const Posts: React.FC = () => {
               <Smile className="w-5 h-5" />
             </button>
             {showEmojiPicker === 'modal' && (
-              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-3 grid grid-cols-10 gap-1 z-10">
+              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-3 grid grid-cols-5 sm:grid-cols-10 gap-1 z-10 max-w-[calc(100vw-2rem)]">
                 {EMOJIS.map(emoji => (
                   <button
                     key={emoji}
@@ -496,7 +496,7 @@ const Posts: React.FC = () => {
 
           {/* Image Preview */}
           {selectedImages.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {selectedImages.map((img, idx) => (
                 <div key={idx} className="relative group">
                   <img src={img} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
@@ -532,7 +532,7 @@ const Posts: React.FC = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
             <Button
               type="button"
               variant="outline"

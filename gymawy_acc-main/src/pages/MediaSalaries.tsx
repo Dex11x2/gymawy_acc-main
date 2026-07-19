@@ -947,11 +947,11 @@ const MediaSalaries: React.FC = () => {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8 space-x-reverse">
+        <nav className="flex space-x-8 space-x-reverse overflow-x-auto">
           {canViewPrices && (
             <button
               onClick={() => setActiveTab('prices')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'prices'
                   ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
@@ -964,7 +964,7 @@ const MediaSalaries: React.FC = () => {
           {canViewAchievements && (
             <button
               onClick={() => setActiveTab('achievements')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'achievements'
                   ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
@@ -977,7 +977,7 @@ const MediaSalaries: React.FC = () => {
           {isVariableSalaryEmployee && (
             <button
               onClick={() => setActiveTab('my-achievements')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'my-achievements'
                   ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
@@ -990,7 +990,7 @@ const MediaSalaries: React.FC = () => {
           {isAdmin && (
             <button
               onClick={() => setActiveTab('content-types')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'content-types'
                   ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
@@ -1019,7 +1019,7 @@ const MediaSalaries: React.FC = () => {
               <select
                 value={selectedEmployeeForPrices}
                 onChange={(e) => setSelectedEmployeeForPrices(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-w-[200px]"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-w-[200px] max-w-[calc(100vw-6rem)]"
               >
                 <option value="">اختر موظف...</option>
                 {employeesWithPrices.map(item => (
@@ -1254,7 +1254,7 @@ const MediaSalaries: React.FC = () => {
             </div>
 
             {isAdmin && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
                   onClick={handleSyncAllAchievements}
@@ -1702,7 +1702,7 @@ const MediaSalaries: React.FC = () => {
       {/* Content Types Tab */}
       {activeTab === 'content-types' && isAdmin && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
             <div className="flex items-center gap-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">إدارة أنواع المحتوى</h2>
               <Button variant="ghost" size="sm" onClick={fetchContentTypes} disabled={isLoadingContentTypes}>
@@ -1817,7 +1817,7 @@ const MediaSalaries: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السعر</label>
               <input
@@ -1903,7 +1903,7 @@ const MediaSalaries: React.FC = () => {
           )}
 
           {/* Month/Year Selection */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الشهر</label>
               <select
@@ -1956,7 +1956,7 @@ const MediaSalaries: React.FC = () => {
                 const itemTotal = item.quantity * itemPrice;
 
                 return (
-                  <div key={index} className="flex gap-3 items-end p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div key={index} className="flex flex-wrap gap-3 items-end p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">نوع المحتوى</label>
                       <select
@@ -2081,7 +2081,7 @@ const MediaSalaries: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 الاسم بالعربية <span className="text-red-500">*</span>
@@ -2110,7 +2110,7 @@ const MediaSalaries: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 السعر الافتراضي

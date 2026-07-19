@@ -39,8 +39,8 @@ const OccasionsPopup: React.FC = () => {
             <div key={index} className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
               <div className="flex items-center gap-3">
                 <span className="text-4xl">{occasion.type === 'birthday' ? '🎂' : '🎉'}</span>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold">{occasion.title}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold break-words">{occasion.title}</h3>
                   {occasion.description && <p className="text-sm text-white/90 mt-1">{occasion.description}</p>}
                 </div>
               </div>

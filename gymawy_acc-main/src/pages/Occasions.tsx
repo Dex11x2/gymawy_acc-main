@@ -229,7 +229,7 @@ const Occasions: React.FC = () => {
                     )}
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3 break-words">
                     {occasion.title}
                   </h3>
 
@@ -253,7 +253,7 @@ const Occasions: React.FC = () => {
                   </div>
 
                   {occasion.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg mb-3 border border-gray-100 dark:border-gray-700">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg mb-3 border border-gray-100 dark:border-gray-700 break-words">
                       {occasion.description}
                     </p>
                   )}

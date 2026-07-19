@@ -270,7 +270,7 @@ const Reports: React.FC = () => {
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">تقارير مفصلة لكل عملة على حدة</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {isManager && (
             <Button
               variant="outline"

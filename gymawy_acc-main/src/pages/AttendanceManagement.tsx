@@ -647,10 +647,10 @@ const AttendanceManagement: React.FC = () => {
             </h2>
           </Card.Header>
           <Card.Body>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Days Headers */}
               {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((day, idx) => (
-                <div key={`day-${idx}`} className="text-center font-semibold text-gray-700 dark:text-gray-300 py-2 text-sm">{day}</div>
+                <div key={`day-${idx}`} className="text-center font-semibold text-gray-700 dark:text-gray-300 py-2 text-xs sm:text-sm min-w-0 truncate">{day}</div>
               ))}
 
               {/* ✅ FIX: Calculate first day of month to align calendar correctly */}
@@ -674,7 +674,7 @@ const AttendanceManagement: React.FC = () => {
                 return (
                   <div
                     key={day}
-                    className={`p-3 border rounded-lg text-center transition-all ${
+                    className={`p-1 sm:p-3 min-w-0 border rounded-lg text-center transition-all ${
                       record?.status === 'present' ? 'bg-success-50 dark:bg-success-900/20 border-success-300 dark:border-success-700' :
                       record?.status === 'late' ? 'bg-warning-50 dark:bg-warning-900/20 border-warning-300 dark:border-warning-700' :
                       record?.status === 'absent' ? 'bg-error-50 dark:bg-error-900/20 border-error-300 dark:border-error-700' :
@@ -682,7 +682,7 @@ const AttendanceManagement: React.FC = () => {
                       'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-lg text-gray-800 dark:text-white">{day}</div>
+                    <div className="font-bold text-sm sm:text-lg text-gray-800 dark:text-white">{day}</div>
                     {record ? (
                       <div className="text-xs mt-1 space-y-1">
                         <div className="font-medium flex items-center justify-center gap-1">
@@ -747,7 +747,7 @@ const AttendanceManagement: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وقت الحضور</label>
               <input
@@ -798,7 +798,7 @@ const AttendanceManagement: React.FC = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">التأخير (دقيقة)</label>
               <input
@@ -830,7 +830,7 @@ const AttendanceManagement: React.FC = () => {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     مغادرة مبكرة (دقيقة)
@@ -900,7 +900,7 @@ const AttendanceManagement: React.FC = () => {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     نوع الخصم

@@ -27,7 +27,7 @@ const CustodyAndAdvances: React.FC = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-wrap gap-2 sm:gap-4 mb-6">
         <button
           onClick={() => setActiveTab('custody')}
           className={`px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 ${

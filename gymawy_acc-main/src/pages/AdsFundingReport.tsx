@@ -253,7 +253,7 @@ const AdsFundingReport: React.FC = () => {
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة إعلانات TikTok و Instagram شهرياً</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={loadOperations} disabled={isLoading}>
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             تحديث

@@ -127,12 +127,12 @@ const AttendanceSystem: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">📋 نظام الحضور والانصراف</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">📋 نظام الحضور والانصراف</h1>
           <p className="text-gray-600 mt-1">إدارة متكاملة للحضور والإجازات</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setViewMode("daily")}
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
@@ -159,18 +159,18 @@ const AttendanceSystem: React.FC = () => {
       {viewMode === "daily" ? (
         <div className="space-y-6">
           <div className="bg-white rounded-xl p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <label className="text-sm font-medium text-gray-700">التاريخ:</label>
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 min-w-0 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               {isAdmin && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => {
                       setEditingRecord(null);
@@ -265,13 +265,13 @@ const AttendanceSystem: React.FC = () => {
       ) : (
         <div className="space-y-6">
           <div className="bg-white rounded-xl p-6 shadow-lg">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">الشهر</label>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 >
                   {Array.from({ length: 12 }, (_, i) => (
                       <option key={i + 1} value={i + 1}>
@@ -285,7 +285,7 @@ const AttendanceSystem: React.FC = () => {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 >
                   {Array.from({ length: 5 }, (_, i) => {
                     const year = new Date().getFullYear() - 2 + i;
@@ -374,7 +374,7 @@ const AttendanceSystem: React.FC = () => {
         <form onSubmit={handleSaveRecord} className="space-y-4">
           <input type="hidden" name="employeeId" value={editingRecord?.employeeId} />
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">التاريخ</label>
               <input
@@ -402,7 +402,7 @@ const AttendanceSystem: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">وقت الحضور</label>
               <input
@@ -423,7 +423,7 @@ const AttendanceSystem: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">دقائق التأخير</label>
               <input

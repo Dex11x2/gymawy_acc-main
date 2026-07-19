@@ -271,13 +271,13 @@ const Instructions: React.FC = () => {
             return (
               <Card key={instruction.id} className="hover:shadow-lg transition-shadow">
                 <Card.Body className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-4 min-w-0">
                       <div className="w-14 h-14 bg-warning-100 dark:bg-warning-900/30 rounded-xl flex items-center justify-center">
                         <IconComponent className="w-7 h-7 text-warning-600 dark:text-warning-400" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white break-words">
                           {instruction.title}
                         </h2>
                         <Badge variant={getCategoryBadgeVariant(instruction.category)} className="mt-1">
@@ -313,7 +313,7 @@ const Instructions: React.FC = () => {
                   </div>
 
                   <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                    <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
+                    <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
                       {instruction.content}
                     </p>
                   </div>

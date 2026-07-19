@@ -160,12 +160,12 @@ const ReportSettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">⚙️ إعدادات التقارير اليومية</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">⚙️ إعدادات التقارير اليومية</h1>
           <p className="text-gray-600 mt-1">تحكم في التقارير والإشعارات اليومية</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={sendTestReport}
             className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
@@ -183,7 +183,7 @@ const ReportSettings: React.FC = () => {
 
       {/* حالة التقارير */}
       <div className="bg-white rounded-xl p-6 shadow-lg">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-800">🔔 حالة التقارير</h2>
             <p className="text-gray-600 mt-1">
@@ -207,24 +207,24 @@ const ReportSettings: React.FC = () => {
       <div className="bg-white rounded-xl p-6 shadow-lg">
         <h2 className="text-xl font-bold text-gray-800 mb-4">📧 إعدادات المرسل</h2>
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <label className="text-gray-700 font-medium min-w-[100px]">إيميل الإرسال:</label>
             <input
               type="text"
               value="YOUR_EMAIL@smtp-SMTP_PROVIDER.com"
               disabled
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+              className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
             />
             <span className="text-xs text-green-600 font-medium">✓ SMTP_PROVIDER معتمد</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <label className="text-gray-700 font-medium min-w-[100px]">اسم المرسل:</label>
             <input
               type="text"
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
               placeholder="اسم يظهر عند المستلم"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+              className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg"
             />
           </div>
           <button
@@ -239,7 +239,7 @@ const ReportSettings: React.FC = () => {
       {/* موعد الإرسال */}
       <div className="bg-white rounded-xl p-6 shadow-lg">
         <h2 className="text-xl font-bold text-gray-800 mb-4">🕐 موعد الإرسال</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <label className="text-gray-700 font-medium">الوقت:</label>
           <input
             type="time"
@@ -297,15 +297,15 @@ const ReportSettings: React.FC = () => {
         <h2 className="text-xl font-bold text-gray-800 mb-4">👥 المستلمون</h2>
         <div className="space-y-3">
           {settings?.recipients?.map((recipient: any, index: number) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={index} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${recipient.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
                 <div>
                   <p className="font-medium text-gray-800">{recipient.name}</p>
-                  <p className="text-sm text-gray-600">{recipient.email}</p>
+                  <p className="text-sm text-gray-600 break-all">{recipient.email}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => testRecipientEmail(recipient.email, recipient.name)}
                   disabled={testingEmail === recipient.email}

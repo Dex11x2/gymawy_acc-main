@@ -253,7 +253,7 @@ const Dashboard: React.FC = () => {
                 نظرة شاملة على أداء شركتك المالي والتشغيلي - {new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button
                 onClick={() => setShowRevenueModal(true)}
                 className="bg-success-500 hover:bg-success-600 text-white"
@@ -631,7 +631,7 @@ const Dashboard: React.FC = () => {
               {Object.entries(revenuesByCurrency).map(([currency, amount]) => (
                 <div key={currency} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{currency}</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-xl font-bold text-gray-900 dark:text-white break-words">
                     {amount.toLocaleString()} {getCurrencySymbol(currency)}
                   </p>
                 </div>
@@ -689,7 +689,7 @@ const Dashboard: React.FC = () => {
               }).map(([currency, amount]) => (
                 <div key={currency} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{currency}</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-xl font-bold text-gray-900 dark:text-white break-words">
                     {amount.toLocaleString()} {getCurrencySymbol(currency)}
                   </p>
                 </div>

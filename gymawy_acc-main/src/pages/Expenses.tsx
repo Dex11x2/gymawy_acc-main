@@ -288,7 +288,7 @@ const Expenses: React.FC = () => {
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">المصروفات</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة مصروفات الشركة</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => setShowTotalModal(true)}
             variant="outline"
@@ -689,7 +689,7 @@ const Expenses: React.FC = () => {
                 <Card key={currency} className="bg-gray-50 dark:bg-gray-900">
                   <Card.Body className="p-4 text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">{currency}</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-xl font-bold text-gray-900 dark:text-white break-words">
                       {amount.toLocaleString()} {getCurrencySymbol(currency)}
                     </p>
                   </Card.Body>

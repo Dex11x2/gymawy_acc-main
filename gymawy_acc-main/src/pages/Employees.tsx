@@ -305,7 +305,7 @@ const Employees: React.FC = () => {
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">الموظفين</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">إدارة موظفي الشركة</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <div className="relative" ref={exportMenuRef}>
             <Button
               onClick={() => setShowExportMenu(!showExportMenu)}
@@ -317,7 +317,7 @@ const Employees: React.FC = () => {
               <ChevronDown className="h-4 w-4" />
             </Button>
             {showExportMenu && (
-              <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl z-50 border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="absolute left-0 mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-xl z-50 border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <button
                   onClick={() => {
                     exportEmployeesToPDF(filteredEmployees);

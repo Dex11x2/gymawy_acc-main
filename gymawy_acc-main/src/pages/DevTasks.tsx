@@ -692,7 +692,7 @@ const DevTasks: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={exportToCSV}
                 variant="outline"
@@ -853,7 +853,7 @@ const DevTasks: React.FC = () => {
                   {/* Actions */}
                   <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                     {canWrite('dev_tasks') && (
-                      <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <CustomDropdown
                           value={task.status}
                           onChange={(value) => handleStatusChange(task.id, value as DevTask['status'])}
@@ -945,7 +945,7 @@ const DevTasks: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               type="date"
               label={isRTL ? 'تاريخ البداية' : 'Start Date'}
@@ -961,7 +961,7 @@ const DevTasks: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {isRTL ? 'الحالة' : 'Status'}

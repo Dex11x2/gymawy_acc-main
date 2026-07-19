@@ -211,7 +211,7 @@ const EmployeeReviews: React.FC = () => {
             <Card.Body className="p-6 space-y-4">
               {myReviews.map((review) => (
                 <div key={review.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                     <div className="flex items-center gap-3">
                       <Avatar alt={review.reviewerName} size="medium" />
                       <div>
@@ -284,7 +284,7 @@ const EmployeeReviews: React.FC = () => {
           {selectedReview && (
             <div className="space-y-6">
               <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar alt={selectedReview.reviewerName} size="medium" />
                     <div>
@@ -545,7 +545,7 @@ const EmployeeReviews: React.FC = () => {
           <Card.Body className="p-6 space-y-4">
             {reviews.slice(0, 5).map((review) => (
               <div key={review.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar alt={review.employeeName} size="medium" />
                     <div>

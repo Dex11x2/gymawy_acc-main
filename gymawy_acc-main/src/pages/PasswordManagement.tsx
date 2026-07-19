@@ -126,13 +126,13 @@ const PasswordManagement: React.FC = () => {
       <Card className="border-2 border-purple-100 dark:border-purple-800/50">
         <Card.Body className="p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-brand-500 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-purple-500 to-brand-500 rounded-xl flex items-center justify-center text-white text-xl font-bold">
                 {user?.name?.charAt(0)}
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">{user?.name}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
+              <div className="min-w-0">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white break-words">{user?.name}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 break-words">{user?.email}</p>
                 <div className="mt-2">
                   {getRoleBadge(user?.role || '')}
                 </div>
@@ -160,14 +160,14 @@ const PasswordManagement: React.FC = () => {
               {allUsers.map((u: any) => (
                 <div key={u.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
                       <Avatar
                         alt={u.name}
                         size="medium"
                       />
-                      <div>
-                        <h4 className="font-semibold text-gray-800 dark:text-white">{u.name}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{u.email}</p>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-gray-800 dark:text-white break-words">{u.name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 break-words">{u.email}</p>
                         <div className="mt-1">
                           {getRoleBadge(u.role)}
                         </div>

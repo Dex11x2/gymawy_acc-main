@@ -207,7 +207,7 @@ const Profile: React.FC = () => {
       {/* Personal Information Section */}
       <div className="rounded-[10px] border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-stroke px-6 py-5 dark:border-strokedark lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stroke px-6 py-5 dark:border-strokedark lg:px-8">
           <h4 className="text-xl font-semibold text-black dark:text-white">
             Personal Information
           </h4>
@@ -305,7 +305,7 @@ const Profile: React.FC = () => {
                   placeholder="Email address"
                 />
               ) : (
-                <p className="text-base font-medium text-black dark:text-white">
+                <p className="text-base font-medium text-black dark:text-white break-words">
                   {user.email || '-'}
                 </p>
               )}

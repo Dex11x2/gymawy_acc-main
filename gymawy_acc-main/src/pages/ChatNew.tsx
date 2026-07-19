@@ -301,16 +301,16 @@ const Chat: React.FC = () => {
     <div className="h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white flex font-outfit">
       
       {/* Left Sidebar - Active Conversations */}
-      <div className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+      <div className="w-20 sm:w-64 lg:w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="p-3 sm:p-6">
+          <div className="hidden sm:flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Active Conversations</h2>
             <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium px-2 py-1 rounded-full">
               {activeConversationsCount}
             </span>
           </div>
 
-          <div className="relative mb-2">
+          <div className="relative mb-2 hidden sm:block">
             <input
               type="text"
               placeholder="Search..."
@@ -322,7 +322,7 @@ const Chat: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4 space-y-1">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-2 sm:px-4 pb-4 space-y-1">
           {filteredUsers.map((chatUser, idx) => {
             const lastMsg = getLastMessage(chatUser.id);
             const isSelected = selectedUser?.id === chatUser.id;
@@ -331,7 +331,7 @@ const Chat: React.FC = () => {
               <div
                 key={chatUser.id || idx}
                 onClick={() => setSelectedUser(chatUser)}
-                className={`p-3 rounded-xl cursor-pointer transition-all duration-200 flex items-center gap-3 ${
+                className={`p-2 sm:p-3 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-center sm:justify-start gap-3 ${
                   isSelected 
                     ? 'bg-brand-50 dark:bg-brand-600/10 border border-brand-200 dark:border-brand-500/20' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -345,7 +345,7 @@ const Chat: React.FC = () => {
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 hidden sm:block">
                   <div className="flex justify-between items-start mb-0.5">
                     <h3 className={`font-semibold text-sm truncate ${isSelected ? 'text-brand-900 dark:text-white' : 'text-gray-900 dark:text-gray-200'}`}>
                       {chatUser.name}
@@ -371,8 +371,8 @@ const Chat: React.FC = () => {
         {selectedUser ? (
           <>
             {/* Chat Header */}
-            <div className="h-20 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
-              <div className="flex items-center gap-4">
+            <div className="h-20 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-3 sm:px-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                 <div className="relative">
                   <div className={`w-10 h-10 rounded-full ${selectedUser.avatarColor} flex items-center justify-center text-white font-semibold shadow-md`}>
                     {selectedUser.initials}
@@ -381,19 +381,19 @@ const Chat: React.FC = () => {
                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{selectedUser.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg leading-tight truncate">{selectedUser.name}</h3>
                   <p className="text-brand-600 dark:text-brand-400 text-xs font-medium">
                     {selectedUser.isOnline ? 'Online' : 'Offline'}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+              <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+                <button className="hidden sm:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                   <Phone className="w-5 h-5" />
                 </button>
-                <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                <button className="hidden sm:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                   <Video className="w-5 h-5" />
                 </button>
                 <button 
@@ -412,7 +412,7 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 bg-white dark:bg-gray-900">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-6 bg-white dark:bg-gray-900">
               {conversationMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 opacity-50">
                   <Send className="w-16 h-16 mb-4" />
@@ -423,7 +423,7 @@ const Chat: React.FC = () => {
                   const isMe = msg.senderId === user?.id;
                   return (
                     <div key={msg.id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex max-w-[70%] ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>
+                      <div className={`flex max-w-[85%] sm:max-w-[70%] ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 sm:gap-3`}>
                         {/* Avatar for received messages */}
                         {!isMe && (
                           <div className={`w-8 h-8 rounded-full ${selectedUser.avatarColor} flex-shrink-0 flex items-center justify-center text-xs text-white font-bold`}>
@@ -433,7 +433,7 @@ const Chat: React.FC = () => {
                         
                         <div className={`group relative`}>
                           <div 
-                            className={`px-5 py-3.5 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                            className={`px-4 sm:px-5 py-3.5 rounded-2xl shadow-sm text-sm leading-relaxed break-words ${
                               isMe 
                                 ? 'bg-brand-600 text-white rounded-br-none' 
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none'
@@ -466,7 +466,7 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+            <div className="p-3 sm:p-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
               {/* Preview */}
               {(selectedImages.length > 0 || selectedFiles.length > 0) && (
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -520,7 +520,7 @@ const Chat: React.FC = () => {
                   >
                     <Smile className="w-5 h-5" />
                     {showEmojiPicker && (
-                      <div className="absolute bottom-full right-0 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 w-72 grid grid-cols-8 gap-2 z-50">
+                      <div className="absolute bottom-full right-0 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 w-72 max-w-[calc(100vw-2rem)] grid grid-cols-8 gap-2 z-50">
                         {EMOJIS.map(emoji => (
                           <button
                             key={emoji}

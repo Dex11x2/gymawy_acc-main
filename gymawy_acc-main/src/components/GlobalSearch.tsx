@@ -93,7 +93,7 @@ export const GlobalSearch: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20 px-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <input
@@ -124,9 +124,9 @@ export const GlobalSearch: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{result.icon}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-gray-800 dark:text-white">{result.title}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-medium text-gray-800 dark:text-white break-words">{result.title}</h3>
                       <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
                         {result.type}
                       </span>
