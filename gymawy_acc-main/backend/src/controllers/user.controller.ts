@@ -4,7 +4,7 @@ import User from '../models/User';
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await User.find({ isActive: true })
-      .select('_id name email role')
+      .select('_id name email role avatar')
       .sort({ name: 1 });
     
     res.json(users);

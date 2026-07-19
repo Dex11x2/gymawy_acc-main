@@ -138,6 +138,7 @@ router.post('/login', async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        avatar: user.avatar,
         companyId: user.companyId,
         permissions: await computePermissions(user.roleId, user.permissions)
       }
@@ -148,6 +149,21 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user
+// Set or clear the current user's profile picture (small data-URL image)
+router.patch('/me/avatar', protect, async (req: any, res) => {
+  try {
+    const { avatar } = req.body;
+    if (avatar && (typeof avatar !== 'string' || !avatar.startsWith('data:image/') || avatar.length > 400_000)) {
+      return res.status(400).json({ message: 'صورة غير صالحة — يجب أن تكون صورة أصغر من 300KB' });
+    }
+    const user = await User.findByIdAndUpdate(req.user.id, { avatar: avatar || '' }, { new: true }).select('avatar');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ avatar: user.avatar });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get('/me', protect, async (req: any, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password').lean();
@@ -158,6 +174,7 @@ router.get('/me', protect, async (req: any, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      avatar: user.avatar,
       roleId: user.roleId,
       companyId: user.companyId,
       departmentId: user.departmentId,

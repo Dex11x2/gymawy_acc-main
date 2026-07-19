@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  avatar?: string;
   role: 'dev' | 'general_manager' | 'administrative_manager' | 'employee';
   companyId?: string;
   departmentId?: string;

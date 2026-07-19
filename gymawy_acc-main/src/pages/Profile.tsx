@@ -1,12 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
-import { Pencil, LogOut, Save, X, ChevronRight } from 'lucide-react';
+import { Pencil, LogOut, Save, X, ChevronRight, Camera, Loader2 } from 'lucide-react';
 import Toast from '../components/Toast';
+import api from '../services/api';
+
+// Downscale the picked image to a 256px square JPEG data-URL so the upload
+// stays tiny regardless of the original photo size.
+const fileToAvatarDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const SIZE = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('canvas'));
+      const scale = Math.max(SIZE / img.width, SIZE / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')); };
+    img.src = url;
+  });
 
 const Profile: React.FC = () => {
-  const { user, updateUser, logout } = useAuthStore();
+  const { user, updateUser, logout, setUser } = useAuthStore();
   const { departments } = useDataStore();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    try {
+      setUploadingAvatar(true);
+      const avatar = await fileToAvatarDataUrl(file);
+      await api.patch('/auth/me/avatar', { avatar });
+      setUser({ ...(user as any), avatar });
+      setToast({ message: 'تم تحديث صورة البروفايل', type: 'success', isOpen: true });
+    } catch {
+      setToast({ message: 'فشل رفع الصورة — جرب صورة أخرى', type: 'error', isOpen: true });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // Profile page always renders the LOGGED-IN user's own profile, so no
   // permission gate is needed. Permissions decide cross-user access elsewhere.
@@ -117,6 +161,21 @@ const Profile: React.FC = () => {
                     className="h-full w-full rounded-full object-cover"
                   />
                   <span className="absolute bottom-0 right-0 h-5 w-5 rounded-full border-[3px] border-white bg-meta-3 dark:border-boxdark"></span>
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    title="تغيير صورة البروفايل"
+                    className="absolute bottom-0 left-0 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg hover:bg-brand-600 disabled:opacity-60"
+                  >
+                    {uploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarPick}
+                    className="hidden"
+                  />
                 </div>
 
                 {/* Name & Role */}

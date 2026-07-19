@@ -121,7 +121,8 @@ const Chat: React.FC = () => {
               role: u.role || 'User',
               isOnline: Math.random() > 0.3, // Mock online status if not real
               avatarColor: getAvatarColor(index),
-              initials: getInitials(u.name)
+              initials: getInitials(u.name),
+              avatar: u.avatar || ''
             };
           });
 
@@ -338,9 +339,13 @@ const Chat: React.FC = () => {
                 }`}
               >
                 <div className="relative">
-                  <div className={`w-12 h-12 rounded-full ${chatUser.avatarColor} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
-                    {chatUser.initials}
-                  </div>
+                  {chatUser.avatar ? (
+                    <img src={chatUser.avatar} alt={chatUser.name} className="w-12 h-12 rounded-full object-cover shadow-lg" />
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full ${chatUser.avatarColor} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                      {chatUser.initials}
+                    </div>
+                  )}
                   {chatUser.isOnline && (
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}
@@ -374,9 +379,13 @@ const Chat: React.FC = () => {
             <div className="h-20 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-3 sm:px-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                 <div className="relative">
-                  <div className={`w-10 h-10 rounded-full ${selectedUser.avatarColor} flex items-center justify-center text-white font-semibold shadow-md`}>
-                    {selectedUser.initials}
-                  </div>
+                  {selectedUser.avatar ? (
+                    <img src={selectedUser.avatar} alt={selectedUser.name} className="w-10 h-10 rounded-full object-cover shadow-md" />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-full ${selectedUser.avatarColor} flex items-center justify-center text-white font-semibold shadow-md`}>
+                      {selectedUser.initials}
+                    </div>
+                  )}
                   {selectedUser.isOnline && (
                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}

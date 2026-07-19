@@ -12,6 +12,7 @@ export interface IUser extends Document {
   plainPassword?: string;
   phone?: string;
   name: string;
+  avatar?: string;
   role: "dev" | "general_manager" | "administrative_manager" | "employee";
   roleId?: mongoose.Types.ObjectId;
   // Per-user override. If non-empty array, replaces role-based permissions
@@ -45,6 +46,8 @@ const UserSchema = new Schema(
     password: { type: String, required: true, minlength: 6 },
     plainPassword: { type: String },
     name: { type: String, required: true },
+    // Small data-URL image (client resizes to ~256px before upload)
+    avatar: { type: String, default: "" },
     role: {
       type: String,
       enum: ["dev", "general_manager", "administrative_manager", "employee"],
