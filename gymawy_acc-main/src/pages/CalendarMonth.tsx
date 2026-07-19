@@ -528,9 +528,81 @@ const CalendarMonth: React.FC = () => {
         </>
       )}
 
-      {/* Row editor modal */}
-      <Modal isOpen={!!editing} onClose={() => setEditing(null)} title={draft.title || 'تعديل الصف'} size="xl">
-        {editing && (
+      {/* Row details modal — read-only for view-only users, full editor otherwise */}
+      <Modal isOpen={!!editing} onClose={() => setEditing(null)} title={draft.title || (canEdit ? 'تعديل الصف' : 'تفاصيل اليوم')} size="xl">
+        {editing && !canEdit && (
+          <div className="space-y-4" dir="rtl">
+            <div className="space-y-2 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-800">
+              <DetailRow label="اليوم">{draft.publishDate ? `${weekdayAr(draft.publishDate)} — ${formatDT(draft.publishDate)}` : '—'}</DetailRow>
+              <DetailRow label="نوع المحتوى"><Tag opt={findOption(CONTENT_TYPES, draft.contentType)} /></DetailRow>
+              <DetailRow label="المنصات">
+                {draft.platforms?.length ? (
+                  <span className="flex flex-wrap gap-1">{draft.platforms.map((p) => <Tag key={p} opt={findOption(PLATFORMS, p)} />)}</span>
+                ) : '—'}
+              </DetailRow>
+              <DetailRow label="المسؤول">{(draft.assigneeId as any)?.name || '—'}</DetailRow>
+              <DetailRow label="تعاون">{draft.collaboration || '—'}</DetailRow>
+              <DetailRow label="لينك الفيديو">
+                {draft.videoLink ? <a href={draft.videoLink} target="_blank" rel="noreferrer" className="text-brand-500 hover:underline break-all">{draft.videoLink}</a> : '—'}
+              </DetailRow>
+              <DetailRow label="الحالة">
+                <span className="flex flex-wrap gap-2">
+                  <span className={`rounded px-2 py-0.5 text-xs font-bold ${draft.filmed ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>{draft.filmed ? '✓ اتصور' : 'لم يتصور'}</span>
+                  <span className={`rounded px-2 py-0.5 text-xs font-bold ${draft.done ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>{draft.done ? '✓ Done' : 'لم يكتمل'}</span>
+                </span>
+              </DetailRow>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+              <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <FileText className="h-4 w-4 text-brand-500" /> الكابشن / السكريبت
+              </p>
+              {draft.script ? (
+                <>
+                  <div className="max-h-[45dvh] select-text overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-3 text-sm leading-relaxed text-gray-800 dark:bg-gray-800/50 dark:text-gray-100">{draft.script}</div>
+                  <button onClick={() => copyCaption(draft.script || '')} className="mt-3 flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+                    <Copy className="h-4 w-4" /> نسخ الكابشن
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">لا يوجد كابشن بعد</p>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+              <p className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">التعليقات ({draft.comments?.length || 0})</p>
+              <div className="mb-3 max-h-40 space-y-2 overflow-y-auto">
+                {(draft.comments || []).map((c) => (
+                  <div key={c.id} className="rounded-lg bg-gray-50 p-2 text-sm dark:bg-gray-800/60">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{(c.authorId as any)?.name || c.authorName || 'مستخدم'}</span>
+                      <span className="text-xs text-gray-400">{formatDT(c.createdAt)}</span>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300">{c.content}</p>
+                  </div>
+                ))}
+                {(!draft.comments || draft.comments.length === 0) && <p className="text-sm text-gray-400">لا توجد تعليقات</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addComment()}
+                  placeholder="أضف تعليق…"
+                  className={inputCls}
+                />
+                <button onClick={addComment} className="flex-shrink-0 rounded-lg bg-brand-500 p-2.5 text-white hover:bg-brand-600">
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-start border-t border-gray-100 pt-3 dark:border-gray-800">
+              <button onClick={() => setEditing(null)} className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">إغلاق</button>
+            </div>
+          </div>
+        )}
+        {editing && canEdit && (
           <div className="space-y-4" dir="rtl">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label="اسم الفيديو">
@@ -729,6 +801,13 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
   <div>
     <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-300">{label}</label>
     {children}
+  </div>
+);
+
+const DetailRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
+    <span className="w-24 flex-shrink-0 text-gray-400">{label}:</span>
+    <span className="min-w-0 flex-1 text-gray-800 dark:text-gray-200">{children}</span>
   </div>
 );
 
