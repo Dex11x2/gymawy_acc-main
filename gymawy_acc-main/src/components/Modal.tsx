@@ -45,13 +45,13 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
       />
 
       {/* Modal Container */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
         <div
           className={`relative w-full ${sizeClasses[size]} transform rounded-2xl bg-white shadow-xl transition-all dark:bg-gray-900 animate-fadeInScale`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700 sm:px-6 sm:py-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {title}
             </h3>
@@ -65,7 +65,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
           </div>
 
           {/* Modal Body */}
-          <div className="max-h-[calc(100vh-200px)] overflow-y-auto px-6 py-5">
+          <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
             {children}
           </div>
         </div>

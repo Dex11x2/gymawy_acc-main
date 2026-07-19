@@ -14,11 +14,11 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: process.env.DEV_PROXY_TARGET || "http://localhost:5000",
         changeOrigin: true,
       },
       "/socket.io": {
-        target: "http://localhost:5000",
+        target: process.env.DEV_PROXY_TARGET || "http://localhost:5000",
         changeOrigin: true,
         ws: true,
       },

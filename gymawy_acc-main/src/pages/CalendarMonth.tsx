@@ -26,6 +26,12 @@ const formatDT = (iso?: string) => {
   const h = h24 % 12 || 12;
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${h}:${pad(d.getMinutes())} ${ampm}`;
 };
+const weekdayAr = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('ar-EG', { weekday: 'long' }) : '');
+const shortDate = (iso?: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+};
 
 // True when the entry's publish date falls on `ref` (today). publishDate is
 // stored at noon so timezone offsets never roll it to an adjacent day.
@@ -307,32 +313,39 @@ const CalendarMonth: React.FC = () => {
         <p className="py-10 text-center text-gray-500 dark:text-gray-400">جارٍ التحميل…</p>
       ) : (
         <>
-        {/* Mobile card view — the 12-column table is unusable on touch screens */}
-        <div className="space-y-3 lg:hidden">
+        {/* Mobile card view — the 12-column table is unusable on touch screens.
+            Tapping anywhere on a card opens the full editor; inner controls stop propagation. */}
+        <div className="space-y-3 pb-6 lg:hidden">
           {visibleEntries.map((e, idx) => (
             <div
               key={e.id}
-              className={`rounded-xl border p-3 ${isSameDay(e.publishDate, today)
+              onClick={() => openEditor(e)}
+              className={`cursor-pointer rounded-xl border p-3 active:scale-[0.99] ${isSameDay(e.publishDate, today)
                 ? 'border-brand-400/60 bg-brand-50 dark:bg-brand-500/10'
                 : `border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] ${e.contentType === 'rest' ? 'opacity-60' : ''}`}`}
             >
               <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <span>#{idx + 1}</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {e.publishDate ? (
+                    <span className="text-base font-bold text-gray-900 dark:text-white">{weekdayAr(e.publishDate)} {shortDate(e.publishDate)}</span>
+                  ) : (
+                    <span className="text-sm font-bold text-gray-400">#{idx + 1}</span>
+                  )}
                   {isSameDay(e.publishDate, today) && (
                     <span className="rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">اليوم</span>
                   )}
                   <Tag opt={findOption(CONTENT_TYPES, e.contentType)} />
+                  {e.done && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">✓ Done</span>}
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => openEditor(e)} title="فتح / تعديل" className="relative rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5">
+                <div className="flex flex-shrink-0 items-center gap-1">
+                  <button onClick={(ev) => { ev.stopPropagation(); openEditor(e); }} title="فتح / تعديل" className="relative rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5">
                     <MessageSquare className="h-5 w-5" />
                     {e.comments?.length > 0 && (
                       <span className="absolute -top-1 -left-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] text-white">{e.comments.length}</span>
                     )}
                   </button>
                   {canRemove && (
-                    <button onClick={() => setConfirmDeleteId(e.id)} title="حذف" className="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10">
+                    <button onClick={(ev) => { ev.stopPropagation(); setConfirmDeleteId(e.id); }} title="حذف" className="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10">
                       <Trash2 className="h-5 w-5" />
                     </button>
                   )}
@@ -343,37 +356,40 @@ const CalendarMonth: React.FC = () => {
                 <input
                   defaultValue={e.title}
                   key={e.id + e.title}
+                  onClick={(ev) => ev.stopPropagation()}
                   onBlur={(ev) => { if (ev.target.value !== (e.title || '')) patchEntry(e.id, { title: ev.target.value }); }}
-                  placeholder="اسم الفيديو…"
-                  className="mb-2 w-full rounded-md bg-transparent px-1 py-1 font-medium text-gray-900 outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:text-white dark:focus:bg-gray-800"
+                  placeholder="اكتب اسم الفيديو…"
+                  className="mb-2 w-full rounded-md bg-transparent px-1 py-1 text-base font-semibold text-gray-900 outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:text-white dark:focus:bg-gray-800"
                 />
               ) : (
-                <p className="mb-2 font-medium text-gray-900 dark:text-white">{e.title || '—'}</p>
+                <p className="mb-2 text-base font-semibold text-gray-900 dark:text-white">{e.title || '—'}</p>
               )}
 
               <div className="mb-2 space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                {e.publishDate && <p className="text-gray-500 dark:text-gray-400">{formatDT(e.publishDate)}</p>}
-                {(e.assigneeId as any)?.name && <p>Assignee: {(e.assigneeId as any).name}</p>}
-                {e.collaboration && <p>Collab: {e.collaboration}</p>}
+                {e.publishDate && <p className="text-xs text-gray-400">{formatDT(e.publishDate)}</p>}
+                {(e.assigneeId as any)?.name && <p>المسؤول: {(e.assigneeId as any).name}</p>}
+                {e.collaboration && <p>تعاون: {e.collaboration}</p>}
                 {e.platforms?.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {e.platforms.map((p) => <Tag key={p} opt={findOption(PLATFORMS, p)} />)}
                   </div>
                 )}
                 {e.videoLink && (
-                  <a href={e.videoLink} target="_blank" rel="noreferrer" className="inline-block text-brand-500 hover:underline">لينك الفيديو</a>
+                  <a href={e.videoLink} target="_blank" rel="noreferrer" onClick={(ev) => ev.stopPropagation()} className="inline-block text-brand-500 hover:underline">لينك الفيديو</a>
                 )}
               </div>
 
-              <button
-                onClick={() => setCaptionView(e)}
-                className="mb-2 flex w-full items-center gap-1.5 rounded-md bg-gray-50 px-2 py-2 text-right text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300"
-              >
-                <FileText className={`h-4 w-4 flex-shrink-0 ${e.script ? 'text-brand-500' : 'text-gray-400'}`} />
-                {e.script ? <span className="truncate">{e.script}</span> : <span className="text-gray-400">إضافة كابشن</span>}
-              </button>
+              {(e.script || canEdit) && (
+                <button
+                  onClick={(ev) => { ev.stopPropagation(); setCaptionView(e); }}
+                  className="mb-2 flex w-full items-center gap-1.5 rounded-md bg-gray-50 px-2 py-2 text-right text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300"
+                >
+                  <FileText className={`h-4 w-4 flex-shrink-0 ${e.script ? 'text-brand-500' : 'text-gray-400'}`} />
+                  {e.script ? <span className="truncate">{e.script}</span> : <span className="text-gray-400">إضافة كابشن</span>}
+                </button>
+              )}
 
-              <div className="flex flex-wrap gap-5 border-t border-gray-100 pt-2 dark:border-gray-800">
+              <div className="flex flex-wrap gap-5 border-t border-gray-100 pt-2 dark:border-gray-800" onClick={(ev) => ev.stopPropagation()}>
                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                   <input type="checkbox" checked={!!e.filmed} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { filmed: ev.target.checked })} className="h-5 w-5 accent-brand-500" /> اتصور؟
                 </label>
