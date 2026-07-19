@@ -332,7 +332,7 @@ const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-brand-200 bg-brand-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900 lg:px-6">
           {/* Left Side */}

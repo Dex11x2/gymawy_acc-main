@@ -32,7 +32,7 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
   if (!isOpen) return null;
 
   return (
-    <div className="absolute left-0 top-16 w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50">
+    <div className="fixed inset-x-2 top-20 w-auto sm:absolute sm:inset-x-auto sm:left-0 sm:top-16 sm:w-96 sm:max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold text-gray-800 dark:text-white">الإشعارات ({unreadCount})</h3>
         {unreadCount > 0 && (
