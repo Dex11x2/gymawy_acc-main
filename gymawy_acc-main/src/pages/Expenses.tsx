@@ -314,7 +314,7 @@ const Expenses: React.FC = () => {
             <Button
               onClick={openAddModal}
               variant="primary"
-              className="gap-2 bg-error-500 hover:bg-error-600"
+              className="gap-2"
             >
               <Plus className="w-4 h-4" />
               إضافة مصروف
@@ -483,7 +483,7 @@ const Expenses: React.FC = () => {
               <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">لا توجد مصروفات</h3>
               <p className="text-gray-500 dark:text-gray-500 mb-6">لم يتم تسجيل أي مصروفات لهذا الشهر</p>
               {canCreateExpense && (
-                <Button onClick={openAddModal} variant="primary" className="gap-2 bg-error-500 hover:bg-error-600">
+                <Button onClick={openAddModal} variant="primary" className="gap-2">
                   <Plus className="w-4 h-4" />
                   إضافة مصروف
                 </Button>
@@ -674,7 +674,7 @@ const Expenses: React.FC = () => {
           />
 
           <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <Button type="submit" variant="primary" className="flex-1 bg-error-500 hover:bg-error-600">
+            <Button type="submit" variant="primary" className="flex-1">
               {editingExpense ? 'تحديث' : 'إضافة'}
             </Button>
             <Button type="button" onClick={() => setShowModal(false)} variant="outline" className="flex-1">

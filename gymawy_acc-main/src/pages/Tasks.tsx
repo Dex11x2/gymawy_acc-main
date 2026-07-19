@@ -391,7 +391,7 @@ const Tasks: React.FC = () => {
                 });
                 setShowModal(true);
               }}
-              className="bg-blue-light-500 hover:bg-blue-light-600"
+              variant="outline"
             >
               <FileText className="h-4 w-4" />
               تسكة تخطيطية جديدة
@@ -463,7 +463,6 @@ const Tasks: React.FC = () => {
                 onClick={() => setActiveTab('sent')}
                 variant={activeTab === 'sent' ? 'primary' : 'outline'}
                 size="sm"
-                className={activeTab === 'sent' ? 'bg-success-500 hover:bg-success-600' : ''}
               >
                 <Send className="h-4 w-4" />
                 التي أرسلتها ({sentTasks.length})

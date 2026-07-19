@@ -263,7 +263,7 @@ const Revenues: React.FC = () => {
             <Button
               onClick={openAdd}
               variant="primary"
-              className="gap-2 bg-success-500 hover:bg-success-600"
+              className="gap-2"
             >
               <Plus className="w-4 h-4" />
               إضافة إيراد
@@ -349,7 +349,7 @@ const Revenues: React.FC = () => {
               <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">لا توجد إيرادات</h3>
               <p className="text-gray-500 dark:text-gray-500 mb-6">لا توجد إيرادات لهذا الشهر</p>
               {canCreateRevenue && (
-                <Button onClick={openAdd} variant="primary" className="gap-2 bg-success-500 hover:bg-success-600">
+                <Button onClick={openAdd} variant="primary" className="gap-2">
                   <Plus className="w-4 h-4" />
                   إضافة إيراد
                 </Button>
@@ -513,7 +513,7 @@ const Revenues: React.FC = () => {
           />
 
           <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <Button type="submit" variant="primary" className="flex-1 bg-success-500 hover:bg-success-600">
+            <Button type="submit" variant="primary" className="flex-1">
               {editing ? 'تحديث' : 'إضافة'}
             </Button>
             <Button type="button" onClick={() => setShowModal(false)} variant="outline" className="flex-1">
