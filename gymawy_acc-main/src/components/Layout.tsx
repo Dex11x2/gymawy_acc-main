@@ -214,7 +214,7 @@ const Layout: React.FC = () => {
   const sidebarWidth = sidebarOpen ? 'w-[290px]' : 'w-[90px]';
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden">
+    <div className="app-shell-height flex overflow-hidden">
       {/* Mobile Sidebar Backdrop */}
       {isMobile && mobileSidebarOpen && (
         <div

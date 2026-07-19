@@ -174,6 +174,13 @@ html, body {
   scroll-behavior: smooth;
 }
 
+/* App shell height: dvh tracks the phone browser's collapsing toolbars;
+   the vh line is the fallback for browsers without dvh support. */
+.app-shell-height {
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* ===== Animations ===== */
 @keyframes fadeIn {
   from { opacity: 0; }

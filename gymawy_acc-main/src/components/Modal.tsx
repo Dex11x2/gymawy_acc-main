@@ -45,7 +45,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
       />
 
       {/* Modal Container */}
-      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
+      <div className="flex min-h-full items-start justify-center p-2 py-4 sm:items-center sm:p-4">
         <div
           className={`relative w-full ${sizeClasses[size]} transform rounded-2xl bg-white shadow-xl transition-all dark:bg-gray-900 animate-fadeInScale`}
           onClick={(e) => e.stopPropagation()}
@@ -65,7 +65,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
           </div>
 
           {/* Modal Body */}
-          <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          <div className="max-h-[calc(100dvh-9rem)] overflow-y-auto px-4 py-4 pb-10 sm:px-6 sm:py-5 sm:pb-8">
             {children}
           </div>
         </div>

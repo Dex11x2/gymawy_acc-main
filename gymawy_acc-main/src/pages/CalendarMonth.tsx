@@ -315,7 +315,7 @@ const CalendarMonth: React.FC = () => {
         <>
         {/* Mobile card view — the 12-column table is unusable on touch screens.
             Tapping anywhere on a card opens the full editor; inner controls stop propagation. */}
-        <div className="space-y-3 pb-6 lg:hidden">
+        <div className="space-y-3 pb-32 lg:hidden">
           {visibleEntries.map((e, idx) => (
             <div
               key={e.id}
