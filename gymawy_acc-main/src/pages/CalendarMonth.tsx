@@ -343,7 +343,7 @@ const CalendarMonth: React.FC = () => {
                 <input
                   defaultValue={e.title}
                   key={e.id + e.title}
-                  onBlur={(ev) => { if (ev.target.value !== e.title) patchEntry(e.id, { title: ev.target.value }); }}
+                  onBlur={(ev) => { if (ev.target.value !== (e.title || '')) patchEntry(e.id, { title: ev.target.value }); }}
                   placeholder="اسم الفيديو…"
                   className="mb-2 w-full rounded-md bg-transparent px-1 py-1 font-medium text-gray-900 outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:text-white dark:focus:bg-gray-800"
                 />
@@ -436,7 +436,7 @@ const CalendarMonth: React.FC = () => {
                       <input
                         defaultValue={e.title}
                         key={e.id + e.title}
-                        onBlur={(ev) => { if (ev.target.value !== e.title) patchEntry(e.id, { title: ev.target.value }); }}
+                        onBlur={(ev) => { if (ev.target.value !== (e.title || '')) patchEntry(e.id, { title: ev.target.value }); }}
                         placeholder="اسم الفيديو…"
                         className="w-44 rounded-md bg-transparent px-1 py-0.5 font-medium text-gray-900 outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:text-white dark:focus:bg-gray-800"
                       />
