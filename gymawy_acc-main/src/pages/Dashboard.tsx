@@ -256,14 +256,14 @@ const Dashboard: React.FC = () => {
             <div className="flex flex-wrap gap-3">
               <Button
                 onClick={() => setShowRevenueModal(true)}
-                className="bg-success-500 hover:bg-success-600 text-white"
+                className="border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
               >
                 <Wallet className="h-4 w-4" />
                 إجمالي الإيرادات
               </Button>
               <Button
                 onClick={() => setShowExpenseModal(true)}
-                className="bg-error-500 hover:bg-error-600 text-white"
+                className="border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
               >
                 <BarChart3 className="h-4 w-4" />
                 إجمالي المصروفات

@@ -29,7 +29,7 @@ const DashboardWrapper: React.FC = () => {
         <div className="flex justify-end">
           <button
             onClick={() => setShowEmployeeDashboard(!showEmployeeDashboard)}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg flex items-center gap-2 font-medium"
+            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 font-medium text-gray-700 shadow-sm transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:text-brand-400"
           >
             {showEmployeeDashboard ? (
               <>
