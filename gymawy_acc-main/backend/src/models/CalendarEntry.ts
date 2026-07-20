@@ -22,6 +22,7 @@ export interface ICalendarEntry extends Document {
   uploadDeadline: string;        // Upload Deadline (free text, NOT a date)
   filmed: boolean;               // اتصور ؟ (checkbox)
   done: boolean;                 // Done (checkbox)
+  scheduled: boolean;            // اتجدول ؟ (checkbox)
   ytSevenDays?: number;          // YT 7days (number)
   instaSevenDays?: number;       // Insta 7days (number)
   tiktokSevenDays?: number;      // TikTok 7days (number)
@@ -47,6 +48,7 @@ const CalendarEntrySchema = new Schema<ICalendarEntry>({
   uploadDeadline: { type: String, default: '' },
   filmed: { type: Boolean, default: false },
   done: { type: Boolean, default: false },
+  scheduled: { type: Boolean, default: false },
   ytSevenDays: { type: Number },
   instaSevenDays: { type: Number },
   tiktokSevenDays: { type: Number },

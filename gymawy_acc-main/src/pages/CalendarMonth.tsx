@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import Avatar from '../components/ui/Avatar';
-import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText, Copy, Pencil } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText, Copy, Pencil, ExternalLink, CopyPlus } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
 
@@ -115,8 +115,11 @@ const CalendarMonth: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthId]);
 
-  // Rows shown for the currently selected account tab.
-  const visibleEntries = entries.filter((e) => e.account === selectedAccount);
+  // Rows shown for the currently selected account tab (sorted by rowOrder so
+  // duplicated rows stay next to their original).
+  const visibleEntries = entries
+    .filter((e) => e.account === selectedAccount)
+    .sort((a, b) => (a.rowOrder || 0) - (b.rowOrder || 0));
   const today = new Date();
 
   const patchEntry = async (id: string, data: Partial<CalEntry>) => {
@@ -164,6 +167,7 @@ const CalendarMonth: React.FC = () => {
         collaboration: draft.collaboration,
         filmed: draft.filmed,
         done: draft.done,
+        scheduled: draft.scheduled,
         script: draft.script,
         isRest: draft.contentType === 'rest',
       };
@@ -188,6 +192,29 @@ const CalendarMonth: React.FC = () => {
       setEntries((prev) => [...prev, created]);
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل إضافة الصف', 'error');
+    }
+  };
+
+  const duplicateRow = async (e: CalEntry) => {
+    if (!monthId) return;
+    try {
+      const created = await calendarApi.createEntry(monthId, {
+        account: e.account,
+        title: e.title,
+        contentType: e.contentType,
+        publishDate: e.publishDate,
+        videoLink: e.videoLink,
+        platforms: e.platforms,
+        assigneeId: (personId(e.assigneeId) || undefined) as any,
+        collaboration: e.collaboration,
+        script: e.script,
+        isRest: e.contentType === 'rest',
+        rowOrder: e.rowOrder, // same day → sorts right after the original
+      });
+      setEntries((prev) => [...prev, created]);
+      notify('تم تكرار الصف');
+    } catch (err: any) {
+      notify(err?.response?.data?.message || 'فشل التكرار', 'error');
     }
   };
 
@@ -429,6 +456,7 @@ const CalendarMonth: React.FC = () => {
                 <th className={thCls}>الكابشن</th>
                 <th className={thCls}>اتصور؟</th>
                 <th className={thCls}>Done</th>
+                <th className={thCls}>اتجدول؟</th>
                 <th className={thCls}></th>
               </tr>
             </thead>
@@ -461,20 +489,103 @@ const CalendarMonth: React.FC = () => {
                       <span className="font-medium">{e.title || '—'}</span>
                     )}
                   </td>
-                  <td className={tdCls}><Tag opt={findOption(CONTENT_TYPES, e.contentType)} /></td>
-                  <td className={`${tdCls} text-gray-500 dark:text-gray-400`}>{formatDT(e.publishDate) || '—'}</td>
                   <td className={tdCls}>
-                    {e.videoLink ? (
-                      <a href={e.videoLink} target="_blank" rel="noreferrer" className="text-brand-500 hover:underline">لينك</a>
-                    ) : '—'}
+                    {canEdit ? (
+                      <select
+                        value={e.contentType || ''}
+                        onChange={(ev) => patchEntry(e.id, { contentType: ev.target.value, isRest: ev.target.value === 'rest' })}
+                        className="cursor-pointer rounded-md bg-transparent px-1 py-0.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-brand-400"
+                        style={{ color: findOption(CONTENT_TYPES, e.contentType)?.color }}
+                      >
+                        <option value="">—</option>
+                        {CONTENT_TYPES.map((o) => <option key={o.key} value={o.key} className="text-gray-800">{o.labelAr}</option>)}
+                      </select>
+                    ) : <Tag opt={findOption(CONTENT_TYPES, e.contentType)} />}
+                  </td>
+                  <td className={tdCls}>
+                    {canEdit ? (
+                      <input
+                        type="datetime-local"
+                        value={toLocalInput(e.publishDate)}
+                        onChange={(ev) => patchEntry(e.id, { publishDate: fromLocalInput(ev.target.value) })}
+                        className="rounded-md bg-transparent px-1 py-0.5 text-xs text-gray-600 outline-none focus:ring-1 focus:ring-brand-400 dark:text-gray-300 dark:[color-scheme:dark]"
+                      />
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400">{formatDT(e.publishDate) || '—'}</span>
+                    )}
+                  </td>
+                  <td className={tdCls}>
+                    <div className="flex items-center gap-1">
+                      {canEdit ? (
+                        <input
+                          defaultValue={e.videoLink}
+                          key={e.id + ':link:' + e.videoLink}
+                          onBlur={(ev) => { if (ev.target.value !== e.videoLink) patchEntry(e.id, { videoLink: ev.target.value }); }}
+                          placeholder="لينك…"
+                          className="w-24 rounded-md bg-transparent px-1 py-0.5 text-sm outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:focus:bg-gray-800"
+                        />
+                      ) : (
+                        e.videoLink ? <span className="max-w-[120px] truncate">{e.videoLink}</span> : <span className="text-gray-400">—</span>
+                      )}
+                      {e.videoLink && (
+                        <a href={e.videoLink} target="_blank" rel="noreferrer" title="فتح اللينك" className="flex-shrink-0 text-brand-500 hover:text-brand-600">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
                   </td>
                   <td className={tdCls}>
                     <div className="flex flex-wrap gap-1">
-                      {e.platforms?.length ? e.platforms.map((p) => <Tag key={p} opt={findOption(PLATFORMS, p)} />) : '—'}
+                      {PLATFORMS.map((o) => {
+                        const active = e.platforms?.includes(o.key);
+                        return (
+                          <button
+                            key={o.key}
+                            disabled={!canEdit}
+                            onClick={() => {
+                              const set = new Set(e.platforms || []);
+                              if (active) set.delete(o.key); else set.add(o.key);
+                              patchEntry(e.id, { platforms: Array.from(set) });
+                            }}
+                            className="rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition disabled:cursor-default"
+                            style={active
+                              ? { backgroundColor: o.color + '26', color: o.color, borderColor: o.color + '55' }
+                              : { color: '#9ca3af', borderColor: '#9ca3af40' }}
+                            title={o.labelAr}
+                          >
+                            {o.labelAr}
+                          </button>
+                        );
+                      })}
                     </div>
                   </td>
-                  <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{(e.assigneeId as any)?.name || '—'}</td>
-                  <td className={`${tdCls} text-gray-600 dark:text-gray-300`}>{e.collaboration || '—'}</td>
+                  <td className={tdCls}>
+                    {canEdit ? (
+                      <select
+                        value={personId(e.assigneeId)}
+                        onChange={(ev) => patchEntry(e.id, { assigneeId: (ev.target.value || null) as any })}
+                        className="max-w-[120px] cursor-pointer rounded-md bg-transparent px-1 py-0.5 text-sm text-gray-600 outline-none focus:ring-1 focus:ring-brand-400 dark:text-gray-300"
+                      >
+                        <option value="">—</option>
+                        {users.map((u) => <option key={u.id} value={u.id} className="text-gray-800">{u.name}</option>)}
+                      </select>
+                    ) : (
+                      <span className="text-gray-600 dark:text-gray-300">{(e.assigneeId as any)?.name || '—'}</span>
+                    )}
+                  </td>
+                  <td className={tdCls}>
+                    {canEdit ? (
+                      <input
+                        defaultValue={e.collaboration}
+                        key={e.id + ':collab:' + e.collaboration}
+                        onBlur={(ev) => { if (ev.target.value !== e.collaboration) patchEntry(e.id, { collaboration: ev.target.value }); }}
+                        placeholder="—"
+                        className="w-24 rounded-md bg-transparent px-1 py-0.5 text-sm outline-none focus:bg-white focus:ring-1 focus:ring-brand-400 dark:focus:bg-gray-800"
+                      />
+                    ) : (
+                      <span className="text-gray-600 dark:text-gray-300">{e.collaboration || '—'}</span>
+                    )}
+                  </td>
                   <td className={tdCls}>
                     <button
                       onClick={() => setCaptionView(e)}
@@ -495,6 +606,9 @@ const CalendarMonth: React.FC = () => {
                   <td className={`${tdCls} text-center`}>
                     <input type="checkbox" checked={!!e.done} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { done: ev.target.checked })} className="h-4 w-4 accent-emerald-500" />
                   </td>
+                  <td className={`${tdCls} text-center`}>
+                    <input type="checkbox" checked={!!e.scheduled} disabled={!canEdit} onChange={(ev) => patchEntry(e.id, { scheduled: ev.target.checked })} className="h-4 w-4 accent-indigo-500" />
+                  </td>
                   <td className={tdCls}>
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEditor(e)} title="فتح / تعديل" className="relative rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5">
@@ -503,6 +617,11 @@ const CalendarMonth: React.FC = () => {
                           <span className="absolute -top-1 -left-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] text-white">{e.comments.length}</span>
                         )}
                       </button>
+                      {canEdit && (
+                        <button onClick={() => duplicateRow(e)} title="تكرار الصف" className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5">
+                          <CopyPlus className="h-4 w-4" />
+                        </button>
+                      )}
                       {canRemove && (
                         <button onClick={() => setConfirmDeleteId(e.id)} title="حذف" className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10">
                           <Trash2 className="h-4 w-4" />
@@ -513,7 +632,7 @@ const CalendarMonth: React.FC = () => {
                 </tr>
               ))}
               {visibleEntries.length === 0 && (
-                <tr><td colSpan={12} className="py-10 text-center">
+                <tr><td colSpan={13} className="py-10 text-center">
                   <p className="mb-3 text-gray-400">لا توجد صفوف لهذا الحساب</p>
                   {canEdit && (
                     <div className="flex justify-center gap-2">
@@ -667,6 +786,9 @@ const CalendarMonth: React.FC = () => {
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                 <input type="checkbox" checked={!!draft.done} onChange={(e) => setDraft({ ...draft, done: e.target.checked })} className="h-4 w-4 accent-emerald-500" /> Done
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input type="checkbox" checked={!!draft.scheduled} onChange={(e) => setDraft({ ...draft, scheduled: e.target.checked })} className="h-4 w-4 accent-indigo-500" /> اتجدول؟
               </label>
             </div>
 

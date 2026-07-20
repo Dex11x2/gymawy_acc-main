@@ -4,6 +4,8 @@ import CalendarMonth from '../models/CalendarMonth';
 import CalendarEntry from '../models/CalendarEntry';
 import CalendarAccount from '../models/CalendarAccount';
 import CalendarActivity from '../models/CalendarActivity';
+import User from '../models/User';
+import { createNotification } from '../services/notification.service';
 
 const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
 
@@ -39,6 +41,28 @@ const logActivity = (
   }).catch(() => { /* non-critical */ });
 };
 
+// Notify managers + the assignee when a video link is first added to an entry.
+const notifyLinkAdded = async (req: AuthRequest, entry: any) => {
+  try {
+    const managers = await User.find({ role: { $in: MANAGER_ROLES }, isActive: true }).select('_id');
+    const ids = new Set<string>(managers.map((m) => String(m._id)));
+    const assignee = entry.assigneeId ? String((entry.assigneeId as any)._id || entry.assigneeId) : '';
+    if (assignee) ids.add(assignee);
+    ids.delete(String(req.user!.userId)); // don't notify the actor
+    if (ids.size === 0) return;
+    const io = (req.app as any)?.get?.('io');
+    await createNotification({
+      userId: Array.from(ids),
+      title: 'لينك جديد في تقويم المحتوى',
+      message: `تمت إضافة لينك للمحتوى «${entry.title || 'بدون عنوان'}»`,
+      type: 'general',
+      link: entry.videoLink,
+      senderId: String(req.user!.userId),
+      senderName: req.user!.name,
+    }, io);
+  } catch { /* non-critical */ }
+};
+
 const DEFAULT_ACCOUNTS = [
   { key: 'gymawya', name: 'جيماوية', color: '#3B82F6', order: 1 },
   { key: 'gymbirch', name: 'جيم بيرش', color: '#F97316', order: 2 },
@@ -57,7 +81,7 @@ const ensureAccountsSeeded = async () => {
 // Fields on CalendarEntry that clients are allowed to write.
 const ENTRY_FIELDS = [
   'title', 'contentType', 'account', 'publishDate', 'videoLink', 'platforms',
-  'assigneeId', 'editorId', 'collaboration', 'uploadDeadline', 'filmed', 'done',
+  'assigneeId', 'editorId', 'collaboration', 'uploadDeadline', 'filmed', 'done', 'scheduled',
   'ytSevenDays', 'instaSevenDays', 'tiktokSevenDays', 'script', 'isRest', 'rowOrder',
 ] as const;
 
@@ -320,9 +344,11 @@ export const createEntry = async (req: AuthRequest, res: Response) => {
 export const updateEntry = async (req: AuthRequest, res: Response) => {
   try {
     if (!can(req, 'edit')) return res.status(403).json({ message: 'ليس لديك صلاحية للتعديل' });
+    const fields = pickEntryFields(req.body);
+    const before = await CalendarEntry.findById(req.params.id).select('videoLink');
     const updated = await CalendarEntry.findByIdAndUpdate(
       req.params.id,
-      pickEntryFields(req.body),
+      fields,
       { new: true },
     )
       .populate('assigneeId', 'name avatar')
@@ -330,6 +356,10 @@ export const updateEntry = async (req: AuthRequest, res: Response) => {
       .populate('comments.authorId', 'name avatar');
     if (!updated) return res.status(404).json({ message: 'الصف غير موجود' });
     logActivity(req, 'update', 'entry', updated.title ? `عدّل صف «${updated.title}»` : 'عدّل صفًا', updated.monthId);
+    // Notify when a video link is newly added (was empty, now set).
+    if (fields.videoLink && (!before || !before.videoLink) && updated.videoLink) {
+      notifyLinkAdded(req, updated);
+    }
     res.json(updated);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

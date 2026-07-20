@@ -41,6 +41,7 @@ export interface CalEntry {
   uploadDeadline: string;
   filmed: boolean;
   done: boolean;
+  scheduled: boolean;
   ytSevenDays?: number;
   instaSevenDays?: number;
   tiktokSevenDays?: number;

@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './config/database';
 import { startDailyReportJob } from './jobs/dailyReport.job';
 import { startSelfieCleanupJob } from './jobs/selfieCleanup.job';
+import { startContentReminderJob } from './jobs/contentReminder.job';
 
 // Load environment variables from backend/.env
 dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
@@ -228,6 +229,7 @@ const startServer = async () => {
     await ensureSuperAdminExists();
     startDailyReportJob();
     startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
+    startContentReminderJob(); // تذكيرات تقويم المحتوى يومياً
 
     httpServer.listen(PORT, () => {
       console.log('');

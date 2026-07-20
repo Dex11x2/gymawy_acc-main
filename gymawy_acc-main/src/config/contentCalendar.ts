@@ -33,6 +33,8 @@ export const PLATFORMS: CalSelectOption[] = [
   { key: 'tiktok', labelAr: 'تيك توك', color: '#1E40AF' },     // أزرق غامق
   { key: 'instagram', labelAr: 'انستجرام', color: '#A855F7' }, // بنفسجي
   { key: 'facebook', labelAr: 'فيس بوك', color: '#A16249' },   // بني
+  { key: 'snapchat', labelAr: 'سناب شات', color: '#EAB308' },  // أصفر
+  { key: 'linkedin', labelAr: 'لينكد إن', color: '#0A66C2' },  // أزرق لينكد إن
 ];
 
 // Preset colors for the month page-icon square.
