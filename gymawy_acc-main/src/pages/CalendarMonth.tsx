@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import Avatar from '../components/ui/Avatar';
-import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText, Copy, Pencil, ExternalLink, CopyPlus } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, MessageSquare, Table2, Send, Lock, FileText, Copy, Pencil, ExternalLink, CopyPlus, Check } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
 
@@ -72,6 +72,7 @@ const CalendarMonth: React.FC = () => {
   const [accForm, setAccForm] = useState({ name: '', color: MONTH_ICON_COLORS[0] });
   const [editing, setEditing] = useState<CalEntry | null>(null);
   const [captionView, setCaptionView] = useState<CalEntry | null>(null);
+  const [platformMenuFor, setPlatformMenuFor] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<CalEntry>>({});
   const [commentText, setCommentText] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -535,28 +536,40 @@ const CalendarMonth: React.FC = () => {
                     </div>
                   </td>
                   <td className={tdCls}>
-                    <div className="flex flex-wrap gap-1">
-                      {PLATFORMS.map((o) => {
-                        const active = e.platforms?.includes(o.key);
-                        return (
-                          <button
-                            key={o.key}
-                            disabled={!canEdit}
-                            onClick={() => {
-                              const set = new Set(e.platforms || []);
-                              if (active) set.delete(o.key); else set.add(o.key);
-                              patchEntry(e.id, { platforms: Array.from(set) });
-                            }}
-                            className="rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition disabled:cursor-default"
-                            style={active
-                              ? { backgroundColor: o.color + '26', color: o.color, borderColor: o.color + '55' }
-                              : { color: '#9ca3af', borderColor: '#9ca3af40' }}
-                            title={o.labelAr}
-                          >
-                            {o.labelAr}
-                          </button>
-                        );
-                      })}
+                    <div className="relative">
+                      <button
+                        onClick={() => canEdit && setPlatformMenuFor(platformMenuFor === e.id ? null : e.id)}
+                        className="flex min-w-[70px] flex-wrap items-center gap-1 rounded-md px-1 py-1 text-right hover:bg-gray-100 dark:hover:bg-white/5"
+                        title="اختر المنصات"
+                      >
+                        {e.platforms?.length
+                          ? e.platforms.map((p) => <Tag key={p} opt={findOption(PLATFORMS, p)} />)
+                          : <span className="text-xs text-gray-400">＋ منصات</span>}
+                      </button>
+                      {platformMenuFor === e.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setPlatformMenuFor(null)} />
+                          <div className="absolute z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                            {PLATFORMS.map((o) => {
+                              const active = e.platforms?.includes(o.key);
+                              return (
+                                <button
+                                  key={o.key}
+                                  onClick={() => {
+                                    const set = new Set(e.platforms || []);
+                                    if (active) set.delete(o.key); else set.add(o.key);
+                                    patchEntry(e.id, { platforms: Array.from(set) });
+                                  }}
+                                  className="flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5"
+                                >
+                                  <Tag opt={o} />
+                                  {active && <Check className="h-3.5 w-3.5 flex-shrink-0 text-brand-500" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </td>
                   <td className={tdCls}>
