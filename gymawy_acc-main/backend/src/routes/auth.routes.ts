@@ -140,6 +140,12 @@ router.post('/login', async (req, res) => {
         role: user.role,
         avatar: user.avatar,
         companyId: user.companyId,
+        departmentId: user.departmentId,
+        phone: user.phone,
+        birthDate: user.birthDate,
+        bio: user.bio,
+        position: user.position,
+        isActive: user.isActive,
         permissions: await computePermissions(user.roleId, user.permissions)
       }
     });
@@ -180,6 +186,9 @@ router.get('/me', protect, async (req: any, res) => {
       departmentId: user.departmentId,
       branchId: user.branchId,
       phone: user.phone,
+      birthDate: user.birthDate,
+      bio: user.bio,
+      position: user.position,
       isActive: user.isActive,
       hasCustomPermissions: Array.isArray(user.permissions) && user.permissions.length > 0,
       permissions: await computePermissions(user.roleId, user.permissions),
