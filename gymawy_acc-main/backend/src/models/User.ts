@@ -22,6 +22,8 @@ export interface IUser extends Document {
   departmentId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
   birthDate?: Date;
+  bio?: string;
+  position?: string;
   isActive: boolean;
   comparePassword(password: string): Promise<boolean>;
 }
@@ -62,6 +64,8 @@ const UserSchema = new Schema(
     departmentId: { type: Schema.Types.ObjectId, ref: "Department" },
     branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
     birthDate: { type: Date },
+    bio: { type: String },
+    position: { type: String },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

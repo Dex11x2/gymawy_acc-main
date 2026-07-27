@@ -67,6 +67,10 @@ export const login = async (req: Request, res: Response) => {
       companyId: user.companyId,
       departmentId: user.departmentId,
       phone: user.phone,
+      birthDate: user.birthDate,
+      bio: user.bio,
+      position: user.position,
+      avatar: user.avatar,
       isActive: user.isActive,
       permissions: await computePermissions(user.roleId, user.permissions)
     };
@@ -90,6 +94,10 @@ export const getMe = async (req: any, res: Response) => {
       companyId: user.companyId,
       departmentId: user.departmentId,
       phone: user.phone,
+      birthDate: user.birthDate,
+      bio: user.bio,
+      position: user.position,
+      avatar: user.avatar,
       isActive: user.isActive,
       permissions: await computePermissions(user.roleId, user.permissions)
     };
