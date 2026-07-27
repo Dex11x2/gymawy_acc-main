@@ -3,6 +3,11 @@ import { PersonRef, personName, personId } from './contentCalendar';
 
 export type ReviewStepKind = 'upload' | 'revision' | 'edit_request' | 'approve';
 
+export interface ReviewSeen {
+  userId?: PersonRef | string;
+  seenAt: string;
+}
+
 export interface ReviewStep {
   id: string;
   byId?: PersonRef | string;
@@ -10,9 +15,9 @@ export interface ReviewStep {
   kind: ReviewStepKind;
   link?: string;
   note?: string;
-  mentionId?: PersonRef | string;
-  mentionName?: string;
-  seenAt?: string;
+  mentionIds?: (PersonRef | string)[];
+  mentionNames?: string[];
+  seenBy?: ReviewSeen[];
   createdAt: string;
 }
 
@@ -23,7 +28,7 @@ export interface VideoReview {
   createdById?: PersonRef | string;
   createdByName?: string;
   status: 'in_review' | 'changes_requested' | 'approved';
-  currentMentionId?: PersonRef | string;
+  currentMentionIds?: (PersonRef | string)[];
   steps: ReviewStep[];
   linkedEntryId?: string;
   finalLink?: string;
@@ -38,16 +43,16 @@ export interface CreateReviewInput {
   account?: string;
   link?: string;
   note?: string;
-  mentionId?: string;
-  mentionName?: string;
+  mentionIds?: string[];
+  mentionNames?: string[];
 }
 
 export interface AddStepInput {
   kind: 'revision' | 'edit_request';
   link?: string;
   note?: string;
-  mentionId?: string;
-  mentionName?: string;
+  mentionIds?: string[];
+  mentionNames?: string[];
 }
 
 export interface ApproveInput {

@@ -17,6 +17,7 @@ import Chat from './pages/ChatNew';
 import Posts from './pages/PostsNew';
 import ContentCalendar from './pages/ContentCalendar';
 import CalendarMonth from './pages/CalendarMonth';
+import VideoReviews from './pages/VideoReviews';
 import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
 import DevTasks from './pages/DevTasks';
@@ -117,6 +118,7 @@ const App: React.FC = () => {
             <Route path="/posts" element={<Posts />} />
             <Route path="/content-calendar" element={<ContentCalendar />} />
             <Route path="/content-calendar/:monthId" element={<CalendarMonth />} />
+            <Route path="/video-reviews" element={<VideoReviews />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/dev-tasks" element={<DevTasks />} />

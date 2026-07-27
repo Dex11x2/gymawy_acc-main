@@ -9,7 +9,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import Avatar from '../components/ui/Avatar';
-import { Plus, ExternalLink, Trash2, CheckCircle2, Clock, Eye, EyeOff, Film, MessageSquarePlus, Send } from 'lucide-react';
+import { Plus, ExternalLink, Trash2, CheckCircle2, Clock, Eye, EyeOff, Film, MessageSquarePlus, Send, ClipboardCheck } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
 
@@ -62,10 +62,10 @@ const VideoReviews: React.FC = () => {
 
   // Create form
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ title: '', account: '', link: '', note: '', mentionId: '' });
+  const [createForm, setCreateForm] = useState({ title: '', account: '', link: '', note: '', mentionIds: [] as string[] });
 
   // Drawer action forms
-  const [stepForm, setStepForm] = useState<{ kind: 'revision' | 'edit_request'; link: string; note: string; mentionId: string } | null>(null);
+  const [stepForm, setStepForm] = useState<{ kind: 'revision' | 'edit_request'; link: string; note: string; mentionIds: string[] } | null>(null);
 
   // Approve modal
   const [showApprove, setShowApprove] = useState(false);
@@ -120,12 +120,12 @@ const VideoReviews: React.FC = () => {
         account: createForm.account || undefined,
         link: createForm.link.trim() || undefined,
         note: createForm.note.trim() || undefined,
-        mentionId: createForm.mentionId || undefined,
-        mentionName: users.find((u) => u.id === createForm.mentionId)?.name,
+        mentionIds: createForm.mentionIds,
+        mentionNames: createForm.mentionIds.map((id) => users.find((u) => u.id === id)?.name || ''),
       });
       setReviews((prev) => [created, ...prev]);
       setShowCreate(false);
-      setCreateForm({ title: '', account: '', link: '', note: '', mentionId: '' });
+      setCreateForm({ title: '', account: '', link: '', note: '', mentionIds: [] });
       notify('تم إنشاء المراجعة');
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل الإنشاء', 'error');
@@ -139,8 +139,8 @@ const VideoReviews: React.FC = () => {
         kind: stepForm.kind,
         link: stepForm.link.trim() || undefined,
         note: stepForm.note.trim() || undefined,
-        mentionId: stepForm.mentionId || undefined,
-        mentionName: users.find((u) => u.id === stepForm.mentionId)?.name,
+        mentionIds: stepForm.mentionIds,
+        mentionNames: stepForm.mentionIds.map((id) => users.find((u) => u.id === id)?.name || ''),
       });
       setOpen(updated);
       replaceReview(updated);
@@ -199,11 +199,15 @@ const VideoReviews: React.FC = () => {
   }
 
   const shown = filter === 'all' ? reviews : reviews.filter((r) => r.status === filter);
-  const canApprove = !!open && open.status !== 'approved' && (isManager || personId(open.currentMentionId) === user?.id);
+  const canApprove = !!open && open.status !== 'approved' && (isManager || (open.currentMentionIds || []).some((m) => personId(m) === user?.id));
   const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white';
 
   return (
     <div dir="rtl">
+      <div className="mb-6 flex items-center gap-2">
+        <ClipboardCheck className="h-6 w-6 text-brand-500" />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">مراجعة الفيديوهات</h1>
+      </div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {['all', 'in_review', 'changes_requested', 'approved'].map((f) => (
@@ -245,8 +249,8 @@ const VideoReviews: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <span>{r.steps.length} خطوة</span>
-                  {r.currentMentionId && r.status !== 'approved' && (
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> مطلوب من: {personName(r.currentMentionId)}</span>
+                  {(r.currentMentionIds?.length ?? 0) > 0 && r.status !== 'approved' && (
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> مطلوب من: {r.currentMentionIds!.map(personName).filter(Boolean).join('، ')}</span>
                   )}
                 </div>
                 {lastStep && <p className="truncate text-xs text-gray-400">آخر خطوة: {KIND[lastStep.kind]?.label} — {personName(lastStep.byId) || lastStep.byName}</p>}
@@ -262,8 +266,8 @@ const VideoReviews: React.FC = () => {
           <div dir="rtl" className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-md px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: STATUS[open.status].color + '26', color: STATUS[open.status].color }}>{STATUS[open.status].label}</span>
-              {open.currentMentionId && open.status !== 'approved' && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">مطلوب من: <b>{personName(open.currentMentionId)}</b></span>
+              {(open.currentMentionIds?.length ?? 0) > 0 && open.status !== 'approved' && (
+                <span className="text-sm text-gray-500 dark:text-gray-400">مطلوب من: <b>{open.currentMentionIds!.map(personName).filter(Boolean).join('، ')}</b></span>
               )}
               {canRemove && (
                 <button onClick={() => setConfirmDeleteId(open.id)} className="mr-auto rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"><Trash2 className="h-4 w-4" /></button>
@@ -295,14 +299,19 @@ const VideoReviews: React.FC = () => {
                           <ExternalLink className="h-3.5 w-3.5" /> فتح اللينك
                         </a>
                       )}
-                      {s.mentionId && (
-                        <div className="mt-1.5 flex items-center gap-1 text-xs">
-                          <span className="text-gray-500 dark:text-gray-400">منشن: {personName(s.mentionId) || s.mentionName}</span>
-                          {s.seenAt ? (
-                            <span className="flex items-center gap-1 text-emerald-500"><Eye className="h-3 w-3" /> شاف ({fmt(s.seenAt)})</span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-gray-400"><EyeOff className="h-3 w-3" /> لسه ما شافش</span>
-                          )}
+                      {(s.mentionIds?.length ?? 0) > 0 && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="text-gray-500 dark:text-gray-400">منشن:</span>
+                          {s.mentionIds!.map((m, i) => {
+                            const mid = personId(m);
+                            const name = personName(m) || s.mentionNames?.[i] || 'مستخدم';
+                            const seen = (s.seenBy || []).some((sb) => personId(sb.userId) === mid);
+                            return (
+                              <span key={mid || i} className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${seen ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-gray-100 text-gray-400 dark:bg-gray-800'}`}>
+                                {seen ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />} {name}{seen ? ' ✓' : ''}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -316,10 +325,10 @@ const VideoReviews: React.FC = () => {
               <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-800">
                 {!stepForm ? (
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setStepForm({ kind: 'revision', link: '', note: '', mentionId: '' })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
+                    <button onClick={() => setStepForm({ kind: 'revision', link: '', note: '', mentionIds: [] })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
                       <Film className="h-4 w-4" /> رفع نسخة/تعديل
                     </button>
-                    <button onClick={() => setStepForm({ kind: 'edit_request', link: '', note: '', mentionId: '' })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
+                    <button onClick={() => setStepForm({ kind: 'edit_request', link: '', note: '', mentionIds: [] })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
                       <MessageSquarePlus className="h-4 w-4" /> طلب تعديل
                     </button>
                     {canApprove && (
@@ -335,10 +344,10 @@ const VideoReviews: React.FC = () => {
                       <input className={inputCls} placeholder="لينك النسخة الجديدة (درايف…)" value={stepForm.link} onChange={(e) => setStepForm({ ...stepForm, link: e.target.value })} />
                     )}
                     <textarea className={inputCls} rows={3} placeholder={stepForm.kind === 'revision' ? 'وصف اللي اتعمل (اختياري)' : 'اكتب التعديل المطلوب بالتفصيل'} value={stepForm.note} onChange={(e) => setStepForm({ ...stepForm, note: e.target.value })} />
-                    <select className={inputCls} value={stepForm.mentionId} onChange={(e) => setStepForm({ ...stepForm, mentionId: e.target.value })}>
-                      <option value="">منشن للشخص الجاي…</option>
-                      {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                    </select>
+                    <div>
+                      <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">منشن (تقدر تختار أكتر من واحد)</label>
+                      <UserMultiSelect users={users} selected={stepForm.mentionIds} onChange={(ids) => setStepForm({ ...stepForm, mentionIds: ids })} />
+                    </div>
                     <div className="flex gap-2">
                       <button onClick={handleAddStep} className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"><Send className="h-4 w-4" /> إرسال</button>
                       <button onClick={() => setStepForm(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 dark:border-gray-600 dark:text-gray-200">إلغاء</button>
@@ -367,10 +376,10 @@ const VideoReviews: React.FC = () => {
           </select>
           <input className={inputCls} placeholder="لينك الفيديو (درايف)" value={createForm.link} onChange={(e) => setCreateForm({ ...createForm, link: e.target.value })} />
           <textarea className={inputCls} rows={2} placeholder="ملاحظة (اختياري)" value={createForm.note} onChange={(e) => setCreateForm({ ...createForm, note: e.target.value })} />
-          <select className={inputCls} value={createForm.mentionId} onChange={(e) => setCreateForm({ ...createForm, mentionId: e.target.value })}>
-            <option value="">منشن للمراجِع…</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">منشن للمراجِعين (تقدر تختار أكتر من واحد)</label>
+            <UserMultiSelect users={users} selected={createForm.mentionIds} onChange={(ids) => setCreateForm({ ...createForm, mentionIds: ids })} />
+          </div>
           <div className="flex gap-2 pt-1">
             <button onClick={handleCreate} className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">إنشاء</button>
             <button onClick={() => setShowCreate(false)} className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm text-gray-700 dark:border-gray-600 dark:text-gray-200">إلغاء</button>
@@ -430,5 +439,25 @@ const VideoReviews: React.FC = () => {
     </div>
   );
 };
+
+const UserMultiSelect: React.FC<{ users: UserOpt[]; selected: string[]; onChange: (ids: string[]) => void }> = ({ users, selected, onChange }) => (
+  <div className="max-h-36 overflow-y-auto rounded-lg border border-gray-300 p-1 dark:border-gray-600">
+    {users.length === 0 && <p className="px-2 py-1 text-xs text-gray-400">لا يوجد مستخدمون</p>}
+    {users.map((u) => {
+      const on = selected.includes(u.id);
+      return (
+        <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-white/5">
+          <input
+            type="checkbox"
+            checked={on}
+            onChange={(e) => onChange(e.target.checked ? [...selected, u.id] : selected.filter((x) => x !== u.id))}
+            className="h-4 w-4 accent-brand-500"
+          />
+          <span className="text-gray-700 dark:text-gray-200">{u.name}</span>
+        </label>
+      );
+    })}
+  </div>
+);
 
 export default VideoReviews;

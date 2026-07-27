@@ -23,25 +23,26 @@ const genId = () => Date.now().toString() + Math.round(Math.random() * 1e6);
 
 const populateReview = (q: any) =>
   q.populate('createdById', 'name avatar')
-    .populate('currentMentionId', 'name avatar')
+    .populate('currentMentionIds', 'name avatar')
     .populate('approvedById', 'name avatar')
     .populate('steps.byId', 'name avatar')
-    .populate('steps.mentionId', 'name avatar');
+    .populate('steps.mentionIds', 'name avatar')
+    .populate('steps.seenBy.userId', 'name avatar');
 
-// Notify a mentioned user (fire-and-forget).
-const notifyMention = (req: AuthRequest, mentionId: any, title: string, message: string) => {
+// Notify a set of mentioned users (fire-and-forget), excluding the actor.
+const notifyMentions = (req: AuthRequest, mentionIds: any[], title: string, message: string) => {
   try {
-    if (!mentionId) return;
-    const target = String(mentionId);
-    if (target === String(req.user!.userId)) return; // don't notify yourself
+    const me = String(req.user!.userId);
+    const targets = Array.from(new Set((mentionIds || []).map(String).filter((id) => id && id !== me)));
+    if (!targets.length) return;
     const io = (req.app as any)?.get?.('io');
     createNotification({
-      userId: target,
+      userId: targets,
       title,
       message,
       type: 'video_review',
-      link: '/content-calendar',
-      senderId: String(req.user!.userId),
+      link: '/video-reviews',
+      senderId: me,
       senderName: req.user!.name,
     }, io).catch(() => { /* non-critical */ });
   } catch { /* non-critical */ }
@@ -69,14 +70,16 @@ export const createReview = async (req: AuthRequest, res: Response) => {
     const link = (req.body.link || '').trim();
     if (!title) return res.status(400).json({ message: 'اسم الفيديو مطلوب' });
 
-    const mentionId = req.body.mentionId || undefined;
+    const mentionIds: string[] = Array.isArray(req.body.mentionIds) ? req.body.mentionIds : [];
+    const mentionNames: string[] = Array.isArray(req.body.mentionNames) ? req.body.mentionNames : [];
+
     const review = await VideoReview.create({
       title,
       account: req.body.account || '',
       createdById: req.user!.userId,
       createdByName: req.user!.name,
       status: 'in_review',
-      currentMentionId: mentionId,
+      currentMentionIds: mentionIds,
       steps: [{
         id: genId(),
         byId: req.user!.userId,
@@ -84,13 +87,14 @@ export const createReview = async (req: AuthRequest, res: Response) => {
         kind: 'upload',
         link: link || undefined,
         note: (req.body.note || '').trim() || undefined,
-        mentionId,
-        mentionName: req.body.mentionName,
+        mentionIds,
+        mentionNames,
+        seenBy: [],
         createdAt: new Date(),
       }],
     });
 
-    notifyMention(req, mentionId, 'فيديو جديد للمراجعة', `تم إرسال «${title}» لمراجعتك`);
+    notifyMentions(req, mentionIds, 'فيديو جديد للمراجعة', `تم إرسال «${title}» لمراجعتك`);
     const populated = await populateReview(VideoReview.findById(review._id));
     res.status(201).json(populated);
   } catch (error: any) {
@@ -111,7 +115,9 @@ export const addStep = async (req: AuthRequest, res: Response) => {
     if (kind === 'revision' && !link) return res.status(400).json({ message: 'لينك النسخة مطلوب' });
     if (kind === 'edit_request' && !note) return res.status(400).json({ message: 'وصف التعديل المطلوب' });
 
-    const mentionId = req.body.mentionId || undefined;
+    const mentionIds: string[] = Array.isArray(req.body.mentionIds) ? req.body.mentionIds : [];
+    const mentionNames: string[] = Array.isArray(req.body.mentionNames) ? req.body.mentionNames : [];
+
     review.steps.push({
       id: genId(),
       byId: req.user!.userId,
@@ -119,16 +125,17 @@ export const addStep = async (req: AuthRequest, res: Response) => {
       kind,
       link: link || undefined,
       note: note || undefined,
-      mentionId,
-      mentionName: req.body.mentionName,
+      mentionIds,
+      mentionNames,
+      seenBy: [],
       createdAt: new Date(),
     } as any);
     review.status = kind === 'edit_request' ? 'changes_requested' : 'in_review';
-    review.currentMentionId = mentionId as any;
+    review.currentMentionIds = mentionIds as any;
     await review.save();
 
     const label = kind === 'edit_request' ? 'طلب تعديل' : 'نسخة جديدة';
-    notifyMention(req, mentionId, label, `${label} على «${review.title}»`);
+    notifyMentions(req, mentionIds, label, `${label} على «${review.title}»`);
     const populated = await populateReview(VideoReview.findById(review._id));
     res.status(201).json(populated);
   } catch (error: any) {
@@ -145,8 +152,10 @@ export const markSeen = async (req: AuthRequest, res: Response) => {
     const me = String(req.user!.userId);
     let changed = false;
     for (const step of review.steps) {
-      if (step.mentionId && String(step.mentionId) === me && !step.seenAt) {
-        step.seenAt = new Date();
+      const mentioned = (step.mentionIds || []).some((id) => String(id) === me);
+      const alreadySeen = (step.seenBy || []).some((s) => String(s.userId) === me);
+      if (mentioned && !alreadySeen) {
+        step.seenBy.push({ userId: req.user!.userId, seenAt: new Date() } as any);
         changed = true;
       }
     }
@@ -163,9 +172,11 @@ export const approve = async (req: AuthRequest, res: Response) => {
     const review = await VideoReview.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'المراجعة غير موجودة' });
 
-    // Only managers or the person currently asked to review can approve.
-    if (!isManager(req) && String(review.currentMentionId || '') !== String(req.user!.userId)) {
-      return res.status(403).json({ message: 'الاعتماد متاح للمدير أو المُراجِع الحالي فقط' });
+    // Only managers or someone currently asked to review can approve.
+    const me = String(req.user!.userId);
+    const isCurrentReviewer = (review.currentMentionIds || []).some((id) => String(id) === me);
+    if (!isManager(req) && !isCurrentReviewer) {
+      return res.status(403).json({ message: 'الاعتماد متاح للمدير أو أحد المُراجِعين الحاليين فقط' });
     }
 
     const entryId = req.body.entryId;
@@ -188,13 +199,16 @@ export const approve = async (req: AuthRequest, res: Response) => {
     review.approvedById = req.user!.userId;
     review.approvedAt = new Date();
     review.linkedEntryId = entry._id as any;
-    review.currentMentionId = undefined;
+    review.currentMentionIds = [] as any;
     review.steps.push({
       id: genId(),
       byId: req.user!.userId,
       byName: req.user!.name,
       kind: 'approve',
       note: (req.body.note || '').trim() || undefined,
+      mentionIds: [],
+      mentionNames: [],
+      seenBy: [],
       createdAt: new Date(),
     } as any);
     await review.save();
@@ -203,7 +217,7 @@ export const approve = async (req: AuthRequest, res: Response) => {
     const participants = new Set<string>();
     participants.add(String(review.createdById));
     review.steps.forEach((s) => participants.add(String(s.byId)));
-    participants.delete(String(req.user!.userId));
+    participants.delete(me);
     if (participants.size) {
       const io = (req.app as any)?.get?.('io');
       createNotification({
@@ -211,8 +225,8 @@ export const approve = async (req: AuthRequest, res: Response) => {
         title: 'تم اعتماد الفيديو',
         message: `تم اعتماد «${review.title}» وإضافته للجدول`,
         type: 'video_review',
-        link: '/content-calendar',
-        senderId: String(req.user!.userId),
+        link: '/video-reviews',
+        senderId: me,
         senderName: req.user!.name,
       }, io).catch(() => { /* non-critical */ });
     }

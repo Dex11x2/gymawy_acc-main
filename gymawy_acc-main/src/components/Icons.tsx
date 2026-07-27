@@ -170,6 +170,14 @@ export const ContentCalendarIcon: React.FC<IconProps> = ({ className = '', size 
   </svg>
 );
 
+export const VideoReviewsIcon: React.FC<IconProps> = ({ className = '', size = 20 }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    <path d="M9 3v4h6V3" />
+    <path d="m8.5 13.5 2 2 4-4" />
+  </svg>
+);
+
 export const DevTasksIcon: React.FC<IconProps> = ({ className = '', size = 20 }) => (
   <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -206,6 +214,7 @@ export const iconComponents = {
   'dev-tasks': DevTasksIcon,
   'role-permissions': LockIcon,
   'content-calendar': ContentCalendarIcon,
+  'video-reviews': VideoReviewsIcon,
 };
 
 export type IconName = keyof typeof iconComponents;
