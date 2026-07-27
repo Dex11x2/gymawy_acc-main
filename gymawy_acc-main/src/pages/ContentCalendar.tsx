@@ -8,7 +8,8 @@ import { Avatar } from '../components/ui';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
-import { Plus, ChevronDown, ChevronLeft, CheckCircle2, RotateCcw, Trash2, CalendarDays, Lock, History } from 'lucide-react';
+import { Plus, ChevronDown, ChevronLeft, CheckCircle2, RotateCcw, Trash2, CalendarDays, Lock, History, ClipboardCheck } from 'lucide-react';
+import VideoReviews from './VideoReviews';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const formatActivityTime = (iso: string) => {
@@ -28,6 +29,7 @@ const ContentCalendar: React.FC = () => {
   const canRemove = canDelete('content_calendar');
   const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
 
+  const [tab, setTab] = useState<'months' | 'reviews'>('months');
   const [months, setMonths] = useState<CalMonth[]>([]);
   const [activity, setActivity] = useState<CalActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,7 @@ const ContentCalendar: React.FC = () => {
             <p className="text-sm text-gray-500 dark:text-gray-400">{user?.name} — إدارة محتوى السوشيال ميديا شهريًا</p>
           </div>
         </div>
-        {canEdit && (
+        {tab === 'months' && canEdit && (
           <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 self-start rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-600"
@@ -176,7 +178,19 @@ const ContentCalendar: React.FC = () => {
         )}
       </div>
 
-      {loading ? (
+      {/* Tabs */}
+      <div className="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-800">
+        <button onClick={() => setTab('months')} className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab === 'months' ? 'border-brand-500 text-brand-500' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>
+          <CalendarDays className="h-4 w-4" /> الشهور
+        </button>
+        <button onClick={() => setTab('reviews')} className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab === 'reviews' ? 'border-brand-500 text-brand-500' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>
+          <ClipboardCheck className="h-4 w-4" /> مراجعة الفيديوهات
+        </button>
+      </div>
+
+      {tab === 'reviews' ? (
+        <VideoReviews />
+      ) : loading ? (
         <p className="py-10 text-center text-gray-500 dark:text-gray-400">جارٍ التحميل…</p>
       ) : (
         <>

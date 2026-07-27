@@ -4,7 +4,7 @@ import api from '../services/api';
 export interface Notification {
   id: string;
   userId: string;
-  type: 'message' | 'task' | 'payroll' | 'approval' | 'system';
+  type: 'message' | 'task' | 'payroll' | 'approval' | 'system' | 'video_review';
   title: string;
   message: string;
   isRead: boolean;

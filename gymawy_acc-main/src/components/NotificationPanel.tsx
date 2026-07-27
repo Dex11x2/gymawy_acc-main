@@ -26,7 +26,8 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
     task: '📋',
     payroll: '💵',
     approval: '✅',
-    system: '⚙️'
+    system: '⚙️',
+    video_review: '🎬'
   };
 
   if (!isOpen) return null;

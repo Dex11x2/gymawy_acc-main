@@ -94,6 +94,9 @@ router.use('/content-types', contentTypeRoutes);
 import contentCalendarRoutes from './contentCalendar.routes';
 router.use('/content-calendar', contentCalendarRoutes);
 
+import videoReviewRoutes from './videoReview.routes';
+router.use('/video-reviews', videoReviewRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

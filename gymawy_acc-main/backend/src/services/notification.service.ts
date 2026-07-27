@@ -5,7 +5,7 @@ interface NotificationData {
   userId: string | string[];
   title: string;
   message: string;
-  type: 'message' | 'task' | 'payment' | 'attendance' | 'complaint' | 'review' | 'post' | 'general';
+  type: 'message' | 'task' | 'payment' | 'attendance' | 'complaint' | 'review' | 'post' | 'general' | 'video_review';
   link?: string;
   senderId?: string;
   senderName?: string;
