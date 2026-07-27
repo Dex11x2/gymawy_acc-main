@@ -9,11 +9,11 @@ const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
 const isManager = (req: AuthRequest): boolean =>
   !!req.user?.role && MANAGER_ROLES.includes(req.user.role);
 
-// Same authorization model as the content calendar (module: content_calendar).
+// Authorization via its own permission module: video_reviews.
 const can = (req: AuthRequest, action: 'view' | 'create' | 'edit' | 'delete'): boolean => {
   if (isManager(req)) return true;
   const perms = req.user?.permissions || [];
-  const mod = perms.find((p) => p.module === 'content_calendar');
+  const mod = perms.find((p) => p.module === 'video_reviews');
   if (!mod) return false;
   if (action === 'view') return mod.actions.includes('view') || mod.actions.includes('read');
   return mod.actions.includes(action) || mod.actions.includes('edit') || mod.actions.includes('write');

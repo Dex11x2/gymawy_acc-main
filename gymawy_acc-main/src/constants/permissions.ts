@@ -22,6 +22,7 @@ export const MODULES = {
   CHAT: 'chat',
   POSTS: 'posts',
   CONTENT_CALENDAR: 'content_calendar',
+  VIDEO_REVIEWS: 'video_reviews',
   REVIEWS: 'reviews',
   REPORTS: 'reports',
   ADS_FUNDING: 'ads_funding',
@@ -282,6 +283,16 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
   {
     module: MODULES.CONTENT_CALENDAR,
     label: 'جدولة المحتوى',
+    actions: [
+      { action: ACTIONS.VIEW, label: 'عرض' },
+      { action: ACTIONS.WRITE, label: 'إضافة' },
+      { action: ACTIONS.EDIT, label: 'تعديل' },
+      { action: ACTIONS.DELETE, label: 'حذف' },
+    ],
+  },
+  {
+    module: MODULES.VIDEO_REVIEWS,
+    label: 'مراجعة الفيديوهات',
     actions: [
       { action: ACTIONS.VIEW, label: 'عرض' },
       { action: ACTIONS.WRITE, label: 'إضافة' },

@@ -198,6 +198,7 @@ const Branches: React.FC = () => {
       { module: 'chat', name: 'المحادثات', nameEn: 'Chat', actions: ['view', 'write'] },
       { module: 'posts', name: 'المنشورات', nameEn: 'Posts', actions: ['view', 'write', 'delete'] },
       { module: 'content_calendar', name: 'جدولة المحتوى', nameEn: 'Content Calendar', actions: ['view', 'write', 'delete'] },
+      { module: 'video_reviews', name: 'مراجعة الفيديوهات', nameEn: 'Video Reviews', actions: ['view', 'write', 'delete'] },
       { module: 'reviews', name: 'تقييمات الموظفين', nameEn: 'Employee Reviews', actions: ['view', 'write', 'delete'] },
       { module: 'reports', name: 'التقارير', nameEn: 'Reports', actions: ['view', 'write'] },
       { module: 'ads_funding', name: 'تقرير تمويل الإعلانات', nameEn: 'Ads Funding Report', actions: ['view', 'write', 'delete'] },

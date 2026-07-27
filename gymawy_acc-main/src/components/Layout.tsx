@@ -203,7 +203,7 @@ const Layout: React.FC = () => {
     { id: 'chat' as IconName, name: language === 'ar' ? 'المحادثات' : 'Chat', path: '/chat', show: true },
     { id: 'posts' as IconName, name: language === 'ar' ? 'المنشورات' : 'Posts', path: '/posts', show: user?.role === 'dev' || hasPermission('posts') },
     { id: 'content-calendar' as IconName, name: language === 'ar' ? 'جدولة المحتوى' : 'Content Calendar', path: '/content-calendar', show: user?.role === 'dev' || hasPermission('content_calendar') },
-    { id: 'video-reviews' as IconName, name: language === 'ar' ? 'مراجعة الفيديوهات' : 'Video Reviews', path: '/video-reviews', show: user?.role === 'dev' || hasPermission('content_calendar') },
+    { id: 'video-reviews' as IconName, name: language === 'ar' ? 'مراجعة الفيديوهات' : 'Video Reviews', path: '/video-reviews', show: user?.role === 'dev' || hasPermission('video_reviews') },
     { id: 'reviews' as IconName, name: language === 'ar' ? 'تقييمات الموظفين' : 'Employee Reviews', path: '/reviews', show: user?.role === 'dev' || hasPermission('reviews') },
     { id: 'reports' as IconName, name: t.reports, path: '/reports', show: user?.role === 'dev' || hasPermission('reports') },
     { id: 'ads-funding' as IconName, name: language === 'ar' ? 'تقرير تمويل الإعلانات' : 'Ads Funding Report', path: '/ads-funding', show: user?.role === 'dev' || hasPermission('ads_funding') },

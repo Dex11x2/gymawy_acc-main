@@ -45,9 +45,9 @@ const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
 const VideoReviews: React.FC = () => {
   const { user } = useAuthStore();
   const { canRead, canWrite, canDelete } = usePermissions();
-  const canView = canRead('content_calendar');
-  const canEdit = canWrite('content_calendar');
-  const canRemove = canDelete('content_calendar');
+  const canView = canRead('video_reviews');
+  const canEdit = canWrite('video_reviews');
+  const canRemove = canDelete('video_reviews');
   const isManager = MANAGER_ROLES.includes(user?.role || '');
 
   const [reviews, setReviews] = useState<VideoReview[]>([]);
