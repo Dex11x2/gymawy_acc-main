@@ -229,7 +229,7 @@ const startServer = async () => {
     await ensureSuperAdminExists();
     startDailyReportJob();
     startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
-    startContentReminderJob(); // تذكيرات تقويم المحتوى يومياً
+    startContentReminderJob(); // تذكيرات جدولة المحتوى يومياً
 
     httpServer.listen(PORT, () => {
       console.log('');

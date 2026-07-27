@@ -19,10 +19,14 @@ async function addContentCalendarPage() {
 
     let page = await Page.findOne({ module: 'content_calendar' });
     if (page) {
-      console.log('⚠️  Page already exists, refreshing role permissions only.');
+      // Keep the display name in sync (e.g. renamed to "جدولة المحتوى").
+      page.name = 'جدولة المحتوى';
+      page.nameEn = 'Content Calendar';
+      await page.save();
+      console.log('✅ Page exists — name updated to:', page.name);
     } else {
       page = await Page.create({
-        name: 'تقويم المحتوى',
+        name: 'جدولة المحتوى',
         nameEn: 'Content Calendar',
         path: '/content-calendar',
         icon: '🗓️',

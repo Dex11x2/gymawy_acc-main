@@ -281,7 +281,7 @@ export const ALL_PERMISSIONS: ModulePermissions[] = [
   },
   {
     module: MODULES.CONTENT_CALENDAR,
-    label: 'تقويم المحتوى',
+    label: 'جدولة المحتوى',
     actions: [
       { action: ACTIONS.VIEW, label: 'عرض' },
       { action: ACTIONS.WRITE, label: 'إضافة' },

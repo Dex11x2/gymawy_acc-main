@@ -53,7 +53,7 @@ const notifyLinkAdded = async (req: AuthRequest, entry: any) => {
     const io = (req.app as any)?.get?.('io');
     await createNotification({
       userId: Array.from(ids),
-      title: 'لينك جديد في تقويم المحتوى',
+      title: 'لينك جديد في جدولة المحتوى',
       message: `تمت إضافة لينك للمحتوى «${entry.title || 'بدون عنوان'}»`,
       type: 'general',
       link: entry.videoLink,
@@ -174,7 +174,7 @@ export const getActivity = async (req: AuthRequest, res: Response) => {
 
 export const getMonths = async (req: AuthRequest, res: Response) => {
   try {
-    if (!can(req, 'view')) return res.status(403).json({ message: 'ليس لديك صلاحية لعرض تقويم المحتوى' });
+    if (!can(req, 'view')) return res.status(403).json({ message: 'ليس لديك صلاحية لعرض جدولة المحتوى' });
     const months = await CalendarMonth.find()
       .populate('ownerId', 'name avatar')
       .sort({ status: 1, year: -1, month: -1, order: 1 });

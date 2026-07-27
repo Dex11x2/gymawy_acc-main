@@ -10,7 +10,7 @@ export const startContentReminderJob = () => {
   cron.schedule('0 9 * * *', async () => {
     await sendTodayReminders();
   }, { timezone: 'Africa/Cairo' });
-  console.log('✅ تم جدولة تذكيرات تقويم المحتوى (يوميًا 9 صباحًا - توقيت القاهرة)');
+  console.log('✅ تم جدولة تذكيرات جدولة المحتوى (يوميًا 9 صباحًا - توقيت القاهرة)');
 };
 
 const sendTodayReminders = async () => {
@@ -38,8 +38,8 @@ const sendTodayReminders = async () => {
       });
       sent++;
     }
-    console.log(`📅 تذكيرات تقويم المحتوى: ${entries.length} عنصر اليوم، أُرسل ${sent} تذكير`);
+    console.log(`📅 تذكيرات جدولة المحتوى: ${entries.length} عنصر اليوم، أُرسل ${sent} تذكير`);
   } catch (error) {
-    console.error('❌ خطأ في تذكيرات تقويم المحتوى:', error);
+    console.error('❌ خطأ في تذكيرات جدولة المحتوى:', error);
   }
 };

@@ -104,7 +104,7 @@ const ContentCalendar: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-500 dark:text-gray-400" dir="rtl">
         <Lock className="h-10 w-10 mb-3" />
-        <p>ليس لديك صلاحية لعرض تقويم المحتوى</p>
+        <p>ليس لديك صلاحية لعرض جدولة المحتوى</p>
       </div>
     );
   }
@@ -161,7 +161,7 @@ const ContentCalendar: React.FC = () => {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
               <CalendarDays className="h-6 w-6 text-brand-500" />
-              تقويم المحتوى
+              جدولة المحتوى
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">{user?.name} — إدارة محتوى السوشيال ميديا شهريًا</p>
           </div>

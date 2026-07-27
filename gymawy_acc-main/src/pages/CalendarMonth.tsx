@@ -279,7 +279,7 @@ const CalendarMonth: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-500 dark:text-gray-400" dir="rtl">
         <Lock className="h-10 w-10 mb-3" />
-        <p>ليس لديك صلاحية لعرض تقويم المحتوى</p>
+        <p>ليس لديك صلاحية لعرض جدولة المحتوى</p>
       </div>
     );
   }
@@ -290,7 +290,7 @@ const CalendarMonth: React.FC = () => {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/content-calendar')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 dark:text-gray-400">
-            تقويم المحتوى
+            جدولة المحتوى
             <ChevronRight className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-2">
