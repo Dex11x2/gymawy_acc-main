@@ -192,8 +192,19 @@ export interface Task {
   dueDate: Date;
   completedDate?: Date;
   comments: TaskComment[];
+  activities?: TaskActivity[];
+  seenBy?: { userId: string; seenAt: Date | string }[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface TaskActivity {
+  id: string;
+  byId: string;
+  byName: string;
+  kind: 'created' | 'status' | 'priority' | 'due' | 'edit' | 'comment' | 'reassign';
+  detail: string;
+  createdAt: Date | string;
 }
 
 export interface TaskModification {

@@ -2,11 +2,21 @@ import React from 'react';
 import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { isSoundEnabled, setSoundEnabled, playNotificationSound, primeNotificationSound } from '../utils/notificationSound';
 
 export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { user } = useAuthStore();
   const { getUserNotifications, markAllAsRead, deleteNotification } = useNotificationStore();
   const navigate = useNavigate();
+  const [soundOn, setSoundOn] = React.useState(isSoundEnabled());
+
+  const toggleSound = () => {
+    primeNotificationSound();
+    const next = !soundOn;
+    setSoundEnabled(next);
+    setSoundOn(next);
+    if (next) playNotificationSound(); // معاينة الصوت عند التفعيل
+  };
 
   const notifications = getUserNotifications(user?.id || '');
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -36,14 +46,27 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
     <div className="fixed inset-x-2 top-20 w-auto sm:absolute sm:inset-x-auto sm:left-0 sm:top-16 sm:w-96 sm:max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold text-gray-800 dark:text-white">الإشعارات ({unreadCount})</h3>
-        {unreadCount > 0 && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => markAllAsRead(user?.id || '')}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            onClick={toggleSound}
+            title={soundOn ? 'إيقاف صوت الإشعارات' : 'تشغيل صوت الإشعارات'}
+            className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors font-medium border ${
+              soundOn
+                ? 'bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/30'
+                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'
+            }`}
           >
-            ✓ تعليم الكل كمقروء
+            {soundOn ? '🔊' : '🔇'}
           </button>
-        )}
+          {unreadCount > 0 && (
+            <button
+              onClick={() => markAllAsRead(user?.id || '')}
+              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              ✓ تعليم الكل كمقروء
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="max-h-96 overflow-y-auto">

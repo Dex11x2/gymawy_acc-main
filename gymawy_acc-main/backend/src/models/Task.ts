@@ -8,6 +8,20 @@ export interface ITaskComment {
   createdAt: Date;
 }
 
+export interface ITaskActivity {
+  id: string;
+  byId: string;
+  byName: string;
+  kind: 'created' | 'status' | 'priority' | 'due' | 'edit' | 'comment' | 'reassign';
+  detail: string;
+  createdAt: Date;
+}
+
+export interface ITaskSeen {
+  userId: string;
+  seenAt: Date;
+}
+
 export interface ITask extends Document {
   companyId?: mongoose.Types.ObjectId;
   title: string;
@@ -18,6 +32,8 @@ export interface ITask extends Document {
   priority: 'low' | 'medium' | 'high';
   dueDate: Date;
   comments: ITaskComment[];
+  activities: ITaskActivity[];
+  seenBy: ITaskSeen[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +45,19 @@ const TaskCommentSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const TaskActivitySchema = new Schema({
+  byId: { type: String, required: true },
+  byName: { type: String, required: true },
+  kind: { type: String, required: true },
+  detail: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const TaskSeenSchema = new Schema({
+  userId: { type: String, required: true },
+  seenAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const TaskSchema = new Schema({
   companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: false },
   title: { type: String, required: true },
@@ -38,7 +67,9 @@ const TaskSchema = new Schema({
   status: { type: String, enum: ['pending', 'in_progress', 'completed', 'cancelled'], default: 'pending' },
   priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
   dueDate: { type: Date },
-  comments: [TaskCommentSchema]
+  comments: [TaskCommentSchema],
+  activities: [TaskActivitySchema],
+  seenBy: [TaskSeenSchema]
 }, { timestamps: true });
 
 TaskSchema.index({ assignedTo: 1, status: 1 });

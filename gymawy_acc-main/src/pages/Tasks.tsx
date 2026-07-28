@@ -8,15 +8,15 @@ import Modal from '../components/Modal';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Checkbox, Table } from '../components/ui';
 import {
-  ClipboardList, Clock, RefreshCw, CheckCircle, Plus, Send,
+  ClipboardList, Clock, RefreshCw, CheckCircle, Send,
   Bell, MessageSquare, Edit2, Trash2, Calendar,
-  User, Users, FileText
+  User, Users, Inbox, Activity
 } from 'lucide-react';
 
 const Tasks: React.FC = () => {
   const { user } = useAuthStore();
   const { addNotification } = useNotificationStore();
-  const { employees, departments, tasks, loadEmployees, loadDepartments, loadTasks, addTask, updateTask, deleteTask, addTaskComment } = useDataStore();
+  const { employees, departments, tasks, loadEmployees, loadDepartments, loadTasks, addTask, updateTask, deleteTask, addTaskComment, markTaskSeen } = useDataStore();
   const { canWrite } = usePermissions();
 
   const canCreateTask = canWrite('tasks');
@@ -27,7 +27,6 @@ const Tasks: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'my' | 'sent'>('my');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [isPlanningTask, setIsPlanningTask] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -57,27 +56,19 @@ const Tasks: React.FC = () => {
       setToast({message: `تعليق جديد من ${data.comment.authorName}`, type: 'info', isOpen: true});
     };
 
-    const handleNotification = (notification: any) => {
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(() => {});
-
-      addNotification({
-        userId: user.id,
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        link: notification.link
-      });
+    // أي تحديث على تسك (إشعار) نعيد تحميل القائمة عشان الجرس/سجل التغييرات يتحدّث فوراً
+    const handleTaskNotification = (notification: any) => {
+      if (notification?.type === 'task') loadTasks();
     };
 
     socket.on('new-task-comment', handleNewComment);
-    socket.on('notification', handleNotification);
+    socket.on('notification', handleTaskNotification);
 
     return () => {
       socket.off('new-task-comment', handleNewComment);
-      socket.off('notification', handleNotification);
+      socket.off('notification', handleTaskNotification);
     };
-  }, [user, selectedTask, loadTasks, addNotification]);
+  }, [user, selectedTask, loadTasks]);
 
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error' | 'info' | 'warning'; isOpen: boolean}>({message: '', type: 'success', isOpen: false});
   const [formData, setFormData] = useState({
@@ -256,17 +247,26 @@ const Tasks: React.FC = () => {
     }
   };
 
+  // هل فيه تغيير جديد لم يشاهده المستخدم الحالي؟ (يفعّل الجرس)
+  const hasUnseen = (task: Task): boolean => {
+    const acts = task.activities || [];
+    if (!acts.length) return false;
+    const last = acts[acts.length - 1];
+    if (String(last.byId) === String(user?.id)) return false; // آخر تغيير من عنده هو
+    const lastTime = new Date(last.createdAt as any).getTime();
+    const seen = (task.seenBy || []).find((s: any) => String(s.userId) === String(user?.id));
+    if (!seen) return true;
+    return lastTime > new Date(seen.seenAt as any).getTime();
+  };
+
   const openTaskDetails = (task: Task) => {
     setSelectedTask(task);
     setShowTaskDetails(true);
+    if (hasUnseen(task)) markTaskSeen(task.id);
   };
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
-    const assignedToData = task.assignedTo as any;
-    const assignedToId = typeof assignedToData === 'object' ? (assignedToData?._id || assignedToData?.id) : task.assignedTo;
-    const isMyTask = String(assignedToId) === String(currentEmployee?.id);
-    setIsPlanningTask(isMyTask);
     setFormData({
       title: task.title,
       description: task.description,
@@ -291,41 +291,6 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const setReminder = (task: Task) => {
-    const currentEmployee = (employees || []).find((e: any) => String(e.userId?._id || e.userId?.id || e.userId) === String(user?.id));
-    const assignedToData = task.assignedTo as any;
-    const isMyTask = String(task.assignedTo) === String(currentEmployee?.id) ||
-                     (typeof assignedToData === 'object' && String(assignedToData?._id || assignedToData?.id) === String(currentEmployee?.id));
-
-    if (isMyTask) {
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(() => {});
-
-      setToast({message: `تم تفعيل التنبيه للمهمة "${task.title}"`, type: 'success', isOpen: true});
-
-      const reminders = JSON.parse(localStorage.getItem('taskReminders') || '[]');
-      reminders.push({
-        taskId: task.id,
-        taskTitle: task.title,
-        dueDate: task.dueDate,
-        createdAt: new Date().toISOString()
-      });
-      localStorage.setItem('taskReminders', JSON.stringify(reminders));
-    } else {
-      const dueDate = new Date(task.dueDate);
-      const now = new Date();
-      const diffTime = dueDate.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays <= 0) {
-        setToast({message: 'المهمة متأخرة!', type: 'warning', isOpen: true});
-      } else if (diffDays === 1) {
-        setToast({message: `تنبيه: المهمة "${task.title}" غداً!`, type: 'info', isOpen: true});
-      } else {
-        setToast({message: `تنبيه: المهمة "${task.title}" بعد ${diffDays} أيام`, type: 'info', isOpen: true});
-      }
-    }
-  };
 
   // Filter tasks
   const currentEmployee = (employees || []).find((e: any) => String(e.userId?._id || e.userId?.id || e.userId) === String(user?.id));
@@ -377,28 +342,6 @@ const Tasks: React.FC = () => {
           <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => {
-                setIsPlanningTask(true);
-                setEditingTask(null);
-                setFormData({
-                  title: '',
-                  description: '',
-                  assignedTo: [currentEmployee?.id || user?.id || ''],
-                  assignedDepartment: '',
-                  assignmentType: 'employees',
-                  priority: 'medium',
-                  dueDate: new Date().toISOString().split('T')[0],
-                  reminderTime: '09:00'
-                });
-                setShowModal(true);
-              }}
-              variant="outline"
-            >
-              <FileText className="h-4 w-4" />
-              تسكة تخطيطية جديدة
-            </Button>
-            <Button
-              onClick={() => {
-                setIsPlanningTask(false);
                 setEditingTask(null);
                 setFormData({
                   title: '',
@@ -413,8 +356,8 @@ const Tasks: React.FC = () => {
                 setShowModal(true);
               }}
             >
-              <Plus className="h-4 w-4" />
-              إضافة مهمة جديدة
+              <Send className="h-4 w-4" />
+              إسناد مهمة جديدة
             </Button>
           </div>
         )}
@@ -456,8 +399,8 @@ const Tasks: React.FC = () => {
                 variant={activeTab === 'my' ? 'primary' : 'outline'}
                 size="sm"
               >
-                <FileText className="h-4 w-4" />
-                تسكات تخطيطية ({myTasksList.length})
+                <Inbox className="h-4 w-4" />
+                الواردة لي ({myTasksList.length})
               </Button>
               <Button
                 onClick={() => setActiveTab('sent')}
@@ -549,7 +492,11 @@ const Tasks: React.FC = () => {
                   const displayAvatar = activeTab === 'my' ? assignedByAvatar : assignedToAvatar;
 
                   return (
-                    <Table.Row key={task.id} className="group hover:bg-brand-50/50 dark:hover:bg-brand-500/5 transition-colors">
+                    <Table.Row key={task.id} className={`group transition-colors ${
+                      hasUnseen(task)
+                        ? 'bg-warning-50/70 dark:bg-warning-500/5 hover:bg-warning-100/70 dark:hover:bg-warning-500/10'
+                        : 'hover:bg-brand-50/50 dark:hover:bg-brand-500/5'
+                    }`}>
                       <Table.Cell className="font-medium text-gray-900 dark:text-gray-100">
                         <div className="flex items-center gap-3">
                           <div className={`w-2 h-8 rounded-full ${
@@ -596,11 +543,18 @@ const Tasks: React.FC = () => {
                       <Table.Cell align="center">
                         <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => setReminder(task)}
-                            className="p-2 rounded-lg text-warning-600 bg-warning-50 hover:bg-warning-100 dark:bg-warning-500/10 dark:hover:bg-warning-500/20 transition-colors"
-                            title="تنبيه"
+                            onClick={() => openTaskDetails(task)}
+                            className={`relative p-2 rounded-lg transition-colors ${
+                              hasUnseen(task)
+                                ? 'text-warning-700 bg-warning-100 hover:bg-warning-200 dark:bg-warning-500/20 ring-2 ring-warning-300 dark:ring-warning-500/40 animate-pulse'
+                                : 'text-gray-500 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
+                            }`}
+                            title={hasUnseen(task) ? 'يوجد تغييرات جديدة — اضغط للاطلاع' : 'الإشعارات وسجل التغييرات'}
                           >
                             <Bell className="h-4 w-4" />
+                            {hasUnseen(task) && (
+                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-error-500 rounded-full ring-2 ring-white dark:ring-gray-800"></span>
+                            )}
                           </button>
                           <button
                             onClick={() => openTaskDetails(task)}
@@ -644,16 +598,9 @@ const Tasks: React.FC = () => {
         isOpen={showModal}
         onClose={() => {
           setShowModal(false);
-          setIsPlanningTask(false);
           setEditingTask(null);
         }}
-        title={
-          editingTask
-            ? "تعديل المهمة"
-            : isPlanningTask
-            ? "إنشاء تسكة تخطيطية جديدة"
-            : "إنشاء مهمة جديدة"
-        }
+        title={editingTask ? "تعديل المهمة" : "إسناد مهمة جديدة"}
         size="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -714,7 +661,7 @@ const Tasks: React.FC = () => {
           />
 
           {/* Assignment Section */}
-          {!isPlanningTask && (
+          {!editingTask && (
             <Card className="bg-gray-50 dark:bg-gray-800/50">
               <Card.Body>
                 <div className="flex items-center gap-2 mb-4">
@@ -764,34 +711,7 @@ const Tasks: React.FC = () => {
             </Card>
           )}
 
-          {/* Planning Task Info */}
-          {isPlanningTask && (
-            <Card className="bg-blue-light-50 dark:bg-blue-light-500/10 border-2 border-blue-light-200 dark:border-blue-light-500/30">
-              <Card.Body>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-light-100 dark:bg-blue-light-500/20 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-blue-light-600 dark:text-blue-light-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-blue-light-800 dark:text-blue-light-300">تسكة تخطيطية</h3>
-                    <p className="text-sm text-blue-light-600 dark:text-blue-light-400">هذه مهمة تذكيرية شخصية لك فقط</p>
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg space-y-2">
-                  <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-success-500" />
-                    سيتم تعيين هذه المهمة لك تلقائياً كتذكير شخصي
-                  </p>
-                  <p className="text-sm text-blue-light-700 dark:text-blue-light-400 font-medium flex items-center gap-2">
-                    <Bell className="h-4 w-4" />
-                    سيتم تذكيرك في الوقت المحدد
-                  </p>
-                </div>
-              </Card.Body>
-            </Card>
-          )}
-
-          {/* Due Date & Time */}
+          {/* Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               type="date"
@@ -800,37 +720,23 @@ const Tasks: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
               required
             />
-            {isPlanningTask && (
-              <Input
-                type="time"
-                label="وقت التذكير"
-                value={formData.reminderTime}
-                onChange={(e) => setFormData({ ...formData, reminderTime: e.target.value })}
-                required
-              />
-            )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
             <Button
               type="submit"
-              className={`flex-1 ${isPlanningTask ? 'bg-blue-light-500 hover:bg-blue-light-600' : ''}`}
+              className="flex-1"
             >
               {editingTask ? (
                 <>
                   <Edit2 className="h-4 w-4" />
                   تحديث المهمة
                 </>
-              ) : isPlanningTask ? (
-                <>
-                  <FileText className="h-4 w-4" />
-                  إنشاء تسكة تخطيطية
-                </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
-                  إنشاء المهمة
+                  <Send className="h-4 w-4" />
+                  إسناد المهمة
                 </>
               )}
             </Button>
@@ -839,7 +745,6 @@ const Tasks: React.FC = () => {
               variant="outline"
               onClick={() => {
                 setShowModal(false);
-                setIsPlanningTask(false);
                 setEditingTask(null);
               }}
               className="flex-1"
@@ -908,6 +813,42 @@ const Tasks: React.FC = () => {
                   </select>
                 </div>
               )}
+
+              {/* Activity Log */}
+              <Card>
+                <Card.Header>
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-warning-500" />
+                    <h3 className="font-semibold text-gray-800 dark:text-white">
+                      سجل التغييرات والإشعارات ({(selectedTask.activities || []).length})
+                    </h3>
+                  </div>
+                </Card.Header>
+                <Card.Body>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {(selectedTask.activities || []).length === 0 ? (
+                      <p className="text-gray-500 dark:text-gray-400 text-center py-4">لا توجد تغييرات بعد</p>
+                    ) : (
+                      [...(selectedTask.activities || [])].reverse().map((act: any, idx: number) => (
+                        <div key={act.id || idx} className="flex items-start gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+                          <div className="w-8 h-8 rounded-full bg-warning-100 dark:bg-warning-500/20 flex items-center justify-center text-warning-600 dark:text-warning-400 shrink-0">
+                            <Activity className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-medium text-gray-800 dark:text-white/90 text-sm">{act.byName}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(act.createdAt).toLocaleString('ar-EG')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5 break-words">{act.detail}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
 
               {/* Comments Section */}
               <Card>

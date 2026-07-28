@@ -119,6 +119,7 @@ interface DataState {
   updateTask: (id: string, task: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   addTaskComment: (taskId: string, content: string) => Promise<void>;
+  markTaskSeen: (taskId: string) => Promise<void>;
 
   // DevTask Actions
   loadDevTasks: () => Promise<void>;
@@ -692,6 +693,15 @@ export const useDataStore = create<DataState>((set, get) => ({
     } catch (error) {
       console.error("Error adding task comment:", error);
       throw error;
+    }
+  },
+
+  markTaskSeen: async (taskId) => {
+    try {
+      await api.post(`/tasks/${taskId}/seen`);
+      await get().loadTasks();
+    } catch (error) {
+      console.error("Error marking task as seen:", error);
     }
   },
 

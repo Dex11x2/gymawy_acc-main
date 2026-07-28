@@ -10,6 +10,7 @@ router.post('/', controller.create);
 router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
 router.post('/:id/comments', controller.addComment);
+router.post('/:id/seen', controller.markSeen);
 router.delete('/:id', controller.remove);
 
 export default router;

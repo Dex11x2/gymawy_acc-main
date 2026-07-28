@@ -9,6 +9,7 @@ import { GlobalSearch } from './GlobalSearch';
 import Logo from './Logo';
 import { NotificationPanel } from './NotificationPanel';
 import { autoBackup } from '../utils/backup';
+import { playNotificationSound, primeNotificationSound } from '../utils/notificationSound';
 import { iconComponents, IconName } from './Icons';
 import { Avatar, Button } from './ui';
 import {
@@ -125,6 +126,52 @@ const Layout: React.FC = () => {
     const interval = setInterval(checkOverdueTasks, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user, devTasks, language, addNotification]);
+
+  // 🔔 صوت الإشعارات على مستوى النظام كله (إشعارات + رسائل جديدة)
+  useEffect(() => {
+    if (!user) return;
+
+    // تهيئة الصوت بعد أول تفاعل من المستخدم (سياسات المتصفح)
+    const prime = () => primeNotificationSound();
+    window.addEventListener('pointerdown', prime, { once: true });
+    window.addEventListener('keydown', prime, { once: true });
+
+    let socket = (window as any).socket;
+    let attempts = 0;
+    // الـsocket ممكن يتعمل بعد أول رندر، فنستنى شوية لو مش جاهز
+    const bind = () => {
+      socket = (window as any).socket;
+      if (!socket) {
+        if (attempts++ < 20) setTimeout(bind, 500);
+        return;
+      }
+
+      const onNotification = () => {
+        playNotificationSound();
+        loadNotifications();
+      };
+      const onNewMessage = () => {
+        playNotificationSound();
+      };
+
+      socket.on('notification', onNotification);
+      socket.on('new-message', onNewMessage);
+
+      cleanup = () => {
+        socket.off('notification', onNotification);
+        socket.off('new-message', onNewMessage);
+      };
+    };
+
+    let cleanup = () => {};
+    bind();
+
+    return () => {
+      window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('keydown', prime);
+      cleanup();
+    };
+  }, [user?.id, loadNotifications]);
 
   // Theme and language effects
   useEffect(() => {

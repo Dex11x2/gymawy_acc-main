@@ -1,16 +1,43 @@
 import { Request, Response } from 'express';
 import Task from '../models/Task';
+import Employee from '../models/Employee';
 import User from '../models/User';
-import Notification from '../models/Notification';
-import { notifyNewTask } from '../services/notification.service';
+import { createNotification, notifyNewTask } from '../services/notification.service';
+
+// حوّل معرّف (موظف أو مستخدم) إلى معرّف مستخدم — الإشعارات والغرف بتستخدم معرّف المستخدم
+const employeeToUserId = async (id: any): Promise<string | null> => {
+  if (!id) return null;
+  try {
+    const emp = await Employee.findById(id).select('userId');
+    if (emp?.userId) return (emp.userId as any).toString();
+    // ربما كان معرّف مستخدم أصلاً (مثلاً مدير بدون سجل موظف)
+    const user = await User.findById(id).select('_id');
+    return user ? (user._id as any).toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+// علّم أن مستخدماً معيّناً شاف آخر نشاط في التسك (upsert)
+const markSeenFor = async (taskId: any, userId: string) => {
+  if (!userId) return;
+  const now = new Date();
+  const upd = await Task.updateOne(
+    { _id: taskId, 'seenBy.userId': userId },
+    { $set: { 'seenBy.$.seenAt': now } }
+  );
+  if (!upd.matchedCount) {
+    await Task.updateOne({ _id: taskId }, { $push: { seenBy: { userId, seenAt: now } } });
+  }
+};
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    // ✅ FIXED: Managers see ALL tasks, regular employees see only their company's tasks
+    // ✅ المدراء يشوفوا كل التسكات، الموظف يشوف تسكات شركته
     const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
     const filter = managerRoles.includes(req.user?.role)
-      ? {}  // Managers see all tasks
-      : { companyId: req.user?.companyId }; // Regular employees see only their company
+      ? {}
+      : { companyId: req.user?.companyId };
 
     const tasks = await Task.find(filter).populate('assignedTo assignedBy');
     res.json(tasks);
@@ -21,25 +48,32 @@ export const getAll = async (req: any, res: Response) => {
 
 export const create = async (req: any, res: Response) => {
   try {
+    const actorId = (req.user._id || req.user.id).toString();
+    const actorName = req.user.name || 'مستخدم';
+
     const task = await Task.create({
       ...req.body,
-      comments: []
+      comments: [],
+      activities: [{
+        byId: actorId,
+        byName: actorName,
+        kind: 'created',
+        detail: `أنشأ المهمة "${req.body.title || ''}"`,
+        createdAt: new Date()
+      }],
+      // المُنشئ شاف المهمة تلقائياً؛ المكلَّف لسه
+      seenBy: [{ userId: actorId, seenAt: new Date() }]
     });
 
     const populatedTask = await Task.findById(task._id).populate('assignedTo assignedBy');
 
-    // إرسال إشعار للموظف المكلف بالمهمة
+    // إشعار للموظف المكلّف
     if (task.assignedTo) {
-      const assignedBy = await User.findById(req.user._id || req.user.id);
+      const assignedToUserId = await employeeToUserId(task.assignedTo);
       const io = req.app.get('io');
-
-      await notifyNewTask(
-        task.assignedTo.toString(),
-        task.title,
-        assignedBy?.name || 'المدير',
-        assignedBy?._id?.toString() || '',
-        io
-      );
+      if (assignedToUserId && assignedToUserId !== actorId) {
+        await notifyNewTask(assignedToUserId, task.title, actorName, actorId, io);
+      }
     }
 
     res.status(201).json(populatedTask);
@@ -62,35 +96,77 @@ export const update = async (req: any, res: Response) => {
   try {
     const oldTask = await Task.findById(req.params.id);
     if (!oldTask) return res.status(404).json({ message: 'Task not found' });
-    
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('assignedTo assignedBy');
-    
-    // إرسال إشعار عند تغيير الحالة
-    if (req.body.status && req.body.status !== oldTask.status && oldTask.assignedBy) {
-      const userId = req.user._id || req.user.id;
-      const notifyUserId = oldTask.assignedBy.toString() === userId.toString() 
-        ? oldTask.assignedTo.toString() 
-        : oldTask.assignedBy.toString();
-      
-      if (notifyUserId && notifyUserId !== userId.toString()) {
-        const statusText = req.body.status === 'completed' ? 'مكتملة ✅' : 
-                          req.body.status === 'in_progress' ? 'قيد التنفيذ ⏳' : 
-                          req.body.status === 'cancelled' ? 'ملغية ❌' : 'معلقة ⏸️';
-        
-        const notification = await Notification.create({
-          userId: notifyUserId,
-          title: '📋 تحديث حالة المهمة',
-          message: `تم تحديث حالة المهمة "${oldTask.title}" إلى: ${statusText}`,
-          type: 'task'
-        });
-        
+
+    const actorId = (req.user._id || req.user.id).toString();
+    const actorName = req.user.name || 'مستخدم';
+
+    // اكتشف التغييرات وابنِ سجل نشاط لكل تغيير
+    const statusText: Record<string, string> = {
+      pending: 'معلقة', in_progress: 'قيد التنفيذ', completed: 'مكتملة', cancelled: 'ملغية'
+    };
+    const priorityText: Record<string, string> = { low: 'منخفضة', medium: 'متوسطة', high: 'عالية' };
+    const activities: any[] = [];
+    const changeSummaries: string[] = [];
+
+    if (req.body.status !== undefined && req.body.status !== oldTask.status) {
+      const d = `غيّر الحالة إلى «${statusText[req.body.status] || req.body.status}»`;
+      activities.push({ byId: actorId, byName: actorName, kind: 'status', detail: d, createdAt: new Date() });
+      changeSummaries.push(d);
+    }
+    if (req.body.priority !== undefined && req.body.priority !== oldTask.priority) {
+      const d = `غيّر الأولوية إلى «${priorityText[req.body.priority] || req.body.priority}»`;
+      activities.push({ byId: actorId, byName: actorName, kind: 'priority', detail: d, createdAt: new Date() });
+      changeSummaries.push(d);
+    }
+    if (req.body.dueDate !== undefined && new Date(req.body.dueDate).getTime() !== new Date(oldTask.dueDate).getTime()) {
+      const d = `غيّر تاريخ الاستحقاق إلى ${new Date(req.body.dueDate).toLocaleDateString('ar-EG')}`;
+      activities.push({ byId: actorId, byName: actorName, kind: 'due', detail: d, createdAt: new Date() });
+      changeSummaries.push(d);
+    }
+    if (req.body.title !== undefined && req.body.title !== oldTask.title) {
+      const d = `عدّل العنوان`;
+      activities.push({ byId: actorId, byName: actorName, kind: 'edit', detail: d, createdAt: new Date() });
+      changeSummaries.push(d);
+    }
+    if (req.body.description !== undefined && req.body.description !== oldTask.description) {
+      const d = `عدّل الوصف`;
+      activities.push({ byId: actorId, byName: actorName, kind: 'edit', detail: d, createdAt: new Date() });
+      changeSummaries.push(d);
+    }
+    if (req.body.assignedTo !== undefined && String(req.body.assignedTo) !== String(oldTask.assignedTo)) {
+      const d = `أعاد إسناد المهمة`;
+      activities.push({ byId: actorId, byName: actorName, kind: 'reassign', detail: d, createdAt: new Date() });
+      changeSummaries.push(d);
+    }
+
+    const updateOps: any = { ...req.body };
+    if (activities.length) updateOps.$push = { activities: { $each: activities } };
+
+    const task = await Task.findByIdAndUpdate(req.params.id, updateOps, { new: true }).populate('assignedTo assignedBy');
+
+    // الفاعل شاف التغيير تلقائياً (عشان جرسه ما يضيّش)
+    if (activities.length) await markSeenFor(req.params.id, actorId);
+
+    // إشعار الطرف الآخر عند أي تغيير
+    if (changeSummaries.length) {
+      const assignedToUserId = await employeeToUserId(oldTask.assignedTo);
+      const assignedByUserId = await employeeToUserId(oldTask.assignedBy);
+      const notifyUserId = assignedByUserId === actorId ? assignedToUserId : assignedByUserId;
+
+      if (notifyUserId && notifyUserId !== actorId) {
         const io = req.app.get('io');
-        if (io) {
-          io.to(`user-${notifyUserId}`).emit('notification', notification);
-        }
+        await createNotification({
+          userId: notifyUserId,
+          title: `📋 تحديث على «${oldTask.title}»`,
+          message: `${actorName}: ${changeSummaries.join('، ')}`,
+          type: 'task',
+          link: '/tasks',
+          senderId: actorId,
+          senderName: actorName
+        }, io);
       }
     }
-    
+
     res.json(task);
   } catch (error: any) {
     console.error('Task update error:', error);
@@ -102,50 +178,68 @@ export const addComment = async (req: any, res: Response) => {
   try {
     const { content } = req.body;
     const task = await Task.findById(req.params.id);
-    
     if (!task) return res.status(404).json({ message: 'Task not found' });
-    
-    const userId = req.user._id || req.user.id;
-    const userName = req.user.name || 'User';
-    
+
+    const actorId = (req.user._id || req.user.id).toString();
+    const actorName = req.user.name || 'مستخدم';
+
     const comment = {
       id: Date.now().toString(),
-      authorId: userId,
-      authorName: userName,
+      authorId: actorId,
+      authorName: actorName,
       content,
       createdAt: new Date()
     };
-    
-    task.comments.push(comment);
+
+    task.comments.push(comment as any);
+    task.activities.push({
+      byId: actorId,
+      byName: actorName,
+      kind: 'comment',
+      detail: `أضاف تعليقاً: ${content}`,
+      createdAt: new Date()
+    } as any);
     await task.save();
-    
-    // إرسال إشعار للطرف الآخر
-    const notifyUserId = task.assignedBy.toString() === userId 
-      ? task.assignedTo.toString() 
-      : task.assignedBy.toString();
-    
-    if (notifyUserId !== userId) {
-      const notification = await Notification.create({
-        userId: notifyUserId,
-        title: '💬 تعليق جديد من ' + userName,
-        message: `${userName} علّق على المهمة "${task.title}": ${content}`,
-        type: 'task'
-      });
-      
-      // إرسال عبر Socket.IO
-      const io = req.app.get('io');
+
+    // الفاعل شاف؛ الطرف الآخر يتبلّغ
+    await markSeenFor(task._id, actorId);
+
+    const assignedToUserId = await employeeToUserId(task.assignedTo);
+    const assignedByUserId = await employeeToUserId(task.assignedBy);
+    const notifyUserId = assignedByUserId === actorId ? assignedToUserId : assignedByUserId;
+
+    const io = req.app.get('io');
+    if (notifyUserId && notifyUserId !== actorId) {
       if (io) {
-        io.to(`user-${notifyUserId}`).emit('new-task-comment', {
-          taskId: task._id,
-          comment
-        });
-        io.to(`user-${notifyUserId}`).emit('notification', notification);
+        io.to(`user-${notifyUserId}`).emit('new-task-comment', { taskId: task._id, comment });
       }
+      await createNotification({
+        userId: notifyUserId,
+        title: `💬 تعليق جديد من ${actorName}`,
+        message: `علّق على «${task.title}»: ${content}`,
+        type: 'task',
+        link: '/tasks',
+        senderId: actorId,
+        senderName: actorName
+      }, io);
     }
-    
+
     res.json(task);
   } catch (error: any) {
     console.error('Add comment error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// علّم أن المستخدم الحالي شاف كل نشاط التسك (يطفّي الجرس)
+export const markSeen = async (req: any, res: Response) => {
+  try {
+    const actorId = (req.user._id || req.user.id).toString();
+    await markSeenFor(req.params.id, actorId);
+    const task = await Task.findById(req.params.id).populate('assignedTo assignedBy');
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+    res.json(task);
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
