@@ -193,6 +193,7 @@ export const DevTasksIcon: React.FC<IconProps> = ({ className = '', size = 20 })
 // Icon mapping for easy access
 export const iconComponents = {
   dashboard: DashboardIcon,
+  'my-space': EmployeeIcon,
   'attendance-map': AttendanceIcon,
   'attendance-management': CalendarIcon,
   branches: BranchIcon,

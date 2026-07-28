@@ -9,7 +9,7 @@ import { GlobalSearch } from './GlobalSearch';
 import Logo from './Logo';
 import { NotificationPanel } from './NotificationPanel';
 import { autoBackup } from '../utils/backup';
-import { playNotificationSound, primeNotificationSound } from '../utils/notificationSound';
+import { playNotificationSound, primeNotificationSound, isTypeMuted } from '../utils/notificationSound';
 import { iconComponents, IconName } from './Icons';
 import { Avatar, Button } from './ui';
 import {
@@ -149,12 +149,12 @@ const Layout: React.FC = () => {
         return;
       }
 
-      const onNotification = () => {
-        playNotificationSound();
+      const onNotification = (n: any) => {
+        if (!isTypeMuted(n?.type)) playNotificationSound();
         loadNotifications();
       };
       const onNewMessage = () => {
-        playNotificationSound();
+        if (!isTypeMuted('message')) playNotificationSound();
         loadNotifications();
       };
 
@@ -240,6 +240,7 @@ const Layout: React.FC = () => {
   };
 
   const menuItems = [
+    { id: 'my-space' as IconName, name: language === 'ar' ? 'مساحتي' : 'My Space', path: '/my-space', show: true },
     { id: 'dashboard' as IconName, name: t.dashboard, path: '/dashboard', show: user?.role === 'dev' || hasPermission('dashboard') },
     { id: 'attendance-map' as IconName, name: language === 'ar' ? 'تسجيل الحضور' : 'Check In', path: '/attendance-map', show: true },
     { id: 'attendance-management' as IconName, name: language === 'ar' ? 'إدارة الحضور' : 'Attendance Management', path: '/attendance-management', show: ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '') },

@@ -44,7 +44,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   loadNotifications: async () => {
     try {
       // Check if user is authenticated
-      const token = sessionStorage.getItem('gemawi-token');
+      const token = localStorage.getItem('gemawi-token') || sessionStorage.getItem('gemawi-token');
       if (!token) {
         set({ notifications: loadNotifications() });
         return;

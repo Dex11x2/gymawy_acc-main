@@ -1,11 +1,34 @@
 // صوت إشعارات على مستوى النظام (مولّد برمجياً عبر Web Audio — بدون ملفات صوت)
 
 const SOUND_KEY = 'notif-sound-enabled';
+const MUTED_TYPES_KEY = 'notif-muted-types';
 
 export const isSoundEnabled = (): boolean => localStorage.getItem(SOUND_KEY) !== 'false';
 
 export const setSoundEnabled = (enabled: boolean): void => {
   localStorage.setItem(SOUND_KEY, enabled ? 'true' : 'false');
+};
+
+// كتم نوع معيّن من الإشعارات (يمنع الصوت لهذا النوع)
+export const getMutedTypes = (): string[] => {
+  try {
+    const raw = localStorage.getItem(MUTED_TYPES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const isTypeMuted = (type?: string): boolean => {
+  if (!type) return false;
+  return getMutedTypes().includes(type);
+};
+
+export const setTypeMuted = (type: string, muted: boolean): void => {
+  const current = new Set(getMutedTypes());
+  if (muted) current.add(type);
+  else current.delete(type);
+  localStorage.setItem(MUTED_TYPES_KEY, JSON.stringify([...current]));
 };
 
 let ctx: AudioContext | null = null;

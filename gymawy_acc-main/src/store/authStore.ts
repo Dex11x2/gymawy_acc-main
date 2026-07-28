@@ -19,18 +19,19 @@ const TOKEN_KEY = "gemawi-token";
 
 export const getStoredToken = (): string | null => {
   try {
-    return sessionStorage.getItem(TOKEN_KEY);
+    // localStorage عشان الجلسة تفضل بعد قفل التاب؛ نقرأ من sessionStorage للتوافق مع الجلسات القديمة
+    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
 };
 
 const setStoredToken = (token: string) => {
-  try { sessionStorage.setItem(TOKEN_KEY, token); } catch {}
+  try { localStorage.setItem(TOKEN_KEY, token); sessionStorage.removeItem(TOKEN_KEY); } catch {}
 };
 
 const clearStoredToken = () => {
-  try { sessionStorage.removeItem(TOKEN_KEY); } catch {}
+  try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); } catch {}
 };
 
 const authStore = create<AuthState>((set, get) => ({

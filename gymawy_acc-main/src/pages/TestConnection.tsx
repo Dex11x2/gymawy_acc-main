@@ -32,7 +32,7 @@ const TestConnection: React.FC = () => {
   };
 
   const checkToken = () => {
-    const token = sessionStorage.getItem('gemawi-token');
+    const token = localStorage.getItem('gemawi-token') || sessionStorage.getItem('gemawi-token');
     return token ? '✅ Token موجود' : '❌ لا يوجد بيانات تسجيل دخول';
   };
 

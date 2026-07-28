@@ -21,6 +21,7 @@ import VideoReviews from './pages/VideoReviews';
 import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
 import DevTasks from './pages/DevTasks';
+import MySpace from './pages/MySpace';
 import CustodyAndAdvances from './pages/CustodyAndAdvances';
 import PasswordManagement from './pages/PasswordManagement';
 import Profile from './pages/Profile';
@@ -35,6 +36,7 @@ import RolePermissionsManager from './pages/RolePermissionsManager';
 import Occasions from './pages/Occasions';
 import OccasionsPopup from './components/OccasionsPopup';
 import Protected from './components/Protected';
+import GlobalToaster from './components/GlobalToaster';
 import ReportSettings from './pages/ReportSettings';
 import AdsFundingReport from './pages/AdsFundingReport';
 import MediaSalaries from './pages/MediaSalaries';
@@ -96,6 +98,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
+    <GlobalToaster />
     {isAuthenticated && <OccasionsPopup />}
     <Router>
       <Routes>
@@ -106,6 +109,7 @@ const App: React.FC = () => {
         {isAuthenticated && (
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardWrapper />} />
+            <Route path="/my-space" element={<MySpace />} />
             <Route path="/instructions" element={<Protected module="instructions"><Instructions /></Protected>} />
 
             <Route path="/departments" element={<Protected module="departments"><Departments /></Protected>} />

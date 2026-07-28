@@ -17,7 +17,12 @@ const LoginForm: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // لو رجعنا هنا بسبب انتهاء الجلسة، اعرض رسالة واضحة
+    if (localStorage.getItem('gemawi-session-expired')) {
+      localStorage.removeItem('gemawi-session-expired');
+      setError(lang === 'ar' ? 'انتهت جلستك، سجّل الدخول من جديد' : 'Your session expired, please sign in again');
+    }
+  }, [lang]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +30,7 @@ const LoginForm: React.FC = () => {
 
     // Clear old auth data
     sessionStorage.removeItem('gemawi-token');
+    localStorage.removeItem('gemawi-token');
 
     try {
       await login(emailOrPhone, password);

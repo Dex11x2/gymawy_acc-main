@@ -2,8 +2,19 @@ import React from 'react';
 import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { isSoundEnabled, setSoundEnabled, playNotificationSound, primeNotificationSound } from '../utils/notificationSound';
-import { Volume2, VolumeX, CheckCheck, Bell, X, ChevronLeft } from 'lucide-react';
+import { isSoundEnabled, setSoundEnabled, playNotificationSound, primeNotificationSound, getMutedTypes, setTypeMuted } from '../utils/notificationSound';
+import { Volume2, VolumeX, CheckCheck, Bell, X, ChevronLeft, SlidersHorizontal } from 'lucide-react';
+
+const MUTE_TYPES: Array<{ key: string; label: string; icon: string }> = [
+  { key: 'message', label: 'الرسائل', icon: '💬' },
+  { key: 'task', label: 'المهام', icon: '📋' },
+  { key: 'post', label: 'المنشورات', icon: '📢' },
+  { key: 'complaint', label: 'الشكاوى', icon: '⚠️' },
+  { key: 'review', label: 'التقييمات', icon: '⭐' },
+  { key: 'attendance', label: 'الحضور', icon: '📅' },
+  { key: 'payment', label: 'الرواتب والمدفوعات', icon: '💰' },
+  { key: 'video_review', label: 'مراجعة الفيديو', icon: '🎬' },
+];
 
 // نمط لكل نوع إشعار: أيقونة + ألوان
 const typeStyles: Record<string, { icon: string; ring: string; chip: string }> = {
@@ -39,6 +50,14 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
   const { getUserNotifications, markAllAsRead, markAsRead, deleteNotification } = useNotificationStore();
   const navigate = useNavigate();
   const [soundOn, setSoundOn] = React.useState(isSoundEnabled());
+  const [showSettings, setShowSettings] = React.useState(false);
+  const [muted, setMuted] = React.useState<string[]>(getMutedTypes());
+
+  const toggleMuted = (key: string) => {
+    const next = !muted.includes(key);
+    setTypeMuted(key, next);
+    setMuted(getMutedTypes());
+  };
 
   const toggleSound = () => {
     primeNotificationSound();
@@ -88,6 +107,17 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
           >
             {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
+          <button
+            onClick={() => setShowSettings((s) => !s)}
+            title="تخصيص الإشعارات"
+            className={`p-2 rounded-lg transition-colors border ${
+              showSettings
+                ? 'bg-brand-50 text-brand-600 border-brand-200 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/30'
+                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'
+            }`}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
           {unreadCount > 0 && (
             <button
               onClick={() => markAllAsRead(user?.id || '')}
@@ -99,6 +129,32 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
           )}
         </div>
       </div>
+
+      {/* Settings: mute per type */}
+      {showSettings && (
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/30">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">كتم صوت أنواع معيّنة</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {MUTE_TYPES.map((t) => {
+              const isMuted = muted.includes(t.key);
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => toggleMuted(t.key)}
+                  className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-sm border transition-colors ${
+                    isMuted
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 truncate"><span>{t.icon}</span>{t.label}</span>
+                  {isMuted ? <VolumeX className="h-3.5 w-3.5 shrink-0" /> : <Volume2 className="h-3.5 w-3.5 shrink-0 text-brand-500" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* List */}
       <div className="max-h-[70vh] sm:max-h-96 overflow-y-auto">
