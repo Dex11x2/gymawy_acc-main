@@ -150,14 +150,24 @@ if (process.env.NODE_ENV !== 'production') {
   app.post('/api/debug/create-users-for-employees', createUserForEmployee);
 }
 
+// تتبّع المستخدمين المتصلين (حضور أونلاين حقيقي)
+const onlineUsers = new Map<string, number>(); // userId -> عدد الاتصالات (تبويبات/أجهزة)
+const socketToUser = new Map<string, string>(); // socketId -> userId
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('✅ User connected:', socket.id);
 
   // Join user to their room
   socket.on('join', ({ userId }) => {
+    if (!userId) return;
     socket.join(`user-${userId}`);
-    console.log(`✅ User ${userId} connected to Gemawi Pro`);
+    socketToUser.set(socket.id, String(userId));
+    onlineUsers.set(String(userId), (onlineUsers.get(String(userId)) || 0) + 1);
+    // ابعت الحالة الحالية للمنضمّ الجديد، وأبلغ الجميع بالتحديث
+    socket.emit('presence', Array.from(onlineUsers.keys()));
+    io.emit('presence', Array.from(onlineUsers.keys()));
+    console.log(`✅ User ${userId} online (${onlineUsers.size} total)`);
   });
 
   // Handle sending messages
@@ -173,6 +183,11 @@ io.on('connection', (socket) => {
     });
     
     console.log(`✅ Message sent to user-${receiverId}`);
+  });
+
+  // طلب قائمة المتصلين الحالية
+  socket.on('get-presence', () => {
+    socket.emit('presence', Array.from(onlineUsers.keys()));
   });
 
   // Handle typing indicator
@@ -195,6 +210,14 @@ io.on('connection', (socket) => {
 
   // Handle disconnect
   socket.on('disconnect', () => {
+    const userId = socketToUser.get(socket.id);
+    if (userId) {
+      socketToUser.delete(socket.id);
+      const remaining = (onlineUsers.get(userId) || 1) - 1;
+      if (remaining <= 0) onlineUsers.delete(userId);
+      else onlineUsers.set(userId, remaining);
+      io.emit('presence', Array.from(onlineUsers.keys()));
+    }
     console.log('❌ User disconnected:', socket.id);
   });
 });

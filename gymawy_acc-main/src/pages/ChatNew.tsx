@@ -65,6 +65,10 @@ const Chat: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [typingFrom, setTypingFrom] = useState<string | null>(null);
+  const typingTimer = React.useRef<any>(null);
+  const lastTypingEmit = React.useRef<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -156,9 +160,24 @@ const Chat: React.FC = () => {
         }
       };
 
+      const handlePresence = (ids: string[]) => {
+        setOnlineIds(new Set((ids || []).map((x) => String(x))));
+      };
+      const handleUserTyping = (data: any) => {
+        setTypingFrom(String(data?.userId));
+        if (typingTimer.current) clearTimeout(typingTimer.current);
+        typingTimer.current = setTimeout(() => setTypingFrom(null), 2500);
+      };
+
       socket.on('new-message', handleNewMessage);
+      socket.on('presence', handlePresence);
+      socket.on('user-typing', handleUserTyping);
+      socket.emit('get-presence');
+
       return () => {
         socket.off('new-message', handleNewMessage);
+        socket.off('presence', handlePresence);
+        socket.off('user-typing', handleUserTyping);
       };
     }
   }, [user]);
@@ -346,7 +365,7 @@ const Chat: React.FC = () => {
                       {chatUser.initials}
                     </div>
                   )}
-                  {chatUser.isOnline && (
+                  {onlineIds.has(String(chatUser.id)) && (
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}
                 </div>
@@ -394,15 +413,19 @@ const Chat: React.FC = () => {
                       {selectedUser.initials}
                     </div>
                   )}
-                  {selectedUser.isOnline && (
+                  {onlineIds.has(String(selectedUser.id)) && (
                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg leading-tight truncate">{selectedUser.name}</h3>
-                  <p className="text-brand-600 dark:text-brand-400 text-xs font-medium">
-                    {selectedUser.isOnline ? 'Online' : 'Offline'}
-                  </p>
+                  {typingFrom && String(typingFrom) === String(selectedUser.id) ? (
+                    <p className="text-success-600 dark:text-success-400 text-xs font-medium animate-pulse">بيكتب الآن...</p>
+                  ) : (
+                    <p className="text-brand-600 dark:text-brand-400 text-xs font-medium">
+                      {onlineIds.has(String(selectedUser.id)) ? 'متصل الآن' : 'غير متصل'}
+                    </p>
+                  )}
                 </div>
               </div>
               
@@ -512,8 +535,16 @@ const Chat: React.FC = () => {
                 <input
                   type="text"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type something here..."
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    const socket = (window as any).socket;
+                    const now = Date.now();
+                    if (socket && selectedUser && now - lastTypingEmit.current > 900) {
+                      lastTypingEmit.current = now;
+                      socket.emit('typing', { receiverId: selectedUser.id, senderId: user?.id });
+                    }
+                  }}
+                  placeholder="اكتب رسالتك هنا..."
                   className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none px-2 py-2"
                 />
 
