@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { softDeletePlugin } from '../utils/softDelete';
 
 export interface IAdvance extends Document {
   companyId?: mongoose.Types.ObjectId;
@@ -31,5 +32,7 @@ const AdvanceSchema = new Schema({
   remainingAmount: { type: Number },
   notes: { type: String }
 }, { timestamps: true });
+
+AdvanceSchema.plugin(softDeletePlugin);
 
 export default mongoose.model<IAdvance>('Advance', AdvanceSchema);

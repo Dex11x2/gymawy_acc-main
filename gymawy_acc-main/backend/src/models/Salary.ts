@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { softDeletePlugin } from '../utils/softDelete';
 
 export interface ISalary extends Document {
   employeeId: mongoose.Types.ObjectId;
@@ -191,5 +192,7 @@ SalarySchema.pre('save', function(next) {
 
   next();
 });
+
+SalarySchema.plugin(softDeletePlugin);
 
 export default mongoose.model<ISalary>('Salary', SalarySchema);

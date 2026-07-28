@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { softDeletePlugin } from '../utils/softDelete';
 
 export interface IExpense extends Document {
   companyId?: mongoose.Types.ObjectId;
@@ -32,5 +33,7 @@ ExpenseSchema.index({ companyId: 1, date: -1 });
 ExpenseSchema.index({ departmentId: 1, date: -1 });
 ExpenseSchema.index({ category: 1 });
 ExpenseSchema.index({ createdBy: 1 });
+
+ExpenseSchema.plugin(softDeletePlugin);
 
 export default mongoose.model<IExpense>('Expense', ExpenseSchema);

@@ -55,7 +55,7 @@ export const update = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
-    const custody = await Custody.findByIdAndDelete(req.params.id);
+    const custody = await Custody.findByIdAndUpdate(req.params.id, { isDeleted: true, deletedAt: new Date() }, { new: true });
     if (!custody) return res.status(404).json({ message: 'Custody not found' });
     res.json({ message: 'Custody deleted' });
   } catch (error: any) {

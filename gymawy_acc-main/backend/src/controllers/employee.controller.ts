@@ -253,15 +253,19 @@ export const remove = async (req: Request, res: Response) => {
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
     
     const User = (await import('../models/User')).default;
-    
+    const Task = (await import('../models/Task')).default;
+
     // حذف حساب User المرتبط
     if (employee.userId) {
       await User.findByIdAndDelete(employee.userId);
     }
-    
+
+    // تنظيف المهام المرتبطة بالموظف (تشغيلية) عشان مايفضلش مراجع معلّقة تكسر العرض
+    await Task.deleteMany({ $or: [{ assignedTo: employee._id }, { assignedBy: employee._id }] });
+
     // حذف Employee
     await Employee.findByIdAndDelete(req.params.id);
-    
+
     res.json({ message: 'Employee and user account deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

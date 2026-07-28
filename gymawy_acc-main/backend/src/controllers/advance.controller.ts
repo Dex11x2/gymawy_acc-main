@@ -69,7 +69,7 @@ export const update = async (req: any, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
-    const advance = await Advance.findByIdAndDelete(req.params.id);
+    const advance = await Advance.findByIdAndUpdate(req.params.id, { isDeleted: true, deletedAt: new Date() }, { new: true });
     if (!advance) return res.status(404).json({ message: 'Advance not found' });
     res.json({ message: 'Advance deleted' });
   } catch (error: any) {

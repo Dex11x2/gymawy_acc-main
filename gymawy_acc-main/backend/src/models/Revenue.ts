@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { softDeletePlugin } from '../utils/softDelete';
 
 export interface IRevenue extends Document {
   companyId?: mongoose.Types.ObjectId;
@@ -32,5 +33,7 @@ RevenueSchema.index({ companyId: 1, date: -1 });
 RevenueSchema.index({ departmentId: 1, date: -1 });
 RevenueSchema.index({ category: 1 });
 RevenueSchema.index({ createdBy: 1 });
+
+RevenueSchema.plugin(softDeletePlugin);
 
 export default mongoose.model<IRevenue>('Revenue', RevenueSchema);

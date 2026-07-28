@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { softDeletePlugin } from '../utils/softDelete';
 
 export interface ICustody extends Document {
   companyId?: mongoose.Types.ObjectId;
@@ -25,5 +26,7 @@ const CustodySchema = new Schema({
   returnDate: { type: Date },
   notes: { type: String }
 }, { timestamps: true });
+
+CustodySchema.plugin(softDeletePlugin);
 
 export default mongoose.model<ICustody>('Custody', CustodySchema);

@@ -384,7 +384,7 @@ export const deleteSalary = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid salary ID' });
     }
 
-    const salary = await Salary.findByIdAndDelete(req.params.id);
+    const salary = await Salary.findByIdAndUpdate(req.params.id, { isDeleted: true, deletedAt: new Date() }, { new: true });
     if (!salary) {
       return res.status(404).json({ message: 'Salary record not found' });
     }

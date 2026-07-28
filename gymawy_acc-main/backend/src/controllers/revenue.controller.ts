@@ -50,7 +50,7 @@ export const update = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
-    const revenue = await Revenue.findByIdAndDelete(req.params.id);
+    const revenue = await Revenue.findByIdAndUpdate(req.params.id, { isDeleted: true, deletedAt: new Date() }, { new: true });
     if (!revenue) return res.status(404).json({ message: 'Revenue not found' });
     res.json({ message: 'Revenue deleted' });
   } catch (error: any) {

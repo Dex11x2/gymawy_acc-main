@@ -42,6 +42,13 @@ export const update = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
+    // امنع حذف القسم لو فيه موظفين مرتبطين بيه (عشان مايبقاش فيه موظفين بقسم محذوف)
+    const Employee = (await import('../models/Employee')).default;
+    const count = await Employee.countDocuments({ departmentId: req.params.id });
+    if (count > 0) {
+      return res.status(400).json({ message: `لا يمكن حذف القسم — يوجد ${count} موظف مرتبط به. انقل الموظفين أولاً.` });
+    }
+
     const department = await Department.findByIdAndDelete(req.params.id);
     if (!department) return res.status(404).json({ message: 'Department not found' });
     res.json({ message: 'Department deleted' });

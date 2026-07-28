@@ -84,7 +84,7 @@ export const update = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
-    const expense = await Expense.findByIdAndDelete(req.params.id);
+    const expense = await Expense.findByIdAndUpdate(req.params.id, { isDeleted: true, deletedAt: new Date() }, { new: true });
     if (!expense) return res.status(404).json({ message: 'Expense not found' });
     res.json({ message: 'Expense deleted' });
   } catch (error: any) {
