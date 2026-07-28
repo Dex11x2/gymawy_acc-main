@@ -5,8 +5,8 @@ import api from '../services/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Search, Send, Paperclip, Smile, FileText, X,
-  MoreVertical, Users, Phone, Video, Info, MoreHorizontal,
-  Image as ImageIcon, Mic, ChevronDown, Bell, Calendar, Mail
+  MoreVertical, Users, MoreHorizontal, ArrowRight,
+  Image as ImageIcon, Mic, ChevronDown, Bell
 } from 'lucide-react';
 
 interface Message {
@@ -66,7 +66,6 @@ const Chat: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showProfileSidebar, setShowProfileSidebar] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +126,8 @@ const Chat: React.FC = () => {
           });
 
         setAllUsers(users);
-        if (users.length > 0 && !selectedUser) {
+        // على الموبايل نسيب القايمة تبان الأول؛ الاختيار التلقائي للشاشات الكبيرة بس
+        if (users.length > 0 && !selectedUser && window.innerWidth >= 640) {
           setSelectedUser(users[0]);
         }
       } catch (error) {
@@ -302,16 +302,16 @@ const Chat: React.FC = () => {
     <div className="h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white flex font-outfit">
       
       {/* Left Sidebar - Active Conversations */}
-      <div className="w-20 sm:w-64 lg:w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="p-3 sm:p-6">
-          <div className="hidden sm:flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Active Conversations</h2>
+      <div className={`${selectedUser ? 'hidden sm:flex' : 'flex'} w-full sm:w-64 lg:w-80 flex-shrink-0 flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900`}>
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">المحادثات</h2>
             <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium px-2 py-1 rounded-full">
               {activeConversationsCount}
             </span>
           </div>
 
-          <div className="relative mb-2 hidden sm:block">
+          <div className="relative mb-2 block">
             <input
               type="text"
               placeholder="Search..."
@@ -332,7 +332,7 @@ const Chat: React.FC = () => {
               <div
                 key={chatUser.id || idx}
                 onClick={() => setSelectedUser(chatUser)}
-                className={`p-2 sm:p-3 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-center sm:justify-start gap-3 ${
+                className={`p-3 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-start gap-3 ${
                   isSelected 
                     ? 'bg-brand-50 dark:bg-brand-600/10 border border-brand-200 dark:border-brand-500/20' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -350,7 +350,7 @@ const Chat: React.FC = () => {
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-success-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0 hidden sm:block">
+                <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-0.5">
                     <h3 className={`font-semibold text-sm truncate ${isSelected ? 'text-brand-900 dark:text-white' : 'text-gray-900 dark:text-gray-200'}`}>
                       {chatUser.name}
@@ -372,12 +372,20 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 relative">
+      <div className={`${selectedUser ? 'flex' : 'hidden sm:flex'} flex-1 flex-col bg-white dark:bg-gray-900 relative`}>
         {selectedUser ? (
           <>
             {/* Chat Header */}
             <div className="h-20 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-3 sm:px-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                {/* زر الرجوع لقائمة الموظفين (موبايل) */}
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="sm:hidden p-2 -ms-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                  aria-label="رجوع"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
                 <div className="relative">
                   {selectedUser.avatar ? (
                     <img src={selectedUser.avatar} alt={selectedUser.name} className="w-10 h-10 rounded-full object-cover shadow-md" />
@@ -399,19 +407,7 @@ const Chat: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
-                <button className="hidden sm:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                  <Phone className="w-5 h-5" />
-                </button>
-                <button className="hidden sm:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                  <Video className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => setShowProfileSidebar(!showProfileSidebar)}
-                  className={`p-2 rounded-full transition-colors ${showProfileSidebar ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                >
-                  <Info className="w-5 h-5" />
-                </button>
-                <button 
+                <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="p-2 text-gray-500 dark:text-gray-400 hover:text-error-500 hover:bg-error-50 dark:hover:bg-error-500/10 rounded-full transition-colors"
                 >
@@ -568,64 +564,6 @@ const Chat: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Right Sidebar - Profile */}
-      {showProfileSidebar && selectedUser && (
-        <div className="w-80 flex-shrink-0 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hidden xl:flex flex-col animate-slideInRight">
-          <div className="p-8 flex flex-col items-center text-center border-b border-gray-200 dark:border-gray-800">
-            <div className="relative mb-6">
-              <div className={`w-28 h-28 rounded-full ${selectedUser.avatarColor} flex items-center justify-center text-white font-bold text-4xl shadow-2xl ring-4 ring-white dark:ring-gray-800`}>
-                {selectedUser.initials}
-              </div>
-              {selectedUser.isOnline && (
-                <div className="absolute bottom-1 right-1 w-5 h-5 bg-success-500 border-4 border-white dark:border-gray-900 rounded-full"></div>
-              )}
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{selectedUser.name}</h2>
-            <p className="text-brand-600 dark:text-brand-400 text-sm font-medium mb-4">{selectedUser.role || 'UI/UX Designer'}</p>
-            
-            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque so ferme.
-            </p>
-
-            <div className="flex items-center gap-2 mb-6">
-              <button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg font-medium text-sm transition-colors shadow-lg shadow-brand-500/20">
-                Follow
-              </button>
-              <button className="p-2.5 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex gap-4 justify-center w-full">
-               {/* Social Icons Mockup */}
-               {['facebook', 'twitter', 'linkedin', 'globe'].map((icon, i) => (
-                 <div key={i} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-white hover:bg-brand-600 transition-all cursor-pointer">
-                   <span className="text-xs">•</span>
-                 </div>
-               ))}
-            </div>
-          </div>
-
-          <div className="p-6 space-y-6">
-             <div className="space-y-4">
-               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Contact Information</h4>
-               <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                 <Mail className="w-4 h-4 text-gray-500" />
-                 <span className="truncate">{selectedUser.email}</span>
-               </div>
-               <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                 <Phone className="w-4 h-4 text-gray-500" />
-                 <span>+1 234 567 890</span>
-               </div>
-               <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                 <Calendar className="w-4 h-4 text-gray-500" />
-                 <span>Joined Nov 2023</span>
-               </div>
-             </div>
-          </div>
-        </div>
-      )}
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
