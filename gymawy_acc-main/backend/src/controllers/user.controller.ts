@@ -25,9 +25,34 @@ export const getUserById = async (req: Request, res: Response) => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
+// الحقول اللي يقدر الموظف يعدّلها في حسابه هو (self-service)
+const SELF_EDITABLE = ['name', 'email', 'phone', 'bio', 'position', 'birthDate', 'avatar'];
+
+export const updateUser = async (req: any, res: Response) => {
   try {
-    const update: any = { ...req.body };
+    const targetId = req.params.id;
+    const isSelf = String(req.user?.id || req.user?._id) === String(targetId);
+    const isManager = MANAGER_ROLES.includes(req.user?.role);
+
+    // موظف عادي يقدر يعدّل حسابه هو فقط، ومدير يقدر يعدّل الجميع
+    if (!isSelf && !isManager) {
+      return res.status(403).json({ message: 'غير مصرح لك بتعديل هذا المستخدم' });
+    }
+
+    let update: any = { ...req.body };
+
+    // غير المدير: نسمح فقط بالحقول الشخصية الآمنة (نمنع role/permissions/isActive/companyId...)
+    if (!isManager) {
+      const filtered: any = {};
+      for (const k of SELF_EDITABLE) if (k in update) filtered[k] = update[k];
+      update = filtered;
+    }
+
+    // حتى المدير: منح دور "dev" مقصور على dev فقط
+    if (update.role === 'dev' && req.user?.role !== 'dev') {
+      delete update.role;
+    }
 
     // Normalise per-user permission override: empty array means clear override
     if ('permissions' in update) {

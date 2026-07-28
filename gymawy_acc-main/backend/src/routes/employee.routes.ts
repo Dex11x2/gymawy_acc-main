@@ -1,18 +1,21 @@
 import express from 'express';
 import * as controller from '../controllers/employee.controller';
-import { protect } from '../middleware/auth.middleware';
+import { protect, authorize } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
+// إدارة الموظفين والوصول لكلمات المرور مقصورة على المدراء
+const managers = authorize('dev', 'general_manager', 'administrative_manager');
+
 router.use(protect);
 router.get('/', controller.getAll);
-router.post('/', controller.create);
 router.get('/:id', controller.getById);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
-router.patch('/:id/password', controller.updatePassword);
-router.patch('/:id/toggle-active', controller.toggleActive);
-router.patch('/:id/permissions', controller.updatePermissions);
-router.get('/:id/plain-password', controller.getPlainPassword);
+router.post('/', managers, controller.create);
+router.put('/:id', managers, controller.update);
+router.delete('/:id', managers, controller.remove);
+router.patch('/:id/password', managers, controller.updatePassword);
+router.patch('/:id/toggle-active', managers, controller.toggleActive);
+router.patch('/:id/permissions', managers, controller.updatePermissions);
+router.get('/:id/plain-password', managers, controller.getPlainPassword);
 
 export default router;
