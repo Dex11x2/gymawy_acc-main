@@ -147,7 +147,13 @@ export const update = async (req: any, res: Response) => {
       changeSummaries.push(d);
     }
 
-    const updateOps: any = { ...req.body };
+    // لازم نستخدم $set مع $push في نفس الوقت (MongoDB مابيسمحش بخلط حقول عادية مع مؤثّرات)
+    const fields = { ...req.body };
+    delete (fields as any)._id;
+    delete (fields as any).id;
+    delete (fields as any).activities;
+    delete (fields as any).seenBy;
+    const updateOps: any = { $set: fields };
     if (activities.length) updateOps.$push = { activities: { $each: activities } };
 
     const task = await Task.findByIdAndUpdate(req.params.id, updateOps, { new: true }).populate('assignedTo assignedBy');
