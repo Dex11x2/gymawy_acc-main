@@ -70,12 +70,28 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
   const notifications = getUserNotifications(user?.id || '');
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const handleNotificationClick = async (notification: any) => {
+  // وجهة احتياطية حسب النوع لو الإشعار مالوش link
+  const typeToPath: Record<string, string> = {
+    message: '/chat',
+    task: '/tasks',
+    post: '/posts',
+    complaint: '/complaints',
+    review: '/reviews',
+    attendance: '/attendance-map',
+    payment: '/my-space',
+    payroll: '/my-space',
+    video_review: '/video-reviews',
+    general: '/my-space',
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    const target = notification.link || typeToPath[notification.type] || '';
+    // علّم كمقروء بدون تعطيل التنقّل (مش بننتظر الطلب)
     if (!notification.isRead) {
-      try { await markAsRead(notification.id); } catch { /* ignore */ }
+      markAsRead(notification.id).catch(() => { /* ignore */ });
     }
     onClose();
-    if (notification.link) navigate(notification.link);
+    if (target) navigate(target);
   };
 
   if (!isOpen) return null;
@@ -198,7 +214,7 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2 break-words">{notification.message}</p>
                   <div className="flex items-center gap-1 mt-1 text-xs text-gray-400 dark:text-gray-500">
                     <span>{timeAgo(notification.createdAt)}</span>
-                    {notification.link && (
+                    {(notification.link || typeToPath[notification.type]) && (
                       <>
                         <span>·</span>
                         <span className="inline-flex items-center gap-0.5 text-brand-500 dark:text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity">
