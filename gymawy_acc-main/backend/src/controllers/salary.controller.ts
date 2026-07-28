@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Salary from '../models/Salary';
 import Employee from '../models/Employee';
 import { ensureId } from '../utils/mongooseHelper';
+import { notifyPayrollPayment, resolveToUserId } from '../services/notification.service';
 
 // Get all salaries for a specific month/year
 export const getSalaries = async (req: any, res: Response) => {
@@ -334,6 +335,15 @@ export const togglePaymentStatus = async (req: Request, res: Response) => {
     }
 
     await salary.save();
+
+    // إشعار الموظف عند صرف الراتب
+    if (salary.isPaid) {
+      const targetUserId = await resolveToUserId(salary.employeeId);
+      if (targetUserId) {
+        await notifyPayrollPayment(targetUserId, salary.netSalary, String(salary.month), (req as any).app.get('io'));
+      }
+    }
+
     res.json(salary);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

@@ -1,5 +1,24 @@
 import { Request, Response } from 'express';
 import Advance from '../models/Advance';
+import { createNotification, resolveToUserId } from '../services/notification.service';
+
+const advanceStatusText: Record<string, string> = {
+  approved: '✅ تمت الموافقة على طلب السلفة',
+  rejected: '❌ تم رفض طلب السلفة',
+  paid: '💰 تم صرف السلفة'
+};
+
+const notifyAdvanceEmployee = async (advance: any, status: string, io: any) => {
+  const targetUserId = await resolveToUserId(advance.employeeId);
+  if (!targetUserId) return;
+  await createNotification({
+    userId: targetUserId,
+    title: advanceStatusText[status] || 'تحديث على طلب السلفة',
+    message: `طلب سلفة بقيمة ${advance.amount} ${advance.currency || 'ج.م'} — ${status === 'approved' ? 'مقبول' : status === 'rejected' ? 'مرفوض' : 'تم الصرف'}`,
+    type: 'payment',
+    link: '/custody'
+  }, io);
+};
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -35,10 +54,13 @@ export const getById = async (req: Request, res: Response) => {
   }
 };
 
-export const update = async (req: Request, res: Response) => {
+export const update = async (req: any, res: Response) => {
   try {
     const advance = await Advance.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!advance) return res.status(404).json({ message: 'Advance not found' });
+    if (req.body.status && ['approved', 'rejected', 'paid'].includes(req.body.status)) {
+      await notifyAdvanceEmployee(advance, req.body.status, req.app.get('io'));
+    }
     res.json(advance);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -63,6 +85,7 @@ export const approve = async (req: any, res: Response) => {
       { new: true }
     );
     if (!advance) return res.status(404).json({ message: 'Advance not found' });
+    await notifyAdvanceEmployee(advance, 'approved', req.app.get('io'));
     res.json(advance);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

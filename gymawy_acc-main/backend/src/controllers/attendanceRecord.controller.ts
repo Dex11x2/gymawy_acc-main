@@ -2,6 +2,7 @@ import { Response } from "express";
 import AttendanceRecord from "../models/AttendanceRecord";
 import Branch from "../models/Branch";
 import User from "../models/User";
+import { notifyAttendanceIssue } from "../services/notification.service";
 
 function calculateDistance(
   lat1: number,
@@ -655,6 +656,15 @@ export const updateRecord = async (req: any, res: Response) => {
     record.permissionGrantedAt = new Date(); // NEW: تاريخ منح الإذن
 
     await record.save();
+
+    // إشعار الموظف عند تطبيق خصم على حضوره
+    if (req.body.deduction && req.body.deduction.amount) {
+      await notifyAttendanceIssue(
+        record.userId.toString(),
+        `تم تطبيق خصم بقيمة ${req.body.deduction.amount} على سجل حضورك${req.body.deduction.reason ? ` — السبب: ${req.body.deduction.reason}` : ''}`,
+        req.app.get('io')
+      );
+    }
 
     res.json({ success: true, message: "تم التحديث بنجاح", data: record });
   } catch (error: any) {

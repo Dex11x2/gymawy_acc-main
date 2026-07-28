@@ -12,7 +12,6 @@ export { default as Review, IReview } from './Review';
 export { default as Custody, ICustody } from './Custody';
 export { default as Attendance, IAttendance } from './Attendance';
 export { default as Communication, ICommunication } from './Communication';
-export { default as Chat, IChat } from './Chat';
 export { default as Subscription, ISubscription } from './Subscription';
 export { default as PasswordReset, IPasswordReset } from './PasswordReset';
 export { default as User, IUser } from './User';

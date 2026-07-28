@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Custody from '../models/Custody';
+import { createNotification, resolveToUserId } from '../services/notification.service';
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -13,6 +14,19 @@ export const getAll = async (req: any, res: Response) => {
 export const create = async (req: any, res: Response) => {
   try {
     const custody = await Custody.create(req.body);
+
+    // إشعار الموظف بإسناد عهدة جديدة
+    const targetUserId = await resolveToUserId(custody.employeeId);
+    if (targetUserId) {
+      await createNotification({
+        userId: targetUserId,
+        title: '📦 عهدة جديدة',
+        message: `تم إسناد عهدة إليك: ${custody.itemName}`,
+        type: 'general',
+        link: '/custody'
+      }, req.app.get('io'));
+    }
+
     res.status(201).json(custody);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

@@ -34,6 +34,7 @@ import AttendanceWithMap from './pages/AttendanceWithMap';
 import RolePermissionsManager from './pages/RolePermissionsManager';
 import Occasions from './pages/Occasions';
 import OccasionsPopup from './components/OccasionsPopup';
+import Protected from './components/Protected';
 import ReportSettings from './pages/ReportSettings';
 import AdsFundingReport from './pages/AdsFundingReport';
 import MediaSalaries from './pages/MediaSalaries';
@@ -105,37 +106,37 @@ const App: React.FC = () => {
         {isAuthenticated && (
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardWrapper />} />
-            <Route path="/instructions" element={<Instructions />} />
+            <Route path="/instructions" element={<Protected module="instructions"><Instructions /></Protected>} />
 
-            <Route path="/departments" element={<Departments />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/payroll" element={<Salaries />} />
-            <Route path="/salaries" element={<Salaries />} />
-            <Route path="/revenues" element={<Revenues />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/custody" element={<CustodyAndAdvances />} />
+            <Route path="/departments" element={<Protected module="departments"><Departments /></Protected>} />
+            <Route path="/employees" element={<Protected module="employees"><Employees /></Protected>} />
+            <Route path="/payroll" element={<Protected module="salaries"><Salaries /></Protected>} />
+            <Route path="/salaries" element={<Protected module="salaries"><Salaries /></Protected>} />
+            <Route path="/revenues" element={<Protected module="revenues"><Revenues /></Protected>} />
+            <Route path="/expenses" element={<Protected module="expenses"><Expenses /></Protected>} />
+            <Route path="/custody" element={<Protected module="custody"><CustodyAndAdvances /></Protected>} />
             <Route path="/chat" element={<Chat />} />
-            <Route path="/posts" element={<Posts />} />
-            <Route path="/content-calendar" element={<ContentCalendar />} />
-            <Route path="/content-calendar/:monthId" element={<CalendarMonth />} />
-            <Route path="/video-reviews" element={<VideoReviews />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/dev-tasks" element={<DevTasks />} />
-            <Route path="/password-management" element={<PasswordManagement />} />
+            <Route path="/posts" element={<Protected module="posts"><Posts /></Protected>} />
+            <Route path="/content-calendar" element={<Protected module="content_calendar"><ContentCalendar /></Protected>} />
+            <Route path="/content-calendar/:monthId" element={<Protected module="content_calendar"><CalendarMonth /></Protected>} />
+            <Route path="/video-reviews" element={<Protected module="video_reviews"><VideoReviews /></Protected>} />
+            <Route path="/reports" element={<Protected module="reports"><Reports /></Protected>} />
+            <Route path="/tasks" element={<Protected module="tasks"><Tasks /></Protected>} />
+            <Route path="/dev-tasks" element={<Protected module="dev_tasks"><DevTasks /></Protected>} />
+            <Route path="/password-management" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><PasswordManagement /></Protected>} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
-            <Route path="/complaints" element={<Complaints />} />
-            <Route path="/attendance-system" element={<AttendanceSystem />} />
-            <Route path="/reviews" element={<EmployeeReviews />} />
-            <Route path="/role-permissions" element={<RolePermissionsManager />} />
-            <Route path="/branches" element={<Branches />} />
-            <Route path="/attendance-management" element={<AttendanceManagement />} />
+            <Route path="/complaints" element={<Protected module="complaints"><Complaints /></Protected>} />
+            <Route path="/attendance-system" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><AttendanceSystem /></Protected>} />
+            <Route path="/reviews" element={<Protected module="reviews"><EmployeeReviews /></Protected>} />
+            <Route path="/role-permissions" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><RolePermissionsManager /></Protected>} />
+            <Route path="/branches" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><Branches /></Protected>} />
+            <Route path="/attendance-management" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><AttendanceManagement /></Protected>} />
             <Route path="/attendance-map" element={<AttendanceWithMap />} />
-            <Route path="/occasions" element={<Occasions />} />
-            <Route path="/report-settings" element={<ReportSettings />} />
-            <Route path="/ads-funding" element={<AdsFundingReport />} />
-            <Route path="/media-salaries" element={<MediaSalaries />} />
+            <Route path="/occasions" element={<Protected module="occasions"><Occasions /></Protected>} />
+            <Route path="/report-settings" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><ReportSettings /></Protected>} />
+            <Route path="/ads-funding" element={<Protected module="ads_funding"><AdsFundingReport /></Protected>} />
+            <Route path="/media-salaries" element={<Protected module="media_salaries"><MediaSalaries /></Protected>} />
             <Route path="/test" element={<TestConnection />} />
 
           </Route>
