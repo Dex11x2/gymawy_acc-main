@@ -10,6 +10,7 @@ import Logo from './Logo';
 import { NotificationPanel } from './NotificationPanel';
 import { autoBackup } from '../utils/backup';
 import { playNotificationSound, primeNotificationSound, isTypeMuted } from '../utils/notificationSound';
+import { attentionCount, empIdOf } from '../utils/tasks';
 import { iconComponents, IconName } from './Icons';
 import { Avatar, Button } from './ui';
 import {
@@ -37,7 +38,7 @@ const Layout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { language, theme, setLanguage, toggleTheme } = useSettingsStore();
   const { getUnreadCount, loadNotifications, addNotification } = useNotificationStore();
-  const { loadRevenues, loadExpenses, loadDepartments, loadEmployees, loadDevTasks, devTasks } = useDataStore();
+  const { loadRevenues, loadExpenses, loadDepartments, loadEmployees, loadDevTasks, devTasks, tasks, loadTasks, employees } = useDataStore();
   const location = useLocation();
   const t = translations[language];
   const unreadCount = getUnreadCount(user?.id || '');
@@ -84,7 +85,8 @@ const Layout: React.FC = () => {
             loadDepartments(),
             loadEmployees(),
             loadNotifications(),
-            loadDevTasks()
+            loadDevTasks(),
+            loadTasks()
           ]);
         } catch (error) {
           console.error('Error loading data:', error);
@@ -152,6 +154,7 @@ const Layout: React.FC = () => {
       const onNotification = (n: any) => {
         if (!isTypeMuted(n?.type)) playNotificationSound();
         loadNotifications();
+        if (n?.type === 'task') loadTasks();
       };
       const onNewMessage = () => {
         if (!isTypeMuted('message')) playNotificationSound();
@@ -239,6 +242,10 @@ const Layout: React.FC = () => {
     return modulePermission.actions.includes('view') || modulePermission.actions.includes('read');
   };
 
+  // عدد المهام اللي تحتاج انتباه الموظف (واردة معلّقة أو فيها تغيير جديد) — للشارة الجانبية
+  const myEmpId = (employees || []).find((e: any) => empIdOf(e.userId) === String(user?.id))?.id;
+  const tasksBadge = attentionCount(tasks || [], myEmpId, user?.id);
+
   const menuItems = [
     { id: 'my-space' as IconName, name: language === 'ar' ? 'مساحتي' : 'My Space', path: '/my-space', show: true },
     { id: 'dashboard' as IconName, name: t.dashboard, path: '/dashboard', show: user?.role === 'dev' || hasPermission('dashboard') },
@@ -253,7 +260,7 @@ const Layout: React.FC = () => {
     { id: 'revenues' as IconName, name: t.revenues, path: '/revenues', show: user?.role === 'dev' || hasPermission('revenues') },
     { id: 'expenses' as IconName, name: t.expenses, path: '/expenses', show: user?.role === 'dev' || hasPermission('expenses') },
     { id: 'custody' as IconName, name: language === 'ar' ? 'العهد والسلف' : 'Custody & Advances', path: '/custody', show: user?.role === 'dev' || hasPermission('custody') },
-    { id: 'tasks' as IconName, name: t.tasks, path: '/tasks', show: user?.role === 'dev' || hasPermission('tasks') },
+    { id: 'tasks' as IconName, name: t.tasks, path: '/tasks', show: user?.role === 'dev' || hasPermission('tasks'), badge: tasksBadge },
     { id: 'dev-tasks' as IconName, name: language === 'ar' ? 'مهام التطوير' : 'Dev Tasks', path: '/dev-tasks', show: user?.role === 'dev' || hasPermission('dev_tasks') },
     { id: 'chat' as IconName, name: language === 'ar' ? 'المحادثات' : 'Chat', path: '/chat', show: true },
     { id: 'posts' as IconName, name: language === 'ar' ? 'المنشورات' : 'Posts', path: '/posts', show: user?.role === 'dev' || hasPermission('posts') },
@@ -331,6 +338,7 @@ const Layout: React.FC = () => {
             {menuItems.map((item) => {
               const IconComponent = iconComponents[item.id];
               const isActive = location.pathname === item.path;
+              const badge = (item as any).badge as number | undefined;
 
               return (
                 <li key={item.id}>
@@ -352,13 +360,27 @@ const Layout: React.FC = () => {
                       <span className={`absolute ${language === 'ar' ? 'right-0' : 'left-0'} top-1/2 -translate-y-1/2 h-8 w-1 rounded-full bg-brand-500`} />
                     )}
 
-                    <IconComponent
-                      className={`flex-shrink-0 transition-transform duration-200 ${!isActive ? 'group-hover:scale-110' : ''}`}
-                      size={20}
-                    />
+                    <span className="relative flex-shrink-0">
+                      <IconComponent
+                        className={`transition-transform duration-200 ${!isActive ? 'group-hover:scale-110' : ''}`}
+                        size={20}
+                      />
+                      {/* نقطة تنبيه على الأيقونة عند طيّ القائمة */}
+                      {!!badge && badge > 0 && !(sidebarOpen || isMobile) && (
+                        <span className="absolute -top-1.5 -end-1.5 min-w-[16px] h-4 px-1 rounded-full bg-error-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-gray-800">
+                          {badge > 9 ? '9+' : badge}
+                        </span>
+                      )}
+                    </span>
 
                     {(sidebarOpen || isMobile) && (
-                      <span className="text-sm">{item.name}</span>
+                      <span className="text-sm flex-1">{item.name}</span>
+                    )}
+                    {/* شارة العدد عند فتح القائمة */}
+                    {!!badge && badge > 0 && (sidebarOpen || isMobile) && (
+                      <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-error-500 text-white text-xs font-bold flex items-center justify-center animate-pulse">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
                     )}
                   </Link>
                 </li>

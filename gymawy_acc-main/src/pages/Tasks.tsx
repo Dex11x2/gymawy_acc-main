@@ -5,13 +5,14 @@ import { useNotificationStore } from '../store/notificationStore';
 import { useDataStore } from '../store/dataStore';
 import { usePermissions } from '../hooks/usePermissions';
 import { Task } from '../types';
+import { hasUnseenTask, isTaskOverdue, sortTasksByUrgency, attentionCount } from '../utils/tasks';
 import Modal from '../components/Modal';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Checkbox, Table } from '../components/ui';
 import {
   ClipboardList, Clock, RefreshCw, CheckCircle, Send,
   Bell, MessageSquare, Edit2, Trash2, Calendar,
-  User, Users, Inbox, Activity
+  User, Users, Inbox, Activity, ChevronLeft, AlertTriangle
 } from 'lucide-react';
 
 const Tasks: React.FC = () => {
@@ -265,17 +266,8 @@ const Tasks: React.FC = () => {
     }
   };
 
-  // هل فيه تغيير جديد لم يشاهده المستخدم الحالي؟ (يفعّل الجرس)
-  const hasUnseen = (task: Task): boolean => {
-    const acts = task.activities || [];
-    if (!acts.length) return false;
-    const last = acts[acts.length - 1];
-    if (String(last.byId) === String(user?.id)) return false; // آخر تغيير من عنده هو
-    const lastTime = new Date(last.createdAt as any).getTime();
-    const seen = (task.seenBy || []).find((s: any) => String(s.userId) === String(user?.id));
-    if (!seen) return true;
-    return lastTime > new Date(seen.seenAt as any).getTime();
-  };
+  // هل فيه تغيير جديد لم يشاهده المستخدم الحالي؟ (يفعّل الجرس) — منطق مشترك
+  const hasUnseen = (task: Task): boolean => hasUnseenTask(task, user?.id);
 
   const openTaskDetails = (task: Task) => {
     setSelectedTask(task);
@@ -328,7 +320,12 @@ const Tasks: React.FC = () => {
   const filteredTasks = (activeTab === 'my' ? myTasksList : sentTasks).filter(task =>
     statusFilter === 'all' ? true : task.status === statusFilter
   );
-  const myTasks = filteredTasks;
+  // ترتيب حسب الإلحاح: الجديد وغير المشاهد والمتأخر فوق
+  const myTasks = sortTasksByUrgency(filteredTasks, user?.id);
+
+  // عدّادات الإبراز
+  const attentionMy = attentionCount(myTasksList, currentEmployee?.id, user?.id);
+  const updatedSent = sentTasks.filter(t => hasUnseen(t)).length;
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -380,6 +377,34 @@ const Tasks: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Attention banner */}
+      {attentionMy > 0 && (
+        <button
+          onClick={() => { setActiveTab('my'); setStatusFilter('all'); }}
+          className="w-full flex items-center gap-3 rounded-2xl border-2 border-warning-300 dark:border-warning-500/40 bg-warning-50 dark:bg-warning-500/10 px-5 py-4 text-start hover:bg-warning-100 dark:hover:bg-warning-500/15 transition-colors"
+        >
+          <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-warning-500 text-white shrink-0">
+            <Bell className="h-5 w-5" />
+            <span className="absolute inset-0 rounded-full bg-warning-500 animate-ping opacity-40" />
+          </span>
+          <div className="flex-1">
+            <p className="font-bold text-warning-800 dark:text-warning-300">
+              عندك {attentionMy} {attentionMy === 1 ? 'مهمة تحتاج ردّك' : 'مهام تحتاج ردّك'}
+            </p>
+            <p className="text-sm text-warning-700/80 dark:text-warning-400/80">اضغط لعرض المهام الواردة والرد عليها</p>
+          </div>
+          <ChevronLeft className="h-5 w-5 text-warning-600 dark:text-warning-400 shrink-0" />
+        </button>
+      )}
+      {activeTab === 'sent' && updatedSent > 0 && (
+        <div className="w-full flex items-center gap-3 rounded-2xl border-2 border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-500/10 px-5 py-3">
+          <RefreshCw className="h-5 w-5 text-brand-500 shrink-0" />
+          <p className="text-sm font-medium text-brand-700 dark:text-brand-300">
+            {updatedSent} من المهام اللي أرسلتها عليها ردّ/تحديث جديد
+          </p>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
@@ -518,10 +543,24 @@ const Tasks: React.FC = () => {
                       <Table.Cell className="font-medium text-gray-900 dark:text-gray-100">
                         <div className="flex items-center gap-3">
                           <div className={`w-2 h-8 rounded-full ${
-                            task.priority === 'high' ? 'bg-error-500' : 
+                            task.priority === 'high' ? 'bg-error-500' :
                             task.priority === 'medium' ? 'bg-warning-500' : 'bg-success-500'
                           }`}></div>
-                          {task.title}
+                          <div className="flex flex-col gap-1">
+                            <span>{task.title}</span>
+                            <div className="flex items-center gap-1.5">
+                              {hasUnseen(task) && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300 text-[11px] font-bold">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-warning-500 animate-pulse" /> جديد
+                                </span>
+                              )}
+                              {isTaskOverdue(task) && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-error-100 text-error-700 dark:bg-error-500/20 dark:text-error-300 text-[11px] font-bold">
+                                  <AlertTriangle className="h-3 w-3" /> متأخرة
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </Table.Cell>
                       <Table.Cell>
