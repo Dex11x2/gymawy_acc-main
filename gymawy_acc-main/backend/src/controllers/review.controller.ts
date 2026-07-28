@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Review from '../models/Review';
+import { notifyNewReview, resolveToUserId } from '../services/notification.service';
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -17,6 +18,13 @@ export const create = async (req: any, res: Response) => {
       companyId: req.user.companyId,
       reviewerId: req.user.id
     });
+
+    // إشعار للموظف اللي اتقيّم (بصوت لحظي)
+    const targetUserId = await resolveToUserId(review.employeeId);
+    if (targetUserId && targetUserId !== String(req.user.id)) {
+      await notifyNewReview(targetUserId, req.user.name || 'مقيّم', review.rating, req.app.get('io'));
+    }
+
     res.status(201).json(review);
   } catch (error: any) {
     res.status(400).json({ message: error.message });

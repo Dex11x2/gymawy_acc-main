@@ -1,5 +1,19 @@
 import Notification from '../models/Notification';
 import User from '../models/User';
+import Employee from '../models/Employee';
+
+// حوّل معرّف (موظف أو مستخدم) إلى معرّف مستخدم — الإشعارات بتستخدم معرّف المستخدم
+export const resolveToUserId = async (id: any): Promise<string | null> => {
+  if (!id) return null;
+  try {
+    const emp = await Employee.findById(id).select('userId');
+    if (emp?.userId) return (emp.userId as any).toString();
+    const user = await User.findById(id).select('_id');
+    return user ? (user._id as any).toString() : null;
+  } catch {
+    return null;
+  }
+};
 
 interface NotificationData {
   userId: string | string[];

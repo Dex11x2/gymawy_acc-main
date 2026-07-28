@@ -155,6 +155,7 @@ const Layout: React.FC = () => {
       };
       const onNewMessage = () => {
         playNotificationSound();
+        loadNotifications();
       };
 
       socket.on('notification', onNotification);

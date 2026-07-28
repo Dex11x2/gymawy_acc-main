@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import LeaveRequest from '../models/LeaveRequest';
 import Employee from '../models/Employee';
+import { notifyManagers, createNotification, resolveToUserId } from '../services/notification.service';
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -55,7 +56,16 @@ export const create = async (req: any, res: Response) => {
       companyId: req.user.companyId,
       status: 'pending'
     });
-    
+
+    // إشعار للمدراء بطلب الإجازة الجديد
+    await notifyManagers({
+      title: '🏖️ طلب إجازة جديد',
+      message: `${employee.name} قدّم طلب إجازة (${days} يوم)`,
+      type: 'general',
+      link: '/attendance-management',
+      companyId: req.user.companyId
+    }, req.app.get('io'));
+
     res.status(201).json(leaveRequest);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -100,7 +110,21 @@ export const updateStatus = async (req: any, res: Response) => {
         await employee.save();
       }
     }
-    
+
+    // إشعار الموظف بقرار طلب الإجازة
+    if (status === 'approved' || status === 'rejected') {
+      const targetUserId = await resolveToUserId(leaveRequest.employeeId);
+      if (targetUserId) {
+        await createNotification({
+          userId: targetUserId,
+          title: status === 'approved' ? '✅ تمت الموافقة على إجازتك' : '❌ تم رفض طلب إجازتك',
+          message: `طلب إجازتك (${leaveRequest.days} يوم) — ${status === 'approved' ? 'مقبول' : 'مرفوض'}${reviewNotes ? `: ${reviewNotes}` : ''}`,
+          type: 'attendance',
+          link: '/attendance-map'
+        }, req.app.get('io'));
+      }
+    }
+
     res.json(leaveRequest);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

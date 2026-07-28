@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Post from '../models/Post';
+import { notifyNewPost, createNotification } from '../services/notification.service';
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -28,10 +29,15 @@ export const getAll = async (req: any, res: Response) => {
 
 export const create = async (req: any, res: Response) => {
   try {
-    const post = await Post.create({ 
-      ...req.body, 
-      authorId: req.user.id 
+    const post = await Post.create({
+      ...req.body,
+      authorId: req.user.id
     });
+
+    // إشعار لكل من لديه صلاحية المنشورات (بصوت لحظي)
+    const preview = (req.body.content || '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'منشور جديد';
+    await notifyNewPost(preview, req.user.name || 'زميل', req.user.companyId, req.app.get('io'));
+
     res.status(201).json(post);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -97,10 +103,10 @@ export const addComment = async (req: any, res: Response) => {
     if (!post) return res.status(404).json({ message: 'Post not found' });
     
     const User = (await import('../models/User')).default;
-    const user = await User.findById(req.user.userId);
-    
+    const user = await User.findById(req.user.id || req.user.userId);
+
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
     const comment = {
       id: Date.now().toString(),
       authorId: user._id as any,
@@ -108,10 +114,24 @@ export const addComment = async (req: any, res: Response) => {
       content,
       createdAt: new Date()
     } as any;
-    
+
     post.comments.push(comment);
     await post.save();
-    
+
+    // إشعار لصاحب المنشور لما حد يعلّق (لو مش هو نفسه)
+    const authorId = (post.authorId as any)?.toString();
+    if (authorId && authorId !== (user._id as any).toString()) {
+      await createNotification({
+        userId: authorId,
+        title: '💬 تعليق جديد على منشورك',
+        message: `${user.name}: ${content}`,
+        type: 'post',
+        link: '/posts',
+        senderId: (user._id as any).toString(),
+        senderName: user.name
+      }, req.app.get('io'));
+    }
+
     res.json(post);
   } catch (error: any) {
     console.error('Add comment error:', error);

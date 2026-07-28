@@ -1,5 +1,13 @@
 import { Response } from 'express';
 import Complaint from '../models/Complaint';
+import { notifyNewComplaint, createNotification } from '../services/notification.service';
+
+const statusLabel: Record<string, string> = {
+  'pending': 'قيد الانتظار',
+  'in-progress': 'قيد المعالجة',
+  'resolved': 'تم الحل ✅',
+  'rejected': 'مرفوضة ❌'
+};
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -23,6 +31,10 @@ export const create = async (req: any, res: Response) => {
       userId: req.user.id,
       userName: req.user.name
     });
+
+    // إشعار للمدراء بالشكوى/المقترح الجديد
+    await notifyNewComplaint(complaint.title, req.user.name || 'موظف', req.user.companyId, req.app.get('io'));
+
     res.status(201).json(complaint);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -31,7 +43,20 @@ export const create = async (req: any, res: Response) => {
 
 export const update = async (req: any, res: Response) => {
   try {
+    const before = await Complaint.findById(req.params.id);
     const complaint = await Complaint.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+    // إشعار صاحب الشكوى عند تغيّر الحالة أو الرد
+    if (complaint && before && req.body.status && req.body.status !== before.status) {
+      await createNotification({
+        userId: complaint.userId.toString(),
+        title: '📣 تحديث على شكواك',
+        message: `«${complaint.title}» — الحالة: ${statusLabel[req.body.status] || req.body.status}`,
+        type: 'complaint',
+        link: '/complaints'
+      }, req.app.get('io'));
+    }
+
     res.json(complaint);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
