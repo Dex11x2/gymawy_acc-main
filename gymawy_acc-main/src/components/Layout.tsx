@@ -68,6 +68,9 @@ const Layout: React.FC = () => {
       '/dev-tasks': 'جيماوي - مهام التطوير'
     };
     document.title = pageTitles[location.pathname] || 'جيماوي - نظام المحاسبة';
+    // اقفل اللوحات المنبثقة عند تغيير الصفحة
+    setShowNotifications(false);
+    setShowUserDropdown(false);
   }, [location.pathname]);
 
   // Load data on mount
@@ -218,6 +221,9 @@ const Layout: React.FC = () => {
       const target = e.target as HTMLElement;
       if (!target.closest('.user-dropdown-container')) {
         setShowUserDropdown(false);
+      }
+      if (!target.closest('.notification-container')) {
+        setShowNotifications(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -422,7 +428,7 @@ const Layout: React.FC = () => {
             </button>
 
             {/* Notifications */}
-            <div className="relative">
+            <div className="relative notification-container">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="notification-btn"

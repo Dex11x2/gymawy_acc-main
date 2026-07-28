@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Task from '../models/Task';
 import Employee from '../models/Employee';
 import User from '../models/User';
-import { createNotification, notifyNewTask } from '../services/notification.service';
+import { createNotification } from '../services/notification.service';
 
 // حوّل معرّف (موظف أو مستخدم) إلى معرّف مستخدم — الإشعارات والغرف بتستخدم معرّف المستخدم
 const employeeToUserId = async (id: any): Promise<string | null> => {
@@ -67,12 +67,20 @@ export const create = async (req: any, res: Response) => {
 
     const populatedTask = await Task.findById(task._id).populate('assignedTo assignedBy');
 
-    // إشعار للموظف المكلّف
+    // إشعار للموظف المكلّف (رابط يفتح المهمة نفسها)
     if (task.assignedTo) {
       const assignedToUserId = await employeeToUserId(task.assignedTo);
       const io = req.app.get('io');
       if (assignedToUserId && assignedToUserId !== actorId) {
-        await notifyNewTask(assignedToUserId, task.title, actorName, actorId, io);
+        await createNotification({
+          userId: assignedToUserId,
+          title: '✅ مهمة جديدة',
+          message: `كلّفك ${actorName} بمهمة: ${task.title}`,
+          type: 'task',
+          link: `/tasks?task=${task._id}`,
+          senderId: actorId,
+          senderName: actorName
+        }, io);
       }
     }
 
@@ -160,7 +168,7 @@ export const update = async (req: any, res: Response) => {
           title: `📋 تحديث على «${oldTask.title}»`,
           message: `${actorName}: ${changeSummaries.join('، ')}`,
           type: 'task',
-          link: '/tasks',
+          link: `/tasks?task=${oldTask._id}`,
           senderId: actorId,
           senderName: actorName
         }, io);
@@ -218,7 +226,7 @@ export const addComment = async (req: any, res: Response) => {
         title: `💬 تعليق جديد من ${actorName}`,
         message: `علّق على «${task.title}»: ${content}`,
         type: 'task',
-        link: '/tasks',
+        link: `/tasks?task=${task._id}`,
         senderId: actorId,
         senderName: actorName
       }, io);

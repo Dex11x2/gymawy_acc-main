@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useDataStore } from '../store/dataStore';
@@ -27,6 +28,7 @@ const Tasks: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'my' | 'sent'>('my');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (user) {
@@ -35,6 +37,22 @@ const Tasks: React.FC = () => {
       loadTasks();
     }
   }, [user, loadEmployees, loadDepartments, loadTasks]);
+
+  // فتح المهمة تلقائياً لما نيجي من إشعار (/tasks?task=<id>)
+  useEffect(() => {
+    const taskId = searchParams.get('task');
+    if (!taskId || !tasks.length) return;
+    const t = tasks.find((x) => String(x.id) === String(taskId));
+    if (t) {
+      setSelectedTask(t);
+      setShowTaskDetails(true);
+      if (hasUnseen(t)) markTaskSeen(t.id);
+      const next = new URLSearchParams(searchParams);
+      next.delete('task');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, searchParams]);
 
   // Socket.IO listener for real-time comments and notifications
   useEffect(() => {
