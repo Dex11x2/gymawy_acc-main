@@ -139,10 +139,16 @@ const CalendarMonth: React.FC = () => {
 
   // Rows shown for the currently selected account tab (sorted by rowOrder so
   // duplicated rows stay next to their original).
+  const today = new Date();
   const visibleEntries = entries
     .filter((e) => e.account === selectedAccount)
-    .sort((a, b) => (a.rowOrder || 0) - (b.rowOrder || 0));
-  const today = new Date();
+    .sort((a, b) => {
+      // صف النهاردة يطلع أول القائمة عشان يبان للناس
+      const at = isSameDay(a.publishDate, today) ? 0 : 1;
+      const bt = isSameDay(b.publishDate, today) ? 0 : 1;
+      if (at !== bt) return at - bt;
+      return (a.rowOrder || 0) - (b.rowOrder || 0);
+    });
 
   const patchEntry = async (id: string, data: Partial<CalEntry>) => {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...data } : e)));
