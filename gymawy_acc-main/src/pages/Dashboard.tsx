@@ -80,12 +80,28 @@ const Dashboard: React.FC = () => {
       .reduce((sum, e) => sum + e.amount, 0),
   };
 
-  // حساب صافي الربح لكل عملة
+  // المرتجعات (إلغاء اشتراكات) — تُخصم من الإيرادات
+  const refundsByCurrency = {
+    EGP: currentMonthExpenses.filter((e: any) => e.currency === 'EGP' && e.type === 'refund').reduce((s, e) => s + e.amount, 0),
+    SAR: currentMonthExpenses.filter((e: any) => e.currency === 'SAR' && e.type === 'refund').reduce((s, e) => s + e.amount, 0),
+    USD: currentMonthExpenses.filter((e: any) => e.currency === 'USD' && e.type === 'refund').reduce((s, e) => s + e.amount, 0),
+    AED: currentMonthExpenses.filter((e: any) => e.currency === 'AED' && e.type === 'refund').reduce((s, e) => s + e.amount, 0),
+  };
+
+  // صافي الإيرادات = الإيرادات − المرتجعات
+  const netRevenueByCurrency = {
+    EGP: revenuesByCurrency.EGP - refundsByCurrency.EGP,
+    SAR: revenuesByCurrency.SAR - refundsByCurrency.SAR,
+    USD: revenuesByCurrency.USD - refundsByCurrency.USD,
+    AED: revenuesByCurrency.AED - refundsByCurrency.AED,
+  };
+
+  // حساب صافي الربح لكل عملة (بعد خصم المرتجعات والمصروفات التشغيلية)
   const netProfitByCurrency = {
-    EGP: revenuesByCurrency.EGP - operationalExpensesByCurrency.EGP,
-    SAR: revenuesByCurrency.SAR - operationalExpensesByCurrency.SAR,
-    USD: revenuesByCurrency.USD - operationalExpensesByCurrency.USD,
-    AED: revenuesByCurrency.AED - operationalExpensesByCurrency.AED,
+    EGP: netRevenueByCurrency.EGP - operationalExpensesByCurrency.EGP,
+    SAR: netRevenueByCurrency.SAR - operationalExpensesByCurrency.SAR,
+    USD: netRevenueByCurrency.USD - operationalExpensesByCurrency.USD,
+    AED: netRevenueByCurrency.AED - operationalExpensesByCurrency.AED,
   };
 
   // Helper functions

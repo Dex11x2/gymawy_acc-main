@@ -90,11 +90,25 @@ const Expenses: React.FC = () => {
     return expenseDate.getMonth() + 1 === selectedMonth && expenseDate.getFullYear() === selectedYear;
   });
 
+  // المرتجعات (عملاء ألغوا اشتراكهم) منفصلة عن المصروفات العادية
+  const regularExpenses = filteredExpenses.filter(e => e.type !== 'refund');
+  const refunds = filteredExpenses.filter((e: any) => e.type === 'refund');
+
   const expensesByCurrency = {
-    EGP: filteredExpenses.filter(e => e.currency === 'EGP').reduce((sum, e) => sum + e.amount, 0),
-    SAR: filteredExpenses.filter(e => e.currency === 'SAR').reduce((sum, e) => sum + e.amount, 0),
-    USD: filteredExpenses.filter(e => e.currency === 'USD').reduce((sum, e) => sum + e.amount, 0),
-    AED: filteredExpenses.filter(e => e.currency === 'AED').reduce((sum, e) => sum + e.amount, 0)
+    EGP: regularExpenses.filter(e => e.currency === 'EGP').reduce((sum, e) => sum + e.amount, 0),
+    SAR: regularExpenses.filter(e => e.currency === 'SAR').reduce((sum, e) => sum + e.amount, 0),
+    USD: regularExpenses.filter(e => e.currency === 'USD').reduce((sum, e) => sum + e.amount, 0),
+    AED: regularExpenses.filter(e => e.currency === 'AED').reduce((sum, e) => sum + e.amount, 0)
+  };
+
+  // إجماليات المرتجعات + توزيع نوع العميل
+  const refundsByCurrency = refunds.reduce((acc: Record<string, number>, e: any) => {
+    acc[e.currency] = (acc[e.currency] || 0) + e.amount; return acc;
+  }, {} as Record<string, number>);
+  const refundsByCustomerType = {
+    egyptian: refunds.filter((e: any) => e.customerType === 'egyptian').length,
+    saudi: refunds.filter((e: any) => e.customerType === 'saudi').length,
+    other: refunds.filter((e: any) => !e.customerType || e.customerType === 'other').length,
   };
 
   // Calculate operational and capital expenses
@@ -172,6 +186,74 @@ const Expenses: React.FC = () => {
     }
     setDeleteId(id);
     setShowDeleteDialog(true);
+  };
+
+  // ===== المرتجعات (عملاء ألغوا اشتراكهم) =====
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [editingRefund, setEditingRefund] = useState<any>(null);
+  const [refundForm, setRefundForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    amount: '' as number | '',
+    currency: 'EGP' as Currency,
+    customerType: 'egyptian' as 'egyptian' | 'saudi' | 'other',
+    refundReason: '',
+    date: formatLocalDate(new Date()),
+  });
+
+  const customerTypeLabel = (t?: string) => t === 'saudi' ? 'سعودي' : t === 'egyptian' ? 'مصري' : 'أخرى';
+
+  const openAddRefund = () => {
+    if (!canCreateExpense) { setToast({message: 'ليس لديك صلاحية لإضافة مرتجعات', type: 'error', isOpen: true}); return; }
+    setEditingRefund(null);
+    setRefundForm({ customerName: '', customerPhone: '', amount: '', currency: 'EGP', customerType: 'egyptian', refundReason: '', date: formatLocalDate(new Date()) });
+    setShowRefundModal(true);
+  };
+
+  const handleEditRefund = (r: any) => {
+    setEditingRefund(r);
+    setRefundForm({
+      customerName: r.customerName || '', customerPhone: r.customerPhone || '',
+      amount: r.amount ?? '', currency: (r.currency || 'EGP') as Currency,
+      customerType: (r.customerType || 'other'), refundReason: r.refundReason || '',
+      date: formatLocalDate(new Date(r.date)),
+    });
+    setShowRefundModal(true);
+  };
+
+  const handleRefundSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingRefund ? !canEditExpense : !canCreateExpense) {
+      setToast({message: 'ليس لديك صلاحية', type: 'error', isOpen: true});
+      return;
+    }
+    const [yy, mm, dd] = refundForm.date.split('-').map(Number);
+    const localDate = new Date(yy, (mm || 1) - 1, dd || 1);
+    const data: any = {
+      title: refundForm.customerName || 'مرتجع',
+      amount: Number(refundForm.amount) || 0,
+      currency: refundForm.currency,
+      date: localDate,
+      category: 'مرتجع اشتراك',
+      type: 'refund',
+      customerName: refundForm.customerName,
+      customerPhone: refundForm.customerPhone,
+      customerType: refundForm.customerType,
+      refundReason: refundForm.refundReason,
+      description: refundForm.refundReason,
+    };
+    if (user?.companyId) data.companyId = user.companyId;
+    if (user?.id) data.createdBy = user.id;
+    try {
+      if (editingRefund) { await updateExpense(editingRefund.id, data); setToast({message: 'تم تحديث المرتجع', type: 'success', isOpen: true}); }
+      else { await addExpense(data); setToast({message: 'تم تسجيل المرتجع', type: 'success', isOpen: true}); }
+      setSelectedMonth(localDate.getMonth() + 1);
+      setSelectedYear(localDate.getFullYear());
+      setShowRefundModal(false);
+      setEditingRefund(null);
+    } catch (error: any) {
+      setToast({message: error?.response?.data?.message || 'حدث خطأ', type: 'error', isOpen: true});
+    }
   };
 
   const confirmDelete = () => {
@@ -320,6 +402,16 @@ const Expenses: React.FC = () => {
               إضافة مصروف
             </Button>
           )}
+          {canCreateExpense && (
+            <Button
+              onClick={openAddRefund}
+              variant="outline"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              إضافة مرتجع
+            </Button>
+          )}
         </div>
       </div>
 
@@ -404,7 +496,7 @@ const Expenses: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">عدد المصروفات</p>
-                <p className="text-2xl font-bold text-gray-800 dark:text-white mt-2">{filteredExpenses.length}</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-white mt-2">{regularExpenses.length}</p>
               </div>
               <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-400">
                 <BarChart3 className="w-6 h-6" />
@@ -477,7 +569,7 @@ const Expenses: React.FC = () => {
           </div>
         </Card.Header>
         <Card.Body className="p-0">
-          {filteredExpenses.length === 0 ? (
+          {regularExpenses.length === 0 ? (
             <div className="p-12 text-center">
               <TrendingDown className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
               <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">لا توجد مصروفات</h3>
@@ -502,7 +594,7 @@ const Expenses: React.FC = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredExpenses.map((expense) => (
+                {regularExpenses.map((expense) => (
                   <Table.Row key={expense.id}>
                     <Table.Cell>
                       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
@@ -568,6 +660,85 @@ const Expenses: React.FC = () => {
                             عرض فقط
                           </span>
                         )}
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* المرتجعات — العملاء الملغيين اشتراكهم */}
+      <Card className="border-t-4 border-t-error-500">
+        <Card.Header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">المرتجعات — إلغاء الاشتراكات</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">تتخصم من الإيرادات · عدد العملاء الملغيين هذا الشهر: {refunds.length}</p>
+          </div>
+          {canCreateExpense && (
+            <Button onClick={openAddRefund} variant="outline" size="sm" className="gap-2">
+              <Plus className="w-4 h-4" /> إضافة مرتجع
+            </Button>
+          )}
+        </Card.Header>
+        <Card.Body className="p-0">
+          {/* عدّادات */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="rounded-xl bg-error-50 dark:bg-error-500/10 p-3 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي العملاء الملغيين</p>
+              <p className="text-2xl font-bold text-error-600 dark:text-error-400">{refunds.length}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">🇪🇬 مصري</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white">{refundsByCustomerType.egyptian}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">🇸🇦 سعودي</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white">{refundsByCustomerType.saudi}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">أخرى</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white">{refundsByCustomerType.other}</p>
+            </div>
+          </div>
+          {Object.keys(refundsByCurrency).length > 0 && (
+            <div className="flex flex-wrap gap-4 px-4 py-2 text-sm border-b border-gray-100 dark:border-gray-800">
+              <span className="text-gray-500 dark:text-gray-400">إجمالي المرتجعات:</span>
+              {Object.entries(refundsByCurrency).map(([curr, total]) => (
+                <span key={curr} className="font-bold text-error-600 dark:text-error-400">{total.toLocaleString()} {getCurrencySymbol(curr)}</span>
+              ))}
+            </div>
+          )}
+          {refunds.length === 0 ? (
+            <div className="p-10 text-center text-gray-500 dark:text-gray-400">لا توجد مرتجعات هذا الشهر</div>
+          ) : (
+            <Table>
+              <Table.Header>
+                <Table.Row>
+                  <Table.Head>العميل</Table.Head>
+                  <Table.Head>التليفون</Table.Head>
+                  <Table.Head>النوع</Table.Head>
+                  <Table.Head>سبب الإلغاء</Table.Head>
+                  <Table.Head>المبلغ</Table.Head>
+                  <Table.Head>التاريخ</Table.Head>
+                  <Table.Head>الإجراءات</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {refunds.map((r: any) => (
+                  <Table.Row key={r.id}>
+                    <Table.Cell><span className="font-medium text-gray-900 dark:text-white">{r.customerName || '-'}</span></Table.Cell>
+                    <Table.Cell><span className="text-gray-600 dark:text-gray-400" dir="ltr">{r.customerPhone || '-'}</span></Table.Cell>
+                    <Table.Cell><Badge variant={r.customerType === 'saudi' ? 'primary' : r.customerType === 'egyptian' ? 'success' : 'light'}>{customerTypeLabel(r.customerType)}</Badge></Table.Cell>
+                    <Table.Cell><span className="text-gray-600 dark:text-gray-400">{r.refundReason || '-'}</span></Table.Cell>
+                    <Table.Cell><span className="text-lg font-semibold text-error-600 dark:text-error-400">{r.amount.toLocaleString()} {getCurrencySymbol(r.currency)}</span></Table.Cell>
+                    <Table.Cell><span className="text-gray-600 dark:text-gray-400">{new Date(r.date).toLocaleDateString('ar-EG')}</span></Table.Cell>
+                    <Table.Cell>
+                      <div className="flex items-center gap-2">
+                        {canEditExpense && <button onClick={() => handleEditRefund(r)} className="p-2 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-500 hover:text-brand-600 transition-colors" title="تعديل"><Edit2 className="w-4 h-4" /></button>}
+                        {canDeleteExpense && <button onClick={() => handleDelete(r.id)} className="p-2 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 text-gray-500 hover:text-error-600 transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>}
                       </div>
                     </Table.Cell>
                   </Table.Row>
@@ -740,6 +911,87 @@ const Expenses: React.FC = () => {
             )}
           </div>
         </div>
+      </Modal>
+
+      {/* Refund Modal */}
+      <Modal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        title={editingRefund ? 'تعديل مرتجع' : 'إضافة مرتجع (إلغاء اشتراك)'}
+        size="lg"
+      >
+        <form onSubmit={handleRefundSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="اسم العميل *"
+              value={refundForm.customerName}
+              onChange={(e) => setRefundForm({ ...refundForm, customerName: e.target.value })}
+              placeholder="اسم العميل"
+              required
+            />
+            <Input
+              label="رقم التليفون"
+              value={refundForm.customerPhone}
+              onChange={(e) => setRefundForm({ ...refundForm, customerPhone: e.target.value })}
+              placeholder="01xxxxxxxxx"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع العميل *</label>
+              <select
+                value={refundForm.customerType}
+                onChange={(e) => setRefundForm({ ...refundForm, customerType: e.target.value as any })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                required
+              >
+                <option value="egyptian">مصري</option>
+                <option value="saudi">سعودي</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العملة *</label>
+              <select
+                value={refundForm.currency}
+                onChange={(e) => setRefundForm({ ...refundForm, currency: e.target.value as Currency })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                required
+              >
+                <option value="EGP">الجنيه المصري (EGP)</option>
+                <option value="SAR">الريال السعودي (SAR)</option>
+                <option value="USD">الدولار الأمريكي (USD)</option>
+                <option value="AED">الدرهم الإماراتي (AED)</option>
+              </select>
+            </div>
+            <Input
+              type="number"
+              label="المبلغ المُرتجع *"
+              value={refundForm.amount}
+              onChange={(e) => setRefundForm({ ...refundForm, amount: e.target.value === '' ? '' : Number(e.target.value) })}
+              placeholder="0"
+              required
+              min="0"
+              step="0.01"
+            />
+            <Input
+              type="date"
+              label="التاريخ *"
+              value={refundForm.date}
+              onChange={(e) => setRefundForm({ ...refundForm, date: e.target.value })}
+              required
+            />
+          </div>
+          <Textarea
+            label="سبب إلغاء الاشتراك"
+            value={refundForm.refundReason}
+            onChange={(e) => setRefundForm({ ...refundForm, refundReason: e.target.value })}
+            placeholder="مثال: عدم الرضا / أسباب مالية / انتقل لمكان آخر ..."
+            rows={2}
+          />
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" variant="primary" className="flex-1">{editingRefund ? 'حفظ التعديل' : 'تسجيل المرتجع'}</Button>
+            <Button type="button" variant="outline" onClick={() => setShowRefundModal(false)} className="flex-1">إلغاء</Button>
+          </div>
+        </form>
       </Modal>
 
       {/* Delete Confirmation */}

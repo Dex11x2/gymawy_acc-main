@@ -11,7 +11,12 @@ export interface IExpense extends Document {
   date: Date;
   description: string;
   notes?: string;
-  type: 'operational' | 'capital';
+  type: 'operational' | 'capital' | 'refund';
+  // حقول المرتجعات (عملاء ألغوا اشتراكهم)
+  customerName?: string;
+  customerPhone?: string;
+  customerType?: 'egyptian' | 'saudi' | 'other';
+  refundReason?: string;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -25,7 +30,11 @@ const ExpenseSchema = new Schema({
   date: { type: Date, default: Date.now },
   description: { type: String },
   notes: { type: String },
-  type: { type: String, enum: ['operational', 'capital'], default: 'operational' },
+  type: { type: String, enum: ['operational', 'capital', 'refund'], default: 'operational' },
+  customerName: { type: String },
+  customerPhone: { type: String },
+  customerType: { type: String, enum: ['egyptian', 'saudi', 'other'] },
+  refundReason: { type: String },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false }
 }, { timestamps: true });
 
