@@ -4,6 +4,22 @@ import api from '../services/api';
 import { usePermissions } from '../hooks/usePermissions';
 import { calendarApi, CalMonth, CalEntry, CalAccount, personId } from '../services/contentCalendar';
 import { CONTENT_TYPES, PLATFORMS, CalSelectOption, findOption, MONTH_ICON_COLORS } from '../config/contentCalendar';
+
+// يوم راحة = صف فاضي: نمسح كل الحقول
+const REST_CLEARED = {
+  title: '',
+  videoLink: '',
+  platforms: [] as string[],
+  publishDate: null as any,
+  script: '',
+  assigneeId: null as any,
+  editorId: null as any,
+  collaboration: '',
+  uploadDeadline: '',
+  filmed: false,
+  done: false,
+  scheduled: false,
+};
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
@@ -163,20 +179,23 @@ const CalendarMonth: React.FC = () => {
   const saveEditor = async () => {
     if (!editing) return;
     try {
-      const payload: Record<string, any> = {
-        title: draft.title,
-        contentType: draft.contentType,
-        publishDate: draft.publishDate,
-        videoLink: draft.videoLink,
-        platforms: draft.platforms,
-        assigneeId: personId(draft.assigneeId) || null,
-        collaboration: draft.collaboration,
-        filmed: draft.filmed,
-        done: draft.done,
-        scheduled: draft.scheduled,
-        script: draft.script,
-        isRest: draft.contentType === 'rest',
-      };
+      // يوم راحة = فاضي: نشيل كل الحقول ونسيبه باهت
+      const payload: Record<string, any> = draft.contentType === 'rest'
+        ? { ...REST_CLEARED, contentType: 'rest', isRest: true }
+        : {
+            title: draft.title,
+            contentType: draft.contentType,
+            publishDate: draft.publishDate,
+            videoLink: draft.videoLink,
+            platforms: draft.platforms,
+            assigneeId: personId(draft.assigneeId) || null,
+            collaboration: draft.collaboration,
+            filmed: draft.filmed,
+            done: draft.done,
+            scheduled: draft.scheduled,
+            script: draft.script,
+            isRest: false,
+          };
       const updated = await calendarApi.updateEntry(editing.id, payload);
       setEntries((prev) => prev.map((e) => (e.id === editing.id ? updated : e)));
       setEditing(null);
@@ -499,7 +518,12 @@ const CalendarMonth: React.FC = () => {
                     {canEdit ? (
                       <select
                         value={e.contentType || ''}
-                        onChange={(ev) => patchEntry(e.id, { contentType: ev.target.value, isRest: ev.target.value === 'rest' })}
+                        onChange={(ev) => {
+                          const v = ev.target.value;
+                          patchEntry(e.id, v === 'rest'
+                            ? { ...REST_CLEARED, contentType: 'rest', isRest: true }
+                            : { contentType: v, isRest: false });
+                        }}
                         className="cursor-pointer rounded-md bg-transparent px-1 py-0.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-brand-400"
                         style={{ color: findOption(CONTENT_TYPES, e.contentType)?.color }}
                       >
