@@ -110,6 +110,10 @@ export const addStep = async (req: AuthRequest, res: Response) => {
     if (review.status === 'approved') return res.status(400).json({ message: 'المراجعة معتمدة بالفعل' });
 
     const kind = req.body.kind === 'edit_request' ? 'edit_request' : 'revision';
+    // طلب التعديل قرار المدير — الموظف بيرفع نسخ (revision) بس
+    if (kind === 'edit_request' && !isManager(req)) {
+      return res.status(403).json({ message: 'طلب التعديل متاح للمدير فقط' });
+    }
     const link = (req.body.link || '').trim();
     const note = (req.body.note || '').trim();
     if (kind === 'revision' && !link) return res.status(400).json({ message: 'لينك النسخة مطلوب' });
@@ -172,11 +176,10 @@ export const approve = async (req: AuthRequest, res: Response) => {
     const review = await VideoReview.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'المراجعة غير موجودة' });
 
-    // Only managers or someone currently asked to review can approve.
-    const me = String(req.user!.userId);
-    const isCurrentReviewer = (review.currentMentionIds || []).some((id) => String(id) === me);
-    if (!isManager(req) && !isCurrentReviewer) {
-      return res.status(403).json({ message: 'الاعتماد متاح للمدير أو أحد المُراجِعين الحاليين فقط' });
+    // Approval is a manager decision only — the employee just uploads versions
+    // and sends them back for review.
+    if (!isManager(req)) {
+      return res.status(403).json({ message: 'الاعتماد متاح للمدير فقط' });
     }
 
     const entryId = req.body.entryId;

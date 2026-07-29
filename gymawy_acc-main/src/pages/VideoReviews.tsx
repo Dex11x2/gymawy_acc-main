@@ -199,7 +199,8 @@ const VideoReviews: React.FC = () => {
   }
 
   const shown = filter === 'all' ? reviews : reviews.filter((r) => r.status === filter);
-  const canApprove = !!open && open.status !== 'approved' && (isManager || (open.currentMentionIds || []).some((m) => personId(m) === user?.id));
+  // الاعتماد وطلب التعديل قرار المدير فقط — الموظف بيرفع نسخ ويبعتها للمراجعة بس
+  const canApprove = !!open && open.status !== 'approved' && isManager;
   const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white';
 
   return (
@@ -328,9 +329,11 @@ const VideoReviews: React.FC = () => {
                     <button onClick={() => setStepForm({ kind: 'revision', link: '', note: '', mentionIds: [] })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
                       <Film className="h-4 w-4" /> رفع نسخة/تعديل
                     </button>
-                    <button onClick={() => setStepForm({ kind: 'edit_request', link: '', note: '', mentionIds: [] })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
-                      <MessageSquarePlus className="h-4 w-4" /> طلب تعديل
-                    </button>
+                    {isManager && (
+                      <button onClick={() => setStepForm({ kind: 'edit_request', link: '', note: '', mentionIds: [] })} className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
+                        <MessageSquarePlus className="h-4 w-4" /> طلب تعديل
+                      </button>
+                    )}
                     {canApprove && (
                       <button onClick={openApprove} className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
                         <CheckCircle2 className="h-4 w-4" /> اعتماد (Approve)
