@@ -92,7 +92,12 @@ const CalendarMonth: React.FC = () => {
       setMonth(monthsData.find((m) => m.id === monthId) || null);
       setEntries(entriesData);
       setAccounts(accountsData);
-      setSelectedAccount((prev) => (prev && accountsData.some((a) => a.key === prev) ? prev : accountsData[0]?.key || ''));
+      setSelectedAccount((prev) => {
+        if (prev && accountsData.some((a) => a.key === prev)) return prev;
+        // الحساب الافتراضي: يوسف اشرف إن وُجد، وإلا أول حساب
+        const preferred = accountsData.find((a) => a.key === 'youssef_ashraf' || a.name === 'يوسف اشرف');
+        return preferred?.key || accountsData[0]?.key || '';
+      });
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل التحميل', 'error');
     } finally {
