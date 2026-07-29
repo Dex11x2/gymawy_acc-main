@@ -178,6 +178,7 @@ export const approve = async (req: AuthRequest, res: Response) => {
 
     // Approval is a manager decision only — the employee just uploads versions
     // and sends them back for review.
+    const me = String(req.user!.userId);
     if (!isManager(req)) {
       return res.status(403).json({ message: 'الاعتماد متاح للمدير فقط' });
     }
