@@ -52,6 +52,7 @@ const VideoReviews: React.FC = () => {
 
   const [reviews, setReviews] = useState<VideoReview[]>([]);
   const [users, setUsers] = useState<UserOpt[]>([]);
+  const [mentionable, setMentionable] = useState<UserOpt[]>([]);
   const [accounts, setAccounts] = useState<CalAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
@@ -92,6 +93,12 @@ const VideoReviews: React.FC = () => {
       const list = Array.isArray(res.data) ? res.data : res.data?.users || [];
       setUsers(list.map((u: any) => ({ id: u.id || u._id, name: u.name })).filter((u: UserOpt) => u.id && u.name));
     } catch { /* optional */ }
+    // المنشن مقصور على اللي معاهم صلاحية على صفحة مراجعة الفيديوهات
+    try {
+      const res = await api.get('/video-reviews/mentionable');
+      const list = Array.isArray(res.data) ? res.data : [];
+      setMentionable(list.map((u: any) => ({ id: u.id || u._id, name: u.name })).filter((u: UserOpt) => u.id && u.name));
+    } catch { /* falls back to empty list */ }
   };
 
   useEffect(() => {
@@ -349,7 +356,8 @@ const VideoReviews: React.FC = () => {
                     <textarea className={inputCls} rows={3} placeholder={stepForm.kind === 'revision' ? 'وصف اللي اتعمل (اختياري)' : 'اكتب التعديل المطلوب بالتفصيل'} value={stepForm.note} onChange={(e) => setStepForm({ ...stepForm, note: e.target.value })} />
                     <div>
                       <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">منشن (تقدر تختار أكتر من واحد)</label>
-                      <UserMultiSelect users={users} selected={stepForm.mentionIds} onChange={(ids) => setStepForm({ ...stepForm, mentionIds: ids })} />
+                      <UserMultiSelect users={mentionable} selected={stepForm.mentionIds} onChange={(ids) => setStepForm({ ...stepForm, mentionIds: ids })} />
+                      <p className="mt-1 text-xs text-gray-400">لو مبعتش منشن لحد، النسخة هتتبعت تلقائيًا للمدير العام</p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={handleAddStep} className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"><Send className="h-4 w-4" /> إرسال</button>
@@ -381,7 +389,7 @@ const VideoReviews: React.FC = () => {
           <textarea className={inputCls} rows={2} placeholder="ملاحظة (اختياري)" value={createForm.note} onChange={(e) => setCreateForm({ ...createForm, note: e.target.value })} />
           <div>
             <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">منشن للمراجِعين (تقدر تختار أكتر من واحد)</label>
-            <UserMultiSelect users={users} selected={createForm.mentionIds} onChange={(ids) => setCreateForm({ ...createForm, mentionIds: ids })} />
+            <UserMultiSelect users={mentionable} selected={createForm.mentionIds} onChange={(ids) => setCreateForm({ ...createForm, mentionIds: ids })} />
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={handleCreate} className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">إنشاء</button>

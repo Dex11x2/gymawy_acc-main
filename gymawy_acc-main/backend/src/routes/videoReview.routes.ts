@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/', controller.getReviews);
+router.get('/mentionable', controller.getMentionable);
 router.post('/', controller.createReview);
 router.post('/:id/steps', controller.addStep);
 router.post('/:id/seen', controller.markSeen);

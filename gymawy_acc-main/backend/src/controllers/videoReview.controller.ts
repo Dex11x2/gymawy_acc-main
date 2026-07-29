@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import VideoReview from '../models/VideoReview';
 import CalendarEntry from '../models/CalendarEntry';
+import User from '../models/User';
+import { computePermissions } from '../utils/permissions.util';
 import { createNotification } from '../services/notification.service';
 
 const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
@@ -102,6 +104,29 @@ export const createReview = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Only people who can open the video-reviews page may be mentioned.
+export const getMentionable = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!can(req, 'view')) return res.status(403).json({ message: 'ليس لديك صلاحية' });
+    const users = await User.find({ isActive: true }).select('name role roleId permissions avatar').lean();
+    const out: any[] = [];
+    for (const u of users as any[]) {
+      if (MANAGER_ROLES.includes(u.role)) {
+        out.push({ id: u._id, name: u.name, avatar: u.avatar, role: u.role });
+        continue;
+      }
+      const perms = await computePermissions(u.roleId, u.permissions);
+      const mod = (perms || []).find((p: any) => p.module === 'video_reviews');
+      if (mod && (mod.actions.includes('view') || mod.actions.includes('read'))) {
+        out.push({ id: u._id, name: u.name, avatar: u.avatar, role: u.role });
+      }
+    }
+    res.json(out);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const addStep = async (req: AuthRequest, res: Response) => {
   try {
     if (!can(req, 'edit')) return res.status(403).json({ message: 'ليس لديك صلاحية' });
@@ -119,8 +144,15 @@ export const addStep = async (req: AuthRequest, res: Response) => {
     if (kind === 'revision' && !link) return res.status(400).json({ message: 'لينك النسخة مطلوب' });
     if (kind === 'edit_request' && !note) return res.status(400).json({ message: 'وصف التعديل المطلوب' });
 
-    const mentionIds: string[] = Array.isArray(req.body.mentionIds) ? req.body.mentionIds : [];
-    const mentionNames: string[] = Array.isArray(req.body.mentionNames) ? req.body.mentionNames : [];
+    let mentionIds: string[] = Array.isArray(req.body.mentionIds) ? req.body.mentionIds : [];
+    let mentionNames: string[] = Array.isArray(req.body.mentionNames) ? req.body.mentionNames : [];
+
+    // من غير منشن → النسخة تتبعت تلقائيًا للمدير العام: هو اللي يعتمد أو يطلب تعديل تاني
+    if (mentionIds.length === 0) {
+      const gms = await User.find({ role: 'general_manager', isActive: true }).select('name').lean();
+      mentionIds = gms.map((g: any) => String(g._id));
+      mentionNames = gms.map((g: any) => g.name);
+    }
 
     review.steps.push({
       id: genId(),
