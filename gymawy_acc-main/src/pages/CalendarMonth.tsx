@@ -244,6 +244,12 @@ const CalendarMonth: React.FC = () => {
   };
 
   const accColor = (key: string) => accounts.find((a) => a.key === key)?.color || '#3B82F6';
+  const accName = (key: string) => accounts.find((a) => a.key === key)?.name || key;
+
+  // بيانات النهاردة من كل الحسابات (شغل اليوم للتيم)
+  const todayEntries = entries
+    .filter((e) => isSameDay(e.publishDate, today))
+    .sort((a, b) => (a.account || '').localeCompare(b.account || ''));
 
   const handleGenerateDays = async () => {
     if (!monthId || !selectedAccount) return;
@@ -330,6 +336,42 @@ const CalendarMonth: React.FC = () => {
           </button>
         )}
       </div>
+
+      {/* شغل النهاردة — بيانات تاريخها اليوم من كل الحسابات */}
+      {todayEntries.length > 0 && (
+        <div className="mb-4 rounded-2xl border-2 border-brand-300 bg-gradient-to-l from-brand-50 to-transparent p-4 dark:border-brand-500/40 dark:from-brand-500/10">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-lg">📅</span>
+            <h2 className="font-bold text-gray-900 dark:text-white">شغل النهاردة</h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{weekdayAr(today.toISOString())} · {shortDate(today.toISOString())}</span>
+            <span className="ms-auto rounded-full bg-brand-500 px-2 py-0.5 text-xs font-bold text-white">{todayEntries.length}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {todayEntries.map((e) => {
+              const isRestE = e.contentType === 'rest';
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => { setSelectedAccount(e.account); openEditor(e); }}
+                  className={`flex flex-col gap-1.5 rounded-xl border p-3 text-start transition-colors hover:border-brand-400 ${isRestE ? 'border-gray-200 bg-gray-50 opacity-70 dark:border-gray-700 dark:bg-gray-800/40' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800/60'}`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: accColor(e.account) }} />
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{accName(e.account)}</span>
+                  </div>
+                  <span className="truncate font-semibold text-gray-900 dark:text-white">{isRestE ? 'راحة 😴' : (e.title || 'بدون عنوان')}</span>
+                  {!isRestE && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {e.contentType && <Tag opt={findOption(CONTENT_TYPES, e.contentType)} />}
+                      {(e.platforms || []).map((p) => <Tag key={p} opt={findOption(PLATFORMS, p)} />)}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Account selector (dropdown) */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
