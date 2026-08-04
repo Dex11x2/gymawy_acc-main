@@ -11,10 +11,14 @@ const init = () => {
   if (initialized) return;
   initialized = true;
   try {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+    let raw = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
     if (!raw) {
       console.log('ℹ️ FCM معطّل (لا يوجد FIREBASE_SERVICE_ACCOUNT)');
       return;
+    }
+    // يقبل JSON مباشر أو base64 (أسهل في متغيرات البيئة)
+    if (!raw.trim().startsWith('{')) {
+      raw = Buffer.from(raw, 'base64').toString('utf8');
     }
     const serviceAccount = JSON.parse(raw);
     if (!getApps().length) {
