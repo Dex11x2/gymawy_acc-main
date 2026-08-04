@@ -1,6 +1,7 @@
 import Notification from '../models/Notification';
 import User from '../models/User';
 import Employee from '../models/Employee';
+import { sendPushToUser } from './fcm.service';
 
 // حوّل معرّف (موظف أو مستخدم) إلى معرّف مستخدم — الإشعارات بتستخدم معرّف المستخدم
 export const resolveToUserId = async (id: any): Promise<string | null> => {
@@ -49,10 +50,18 @@ export const createNotification = async (data: NotificationData, io?: any) => {
 
       notifications.push(notification);
 
-      // إرسال عبر Socket.IO إذا كان متاحاً
+      // إرسال عبر Socket.IO إذا كان متاحاً (التطبيق مفتوح)
       if (io) {
         io.to(`user-${userId}`).emit('notification', notification);
       }
+
+      // إرسال Push عبر FCM (يوصل والتطبيق مقفول) — يتفعّل لو Firebase مظبوط
+      sendPushToUser(String(userId), {
+        title: data.title,
+        body: data.message,
+        link: data.link,
+        type: data.type,
+      }).catch(() => { /* لا توقف الإشعار لو فشل الـpush */ });
     }
 
     console.log(`✅ تم إرسال ${notifications.length} إشعار`);

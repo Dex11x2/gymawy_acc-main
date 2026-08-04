@@ -48,6 +48,11 @@ const App: React.FC = () => {
     initAuth();
   }, [initAuth]);
 
+  // تسجيل إشعارات Push (داخل تطبيق الموبايل فقط)
+  useEffect(() => {
+    if (user) { import('./services/push').then((m) => m.initPush()); }
+  }, [user]);
+
   // Socket.IO connection
   useEffect(() => {
     if (!user) return;
