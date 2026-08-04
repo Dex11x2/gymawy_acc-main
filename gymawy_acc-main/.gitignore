@@ -64,3 +64,8 @@ yarn-error.log*ssl/
 backend/test-email.js
 test-email.js
 backend/src/scripts/test-email-manual.ts
+
+# Android signing keys (never commit)
+*.p12
+*.keystore
+*.jks
