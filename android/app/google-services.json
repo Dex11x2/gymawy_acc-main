@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "735748938127",
+    "project_id": "gymmawy-3f96c",
+    "storage_bucket": "gymmawy-3f96c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:735748938127:android:535bc6532f1a26876993fa",
+        "android_client_info": {
+          "package_name": "net.gymmawy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA88sD1mbwDbT2n2rSGNCC7mDxSJqdfu2Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
