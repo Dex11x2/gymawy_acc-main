@@ -69,3 +69,4 @@ backend/src/scripts/test-email-manual.ts
 *.p12
 *.keystore
 *.jks
+backups/

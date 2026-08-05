@@ -13,6 +13,7 @@ import { initFcm } from './services/fcm.service';
 import { startDailyReportJob } from './jobs/dailyReport.job';
 import { startSelfieCleanupJob } from './jobs/selfieCleanup.job';
 import { startContentReminderJob } from './jobs/contentReminder.job';
+import { startBackupJob } from './jobs/backup.job';
 
 // Load environment variables from backend/.env
 dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
@@ -255,6 +256,7 @@ const startServer = async () => {
     startDailyReportJob();
     startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
     startContentReminderJob(); // تذكيرات جدولة المحتوى يومياً
+    startBackupJob(); // نسخة احتياطية يومية لقاعدة البيانات
 
     httpServer.listen(PORT, () => {
       console.log('');

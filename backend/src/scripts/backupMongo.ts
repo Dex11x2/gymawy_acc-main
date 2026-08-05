@@ -8,66 +8,74 @@ dotenv.config();
 const RETENTION_DAYS = parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
 const BACKUP_DIR = process.env.BACKUP_DIR || path.resolve(process.cwd(), 'backups');
 
-async function backup(): Promise<void> {
+export interface BackupResult {
+  outDir: string;
+  totalCollections: number;
+  totalDocuments: number;
+  totalBytes: number;
+}
+
+/**
+ * ياخد نسخة احتياطية كاملة من قاعدة البيانات (كل collection في ملف JSON).
+ * بيستخدم اتصال منفصل (createConnection) عشان مايأثرش على اتصال السيرفر الأساسي —
+ * فآمن يتنادى وهو السيرفر شغّال (من الـcron job) أو كـCLI.
+ */
+export async function runBackup(): Promise<BackupResult> {
   const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    console.error('❌ MONGODB_URI is not set');
-    process.exit(1);
-  }
+  if (!uri) throw new Error('MONGODB_URI is not set');
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const outDir = path.join(BACKUP_DIR, timestamp);
   fs.mkdirSync(outDir, { recursive: true });
 
-  console.log(`🔌 Connecting to MongoDB...`);
-  await mongoose.connect(uri, {
+  // اتصال مستقل خاص بالنسخ الاحتياطي (مش اتصال mongoose الافتراضي بتاع التطبيق)
+  const conn = await mongoose.createConnection(uri, {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 120000,
-  });
-  console.log(`✅ Connected. Database: ${mongoose.connection.name}`);
+  }).asPromise();
 
-  const collections = await mongoose.connection.db!.listCollections().toArray();
-  console.log(`📚 Found ${collections.length} collections`);
+  try {
+    const db = conn.db!;
+    const collections = await db.listCollections().toArray();
 
-  const summary: Array<{ name: string; documents: number; bytes: number }> = [];
-  let totalDocs = 0;
-  let totalBytes = 0;
+    const summary: Array<{ name: string; documents: number; bytes: number }> = [];
+    let totalDocs = 0;
+    let totalBytes = 0;
 
-  for (const col of collections) {
-    const docs = await mongoose.connection.db!.collection(col.name).find({}).toArray();
-    const json = JSON.stringify(docs, null, 2);
-    const filePath = path.join(outDir, `${col.name}.json`);
-    fs.writeFileSync(filePath, json, 'utf8');
-    const bytes = Buffer.byteLength(json, 'utf8');
-    summary.push({ name: col.name, documents: docs.length, bytes });
-    totalDocs += docs.length;
-    totalBytes += bytes;
-    console.log(`  ✅ ${col.name.padEnd(35)} ${docs.length.toString().padStart(8)} docs  (${(bytes / 1024).toFixed(1)} KB)`);
+    for (const col of collections) {
+      const docs = await db.collection(col.name).find({}).toArray();
+      const json = JSON.stringify(docs, null, 2);
+      fs.writeFileSync(path.join(outDir, `${col.name}.json`), json, 'utf8');
+      const bytes = Buffer.byteLength(json, 'utf8');
+      summary.push({ name: col.name, documents: docs.length, bytes });
+      totalDocs += docs.length;
+      totalBytes += bytes;
+    }
+
+    fs.writeFileSync(
+      path.join(outDir, '_manifest.json'),
+      JSON.stringify({
+        backupAt: new Date().toISOString(),
+        database: conn.name,
+        host: conn.host,
+        totalCollections: collections.length,
+        totalDocuments: totalDocs,
+        totalBytes,
+        collections: summary,
+      }, null, 2),
+      'utf8'
+    );
+
+    pruneOldBackups();
+
+    return { outDir, totalCollections: collections.length, totalDocuments: totalDocs, totalBytes };
+  } finally {
+    await conn.close();
   }
-
-  fs.writeFileSync(
-    path.join(outDir, '_manifest.json'),
-    JSON.stringify({
-      backupAt: new Date().toISOString(),
-      database: mongoose.connection.name,
-      host: mongoose.connection.host,
-      totalCollections: collections.length,
-      totalDocuments: totalDocs,
-      totalBytes,
-      collections: summary,
-    }, null, 2),
-    'utf8'
-  );
-
-  await mongoose.disconnect();
-  console.log(`\n✅ Backup complete: ${outDir}`);
-  console.log(`📦 ${totalDocs} documents, ${(totalBytes / 1024 / 1024).toFixed(2)} MB`);
-
-  pruneOldBackups();
 }
 
-function pruneOldBackups(): void {
-  if (!fs.existsSync(BACKUP_DIR)) return;
+export function pruneOldBackups(): number {
+  if (!fs.existsSync(BACKUP_DIR)) return 0;
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
   let deleted = 0;
   for (const entry of fs.readdirSync(BACKUP_DIR)) {
@@ -78,10 +86,19 @@ function pruneOldBackups(): void {
       deleted++;
     }
   }
-  if (deleted > 0) console.log(`🗑️  Pruned ${deleted} backups older than ${RETENTION_DAYS} days`);
+  return deleted;
 }
 
-backup().catch((err) => {
-  console.error('❌ Backup failed:', err);
-  process.exit(1);
-});
+// تشغيل مباشر كـCLI: `npm run backup`
+if (require.main === module) {
+  runBackup()
+    .then((r) => {
+      console.log(`\n✅ Backup complete: ${r.outDir}`);
+      console.log(`📦 ${r.totalCollections} collections, ${r.totalDocuments} documents, ${(r.totalBytes / 1024 / 1024).toFixed(2)} MB`);
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('❌ Backup failed:', err);
+      process.exit(1);
+    });
+}
