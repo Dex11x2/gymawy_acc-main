@@ -923,11 +923,10 @@ const Expenses: React.FC = () => {
         <form onSubmit={handleRefundSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="اسم العميل *"
+              label="اسم العميل"
               value={refundForm.customerName}
               onChange={(e) => setRefundForm({ ...refundForm, customerName: e.target.value })}
-              placeholder="اسم العميل"
-              required
+              placeholder="اسم العميل (اختياري)"
             />
             <Input
               label="رقم التليفون"
@@ -936,7 +935,7 @@ const Expenses: React.FC = () => {
               placeholder="01xxxxxxxxx"
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع العميل *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع العميل</label>
               <select
                 value={refundForm.customerType}
                 onChange={(e) => setRefundForm({ ...refundForm, customerType: e.target.value as any })}
@@ -964,11 +963,10 @@ const Expenses: React.FC = () => {
             </div>
             <Input
               type="number"
-              label="المبلغ المُرتجع *"
+              label="المبلغ المُرتجع"
               value={refundForm.amount}
               onChange={(e) => setRefundForm({ ...refundForm, amount: e.target.value === '' ? '' : Number(e.target.value) })}
-              placeholder="0"
-              required
+              placeholder="0 (اختياري)"
               min="0"
               step="0.01"
             />
