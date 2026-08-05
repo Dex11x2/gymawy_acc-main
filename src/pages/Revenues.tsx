@@ -6,7 +6,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
-import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar } from 'lucide-react';
+import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, Search } from 'lucide-react';
 
 type Currency = "EGP" | "USD" | "SAR" | "AED";
 
@@ -43,6 +43,9 @@ const Revenues: React.FC = () => {
   const [selectedTotalCurrency, setSelectedTotalCurrency] = useState<Currency>('SAR');
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [isCalculating, setIsCalculating] = useState(false);
+  // فلاتر عرض جدول الإيرادات (بتفلتر الجدول فقط — الملخّصات على إجمالي الشهر)
+  const [search, setSearch] = useState('');
+  const [filterCurrency, setFilterCurrency] = useState<'all' | Currency>('all');
 
   const [formData, setFormData] = useState({
     amount: "" as number | "",
@@ -83,6 +86,18 @@ const Revenues: React.FC = () => {
     USD: filteredRevenues.filter(r => r.currency === 'USD').reduce((sum, r) => sum + r.amount, 0),
     AED: filteredRevenues.filter(r => r.currency === 'AED').reduce((sum, r) => sum + r.amount, 0)
   };
+
+  // فلترة صفوف الجدول المعروضة (بحث + عملة) — لا تؤثر على بطاقات الملخّص
+  const searchLc = search.trim().toLowerCase();
+  const displayedRevenues = filteredRevenues.filter((r: any) => {
+    if (filterCurrency !== 'all' && r.currency !== filterCurrency) return false;
+    if (searchLc) {
+      const hay = `${r.title || ''} ${r.description || ''} ${r.category || ''} ${r.source || ''}`.toLowerCase();
+      if (!hay.includes(searchLc)) return false;
+    }
+    return true;
+  });
+  const isFiltering = !!searchLc || filterCurrency !== 'all';
 
   const openAdd = () => {
     if (!canCreateRevenue) {
@@ -343,6 +358,32 @@ const Revenues: React.FC = () => {
           </h2>
         </Card.Header>
         <Card.Body className="p-0">
+          {/* شريط بحث وفلاتر (يفلتر الجدول فقط) */}
+          {filteredRevenues.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 p-3 border-b border-gray-100 dark:border-gray-800">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-gray-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ابحث بالمصدر أو الوصف أو الفئة..."
+                  className="w-full ps-9 pe-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+              <select value={filterCurrency} onChange={(e) => setFilterCurrency(e.target.value as any)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                <option value="all">كل العملات</option>
+                <option value="EGP">جنيه</option>
+                <option value="SAR">ريال</option>
+                <option value="USD">دولار</option>
+                <option value="AED">درهم</option>
+              </select>
+              {isFiltering && (
+                <button onClick={() => { setSearch(''); setFilterCurrency('all'); }}
+                  className="text-xs text-gray-500 hover:text-brand-600 px-2 py-1">مسح الفلاتر ({displayedRevenues.length})</button>
+              )}
+            </div>
+          )}
           {filteredRevenues.length === 0 ? (
             <div className="p-12 text-center">
               <TrendingUp className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
@@ -354,6 +395,11 @@ const Revenues: React.FC = () => {
                   إضافة إيراد
                 </Button>
               )}
+            </div>
+          ) : displayedRevenues.length === 0 ? (
+            <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+              <Search className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+              مفيش نتائج مطابقة للبحث/الفلاتر
             </div>
           ) : (
             <Table>
@@ -368,7 +414,7 @@ const Revenues: React.FC = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredRevenues.map((revenue) => (
+                {displayedRevenues.map((revenue) => (
                   <Table.Row key={revenue.id}>
                     <Table.Cell>
                       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
