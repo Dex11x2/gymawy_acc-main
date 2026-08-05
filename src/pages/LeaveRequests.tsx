@@ -193,7 +193,12 @@ const LeaveRequests: React.FC = () => {
                             </span>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{reqSummary(r)}</p>
-                          {r.reason && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">💬 {r.reason}</p>}
+                          {r.reason && (
+                            <div className="mt-2 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 px-3 py-2">
+                              <p className="text-[11px] font-semibold text-brand-600 dark:text-brand-400 mb-0.5">السبب / الالتماس</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{r.reason}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {!!r.warnings?.length && (
@@ -265,7 +270,16 @@ const LeaveRequests: React.FC = () => {
               {isPermission && (
                 <Input type="number" label="عدد الساعات" min="0.5" step="0.5" max="8" value={form.hours} onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })} required />
               )}
-              <Textarea label="السبب (اختياري)" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} rows={2} placeholder="اكتب سبب الطلب لو حابب..." />
+              <div>
+                <Textarea
+                  label="السبب أو الالتماس (اختياري)"
+                  value={form.reason}
+                  onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                  rows={3}
+                  placeholder="لو في ظرف أو موقف خاص، اشرحه هنا بكل صراحة عشان المدير يفهمه وياخده في اعتباره قبل ما يقرر..."
+                />
+                <p className="text-xs text-gray-400 mt-1">📝 كل ما توضّح أكتر، كل ما يكون أسهل على المدير إنه يراعي ظرفك.</p>
+              </div>
 
               <details className="rounded-lg bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400">
                 <summary className="cursor-pointer select-none px-3 py-2 font-semibold flex items-center gap-1.5"><ClipboardList className="h-3.5 w-3.5" /> قواعد الأجازات (اضغط للعرض)</summary>
