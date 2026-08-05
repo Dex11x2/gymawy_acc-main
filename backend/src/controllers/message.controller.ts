@@ -38,21 +38,23 @@ export const create = async (req: any, res: Response) => {
     // Create notification for receiver
     const sender = await User.findById(userId);
     if (sender) {
+      // الرابط يفتح المحادثة مع المُرسِل مباشرة
+      const chatLink = `/chat?user=${userId}`;
       await Notification.create({
         userId: receiverId,
         type: 'message',
         title: 'رسالة جديدة',
         message: `رسالة جديدة من ${sender.name}`,
-        link: '/chat',
+        link: chatLink,
         senderId: userId,
         senderName: sender.name
       });
 
-      // إشعار Push (يوصل والتطبيق مقفول)
+      // إشعار Push (يوصل والتطبيق مقفول) → يفتح المحادثة المحددة عند الضغط
       sendPushToUser(String(receiverId), {
         title: `💬 ${sender.name}`,
         body: content || 'رسالة جديدة',
-        link: '/chat',
+        link: chatLink,
         type: 'message',
       }).catch(() => {});
     }

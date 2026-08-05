@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationStore } from '../store/notificationStore';
 import api from '../services/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Search, Send, Paperclip, Smile, FileText, X,
-  MoreVertical, Users, MoreHorizontal, ArrowRight,
-  Image as ImageIcon, Mic, ChevronDown, Bell
+  MoreHorizontal, ArrowRight
 } from 'lucide-react';
 
 interface Message {
@@ -70,6 +70,7 @@ const Chat: React.FC = () => {
   const typingTimer = React.useRef<any>(null);
   const lastTypingEmit = React.useRef<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -186,6 +187,33 @@ const Chat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedUser, allMessages]);
 
+  // فتح محادثة محددة عند القدوم من إشعار (/chat?user=<id>)
+  useEffect(() => {
+    const uid = searchParams.get('user');
+    if (!uid || !allUsers.length) return;
+    const target = allUsers.find(u => String(u.id) === String(uid));
+    if (target) {
+      setSelectedUser(target);
+      const next = new URLSearchParams(searchParams);
+      next.delete('user');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allUsers, searchParams]);
+
+  // علّم رسائل المحادثة مقروءة عند فتحها (يصفّي شارة غير المقروء)
+  useEffect(() => {
+    if (!selectedUser || !user) return;
+    const hasUnread = allMessages.some(m => String(m.senderId) === String(selectedUser.id) && String(m.receiverId) === String(user.id) && !m.isRead);
+    if (!hasUnread) return;
+    setAllMessages(prev => prev.map(m =>
+      (String(m.senderId) === String(selectedUser.id) && String(m.receiverId) === String(user.id) && !m.isRead)
+        ? { ...m, isRead: true } : m
+    ));
+    api.put(`/messages/conversation/${selectedUser.id}/read`).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser?.id]);
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -297,9 +325,22 @@ const Chat: React.FC = () => {
     setShowEmojiPicker(false);
   };
 
-  const filteredUsers = allUsers.filter(u =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // عدد الرسائل غير المقروءة من مستخدم معيّن
+  const unreadFrom = (userId: string) =>
+    allMessages.filter(m => String(m.senderId) === String(userId) && String(m.receiverId) === String(user?.id) && !m.isRead).length;
+
+  const filteredUsers = allUsers
+    .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      // اللي بعتولي رسائل غير مقروءة يطلعوا فوق، بعدين الأحدث محادثة
+      const ua = unreadFrom(a.id), ub = unreadFrom(b.id);
+      if ((ua > 0) !== (ub > 0)) return ua > 0 ? -1 : 1;
+      const la = getLastMessage(a.id), lb = getLastMessage(b.id);
+      const ta = la ? new Date(la.timestamp).getTime() : 0;
+      const tb = lb ? new Date(lb.timestamp).getTime() : 0;
+      if (ta !== tb) return tb - ta;
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
   const conversationMessages = getConversationMessages();
 
@@ -346,7 +387,8 @@ const Chat: React.FC = () => {
           {filteredUsers.map((chatUser, idx) => {
             const lastMsg = getLastMessage(chatUser.id);
             const isSelected = selectedUser?.id === chatUser.id;
-            
+            const unread = unreadFrom(chatUser.id);
+
             return (
               <div
                 key={chatUser.id || idx}
@@ -371,18 +413,25 @@ const Chat: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-0.5">
-                    <h3 className={`font-semibold text-sm truncate ${isSelected ? 'text-brand-900 dark:text-white' : 'text-gray-900 dark:text-gray-200'}`}>
+                    <h3 className={`text-sm truncate ${unread > 0 ? 'font-extrabold text-gray-900 dark:text-white' : `font-semibold ${isSelected ? 'text-brand-900 dark:text-white' : 'text-gray-900 dark:text-gray-200'}`}`}>
                       {chatUser.name}
                     </h3>
                     {lastMsg && (
-                      <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
+                      <span className={`text-[10px] whitespace-nowrap ml-2 ${unread > 0 ? 'text-brand-600 dark:text-brand-400 font-bold' : 'text-gray-500'}`}>
                         {formatTime(lastMsg.timestamp)}
                       </span>
                     )}
                   </div>
-                  <p className={`text-xs truncate ${isSelected ? 'text-brand-700 dark:text-brand-200' : 'text-gray-500'}`}>
-                    {lastMsg ? lastMsg.content : 'Start a conversation'}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-xs truncate ${unread > 0 ? 'font-bold text-gray-800 dark:text-gray-100' : isSelected ? 'text-brand-700 dark:text-brand-200' : 'text-gray-500'}`}>
+                      {lastMsg ? lastMsg.content : 'Start a conversation'}
+                    </p>
+                    {unread > 0 && (
+                      <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {unread > 9 ? '9+' : unread}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -509,7 +558,7 @@ const Chat: React.FC = () => {
                       </button>
                     </div>
                   ))}
-                  {selectedFiles.map((file, i) => (
+                  {selectedFiles.map((_file, i) => (
                     <div key={i} className="relative w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center group">
                       <FileText className="w-8 h-8 text-gray-400" />
                       <button 
