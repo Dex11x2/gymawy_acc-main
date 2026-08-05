@@ -9,6 +9,7 @@ import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './config/database';
+import { initFcm } from './services/fcm.service';
 import { startDailyReportJob } from './jobs/dailyReport.job';
 import { startSelfieCleanupJob } from './jobs/selfieCleanup.job';
 import { startContentReminderJob } from './jobs/contentReminder.job';
@@ -250,6 +251,7 @@ const startServer = async () => {
   try {
     await connectDatabase();
     await ensureSuperAdminExists();
+    initFcm(); // تهيئة إشعارات Push (FCM) والتأكد من المفتاح
     startDailyReportJob();
     startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
     startContentReminderJob(); // تذكيرات جدولة المحتوى يومياً

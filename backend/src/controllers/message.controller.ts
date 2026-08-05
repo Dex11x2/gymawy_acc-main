@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Message from '../models/Message';
 import Notification from '../models/Notification';
 import User from '../models/User';
+import { sendPushToUser } from '../services/fcm.service';
 
 export const getAll = async (req: any, res: Response) => {
   try {
@@ -46,8 +47,16 @@ export const create = async (req: any, res: Response) => {
         senderId: userId,
         senderName: sender.name
       });
+
+      // إشعار Push (يوصل والتطبيق مقفول)
+      sendPushToUser(String(receiverId), {
+        title: `💬 ${sender.name}`,
+        body: content || 'رسالة جديدة',
+        link: '/chat',
+        type: 'message',
+      }).catch(() => {});
     }
-    
+
     // Emit socket event
     const io = (req.app as any).get('io');
     if (io) {

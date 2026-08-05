@@ -31,6 +31,9 @@ const init = () => {
   }
 };
 
+// تهيئة صريحة عند إقلاع السيرفر (للتأكد من صحة المفتاح فورًا)
+export const initFcm = () => init();
+
 export const sendPushToUser = async (
   userId: string,
   payload: { title: string; body: string; link?: string; type?: string }
