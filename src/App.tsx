@@ -48,9 +48,12 @@ const App: React.FC = () => {
     initAuth();
   }, [initAuth]);
 
-  // تسجيل إشعارات Push (داخل تطبيق الموبايل فقط)
+  // تسجيل إشعارات Push — التطبيق الأصلي (Capacitor) + الويب/PWA (Firebase)
   useEffect(() => {
-    if (user) { import('./services/push').then((m) => m.initPush()); }
+    if (user) {
+      import('./services/push').then((m) => m.initPush());
+      import('./services/webPush').then((m) => m.initWebPush()); // بدون إجبار: يسجّل لو الإذن ممنوح
+    }
   }, [user]);
 
   // Socket.IO connection

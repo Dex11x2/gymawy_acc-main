@@ -46,11 +46,14 @@ export const sendPushToUser = async (
       .filter(Boolean);
     if (!tokens.length) return;
 
+    const base = process.env.FRONTEND_URL || 'https://gymmawy.net';
     const res = await getMessaging().sendEachForMulticast({
       tokens,
       notification: { title: payload.title, body: payload.body },
       data: { link: payload.link || '', type: payload.type || '' },
       android: { priority: 'high' },
+      // على الويب: الضغط على الإشعار يفتح اللينك المحدد
+      webpush: { fcmOptions: { link: payload.link ? `${base}${payload.link}` : base } },
     });
 
     // نظّف التوكنات غير الصالحة

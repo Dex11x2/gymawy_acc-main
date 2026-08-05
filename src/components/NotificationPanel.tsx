@@ -3,6 +3,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { isSoundEnabled, setSoundEnabled, playNotificationSound, primeNotificationSound, getMutedTypes, setTypeMuted } from '../utils/notificationSound';
+import { initWebPush, webPushState } from '../services/webPush';
 import { Volume2, VolumeX, CheckCheck, Bell, X, ChevronLeft, SlidersHorizontal } from 'lucide-react';
 
 const MUTE_TYPES: Array<{ key: string; label: string; icon: string }> = [
@@ -52,6 +53,13 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
   const [soundOn, setSoundOn] = React.useState(isSoundEnabled());
   const [showSettings, setShowSettings] = React.useState(false);
   const [muted, setMuted] = React.useState<string[]>(getMutedTypes());
+  const [pushState, setPushState] = React.useState(webPushState());
+
+  const enableWebPush = async () => {
+    primeNotificationSound();
+    await initWebPush(true); // بلمسة المستخدم — يطلب الإذن (ضروري لآيفون)
+    setPushState(webPushState());
+  };
 
   const toggleMuted = (key: string) => {
     const next = !muted.includes(key);
@@ -145,6 +153,17 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
           )}
         </div>
       </div>
+
+      {/* تفعيل إشعارات المتصفح/الآيفون (للويب فقط، لما الإذن لسه مطلوب) */}
+      {pushState === 'default' && (
+        <button
+          onClick={enableWebPush}
+          className="w-full flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-brand-50/60 dark:bg-brand-500/10 text-start hover:bg-brand-100/60 dark:hover:bg-brand-500/15 transition-colors"
+        >
+          <Bell className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0" />
+          <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">فعّل إشعارات الجهاز (تظهر والتطبيق مقفول)</span>
+        </button>
+      )}
 
       {/* Settings: mute per type */}
       {showSettings && (
