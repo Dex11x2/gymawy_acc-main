@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import LeaveRequest from '../models/LeaveRequest';
 import Employee from '../models/Employee';
+import User from '../models/User';
 import { notifyManagers, createNotification, resolveToUserId } from '../services/notification.service';
 
 const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
@@ -154,13 +155,24 @@ export const create = async (req: any, res: Response) => {
     });
 
     const label = isPermission ? `إذن (${hrs} ساعة)` : `${days} يوم`;
-    await notifyManagers({
+    const notifyData = {
       title: '🏖️ طلب أجازة/إذن جديد',
       message: `${employee.name} قدّم طلب ${leaveTypeAr(leaveType)} — ${label}${warnings.length ? ' ⚠️ فيه ملاحظات' : ''}`,
-      type: 'general',
+      type: 'general' as const,
       link: '/leave-requests',
       companyId: req.user.companyId
-    }, req.app.get('io'));
+    };
+    // الطلب يروح للمُعتمِدين المحدَّدين (اللي متعملهم صلاحية «موافقة الأجازات» — حسين ومنير)
+    const approvers = await User.find({
+      permissions: { $elemMatch: { module: 'leave_requests', actions: { $in: ['view', 'read', 'write', 'edit', 'approve', 'delete'] } } }
+    }).select('_id');
+    const approverIds = approvers.map((u: any) => u._id.toString());
+    if (approverIds.length > 0) {
+      await createNotification({ ...notifyData, userId: approverIds }, req.app.get('io'));
+    } else {
+      // احتياطي: لو لسه محدِّش متعمله صلاحية، ابعت لكل المدراء عشان الطلب مايضيعش
+      await notifyManagers(notifyData, req.app.get('io'));
+    }
 
     res.status(201).json(leaveRequest);
   } catch (error: any) {
@@ -177,6 +189,12 @@ export const updateStatus = async (req: any, res: Response) => {
     const leaveRequest = await LeaveRequest.findById(req.params.id);
     if (!leaveRequest) return res.status(404).json({ message: 'الطلب غير موجود' });
 
+    // لو الطلب اتحسم قبل كده (وافق حسين مثلًا) مايتعملش تاني — يمنع الخصم المكرر
+    const prevStatus = leaveRequest.status;
+    if (prevStatus === 'approved' && status === 'approved') {
+      return res.status(200).json({ ...leaveRequest.toObject(), alreadyDecided: true, message: 'تمت الموافقة على الطلب بالفعل' });
+    }
+
     leaveRequest.status = status;
     leaveRequest.reviewedBy = req.user.id || req.user._id;
     leaveRequest.reviewedByName = req.user.name;
@@ -184,8 +202,8 @@ export const updateStatus = async (req: any, res: Response) => {
     leaveRequest.reviewNotes = reviewNotes;
     await leaveRequest.save();
 
-    // خصم من الرصيد عند الموافقة (الإذونات لا تُخصم — تُحسب أسبوعيًا)
-    if (status === 'approved' && leaveRequest.leaveType !== 'permission') {
+    // خصم من الرصيد عند الموافقة (مرة واحدة فقط — لو مكانش معتمَد قبل كده) (الإذونات لا تُخصم — تُحسب أسبوعيًا)
+    if (status === 'approved' && prevStatus !== 'approved' && leaveRequest.leaveType !== 'permission') {
       const employee = await Employee.findById(leaveRequest.employeeId);
       if (employee) {
         if (deductFromEmergency && (leaveRequest.leaveType === 'annual' || leaveRequest.leaveType === 'sick')) {
