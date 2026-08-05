@@ -196,16 +196,6 @@ const Dashboard: React.FC = () => {
     loadDevTasks();
   }, []);
 
-  React.useEffect(() => {
-    console.log('Dashboard - Revenues:', revenues.length, revenues);
-    console.log('Dashboard - Expenses:', expenses.length, expenses);
-    console.log('Dashboard - Current Month Revenues:', currentMonthRevenues.length);
-    console.log('Dashboard - Current Month Expenses:', currentMonthExpenses.length);
-    console.log('Dashboard - Revenues by Currency:', revenuesByCurrency);
-    console.log('Dashboard - Expenses by Currency:', operationalExpensesByCurrency);
-    console.log('Dashboard - Net Profit by Currency:', netProfitByCurrency);
-  }, [revenues, expenses]);
-
   const currentEmployee = employees.find((e: any) => String(e.userId?._id || e.userId?.id || e.userId) === String(user?.id));
   const employeeBalance = currentEmployee?.leaveBalance || { annual: 14, emergency: 7 };
   const isEmployee = user?.role === 'employee';

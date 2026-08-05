@@ -32,23 +32,8 @@ const Expenses: React.FC = () => {
 
   // تحميل المصروفات عند فتح الصفحة
   useEffect(() => {
-    console.log('🔍 Expenses Page - Diagnostic Info:');
-    console.log('  Current user:', user);
-    console.log('  User permissions:', user?.permissions);
-    console.log('  User companyId:', user?.companyId);
-    console.log('  User role:', user?.role);
-    console.log('  Can view expenses:', canViewExpenses);
-    console.log('  Can create expense:', canCreateExpense);
-    console.log('  Can edit expense:', canEditExpense);
-    console.log('  Can delete expense:', canDeleteExpense);
-
-    if (canViewExpenses) {
-      console.log('  ✅ User has VIEW permission - Loading expenses...');
-      loadExpenses();
-    } else {
-      console.warn('  ⚠️ User does NOT have VIEW permission for expenses');
-    }
-  }, [loadExpenses, user, canViewExpenses, canCreateExpense, canEditExpense, canDeleteExpense]);
+    if (canViewExpenses) loadExpenses();
+  }, [loadExpenses, canViewExpenses]);
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
