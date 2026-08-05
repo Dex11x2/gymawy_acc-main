@@ -22,6 +22,7 @@ import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
 import DevTasks from './pages/DevTasks';
 import MySpace from './pages/MySpace';
+import LeaveRequests from './pages/LeaveRequests';
 import CustodyAndAdvances from './pages/CustodyAndAdvances';
 import PasswordManagement from './pages/PasswordManagement';
 import Profile from './pages/Profile';
@@ -118,6 +119,7 @@ const App: React.FC = () => {
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardWrapper />} />
             <Route path="/my-space" element={<MySpace />} />
+            <Route path="/leave-requests" element={<LeaveRequests />} />
             <Route path="/instructions" element={<Protected module="instructions"><Instructions /></Protected>} />
 
             <Route path="/departments" element={<Protected module="departments"><Departments /></Protected>} />

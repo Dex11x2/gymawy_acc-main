@@ -185,6 +185,7 @@ const Branches: React.FC = () => {
       { module: 'dashboard', name: 'لوحة التحكم', nameEn: 'Dashboard', actions: ['view'] },
       { module: 'attendance_map', name: 'تسجيل الحضور', nameEn: 'Check In', actions: ['view', 'write'] },
       { module: 'attendance_management', name: 'إدارة الحضور', nameEn: 'Attendance Management', actions: ['view', 'write', 'delete'] },
+      { module: 'leave_requests', name: 'موافقة الأجازات والإذونات', nameEn: 'Leave Approval', actions: ['view', 'write'] },
       { module: 'branches', name: 'الفروع والصلاحيات', nameEn: 'Branches & Permissions', actions: ['view', 'write', 'delete'] },
       { module: 'departments', name: 'الأقسام', nameEn: 'Departments', actions: ['view', 'write', 'delete'] },
       { module: 'employees', name: 'الموظفين', nameEn: 'Employees', actions: ['view', 'write', 'delete'] },

@@ -194,6 +194,7 @@ export const DevTasksIcon: React.FC<IconProps> = ({ className = '', size = 20 })
 export const iconComponents = {
   dashboard: DashboardIcon,
   'my-space': EmployeeIcon,
+  'leave-requests': CalendarIcon,
   'attendance-map': AttendanceIcon,
   'attendance-management': CalendarIcon,
   branches: BranchIcon,

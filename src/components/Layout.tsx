@@ -248,6 +248,7 @@ const Layout: React.FC = () => {
 
   const menuItems = [
     { id: 'my-space' as IconName, name: language === 'ar' ? 'مساحتي' : 'My Space', path: '/my-space', show: true },
+    { id: 'leave-requests' as IconName, name: language === 'ar' ? 'الأجازات والإذونات' : 'Leaves', path: '/leave-requests', show: true },
     { id: 'dashboard' as IconName, name: t.dashboard, path: '/dashboard', show: user?.role === 'dev' || hasPermission('dashboard') },
     { id: 'attendance-map' as IconName, name: language === 'ar' ? 'تسجيل الحضور' : 'Check In', path: '/attendance-map', show: true },
     { id: 'attendance-management' as IconName, name: language === 'ar' ? 'إدارة الحضور' : 'Attendance Management', path: '/attendance-management', show: ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '') },
