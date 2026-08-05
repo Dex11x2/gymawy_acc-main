@@ -115,11 +115,17 @@ export interface Expense {
   date: Date;
   category: string;
   notes?: string;
-  type: 'operational' | 'capital';
+  type: 'operational' | 'capital' | 'refund';
   createdBy: string;
   departmentId?: string; // ربط بالقسم
   approvedBy?: string; // من وافق على المصروف
   receiptNumber?: string; // رقم الإيصال
+  title?: string;
+  // حقول المرتجعات (عملاء ألغوا اشتراكهم)
+  customerName?: string;
+  customerPhone?: string;
+  customerType?: 'egyptian' | 'saudi' | 'other';
+  refundReason?: string;
 }
 
 export interface ChatMessage {

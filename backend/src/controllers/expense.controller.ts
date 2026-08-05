@@ -3,53 +3,44 @@ import Expense from '../models/Expense';
 
 export const getAll = async (req: any, res: Response) => {
   try {
-    console.log('📡 GET /expenses Request:');
-    console.log('  User ID:', req.user?.id);
-    console.log('  User Role:', req.user?.role);
-    console.log('  User CompanyId:', req.user?.companyId);
-
-    // 🔍 DIAGNOSTIC: Check all expenses in DB (before filtering)
-    const allExpenses = await Expense.find({}).select('_id amount currency companyId').limit(10);
-    console.log('🔍 DIAGNOSTIC - All Expenses in DB (first 10):',
-      allExpenses.map(e => ({
-        id: e._id.toString().substring(0, 8),
-        amount: e.amount,
-        currency: e.currency,
-        companyId: e.companyId?.toString() || 'null'
-      }))
-    );
-
-    // ✅ FIXED: Allow dev and managers to see all expenses
     const managerRoles = ['dev', 'administrative_manager', 'general_manager'];
-    const filter = managerRoles.includes(req.user?.role)
-      ? {}  // Managers see all expenses
-      : { companyId: req.user?.companyId }; // Regular employees see only their company's expenses
+    const filter: any = managerRoles.includes(req.user?.role)
+      ? {}                                   // المدراء يشوفوا كل المصروفات
+      : { companyId: req.user?.companyId };   // الموظف العادي يشوف بتاع شركته فقط
 
-    console.log('  Applied Filter:', JSON.stringify(filter));
-    console.log('  User can see all expenses:', managerRoles.includes(req.user?.role));
+    // فلاتر اختيارية (متوافقة مع القديم — لو مفيش أي param السلوك زي ما هو)
+    const { search, type, currency, dateFrom, dateTo, page, limit } = req.query;
 
-    // ترتيب بالأحدث أولاً
-    const expenses = await Expense.find(filter)
+    if (type) filter.type = type;
+    if (currency) filter.currency = currency;
+    if (dateFrom || dateTo) {
+      filter.date = {};
+      if (dateFrom) filter.date.$gte = new Date(dateFrom);
+      if (dateTo) { const d = new Date(dateTo); d.setHours(23, 59, 59, 999); filter.date.$lte = d; }
+    }
+    if (search) {
+      const rx = new RegExp(String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ title: rx }, { description: rx }, { category: rx }, { customerName: rx }];
+    }
+
+    const query = Expense.find(filter)
       .populate('departmentId createdBy')
       .sort({ date: -1, createdAt: -1 });
 
-    console.log('✅ Expenses Query Result:', {
-      count: expenses.length,
-      firstExpense: expenses[0] ? {
-        id: expenses[0]._id,
-        amount: expenses[0].amount,
-        companyId: expenses[0].companyId
-      } : null
-    });
+    // Pagination اختياري: يتفعّل فقط لو اتبعت page أو limit
+    if (page || limit) {
+      const pageNum = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+      const pageSize = Math.min(200, Math.max(1, parseInt(String(limit || '50'), 10) || 50));
+      const total = await Expense.countDocuments(filter);
+      const data = await query.skip((pageNum - 1) * pageSize).limit(pageSize);
+      return res.json({ data, total, page: pageNum, pages: Math.ceil(total / pageSize) });
+    }
 
+    const expenses = await query;
     res.json(expenses);
   } catch (error: any) {
     console.error('❌ Error in expense.getAll:', error);
-    res.status(500).json({
-      message: error.message,
-      error: error.toString(),
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 

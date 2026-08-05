@@ -7,7 +7,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
-import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, FileDown, FileSpreadsheet, Wrench, Building2, BarChart3, Lock } from 'lucide-react';
+import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, FileDown, FileSpreadsheet, Wrench, Building2, BarChart3, Lock, Search } from 'lucide-react';
 
 type Currency = 'EGP' | 'USD' | 'SAR' | 'AED';
 
@@ -59,6 +59,10 @@ const Expenses: React.FC = () => {
   const [selectedTotalCurrency, setSelectedTotalCurrency] = useState<Currency>('SAR');
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [isCalculating, setIsCalculating] = useState(false);
+  // فلاتر عرض جدول المصروفات (بتفلتر الجدول فقط — الملخّصات تفضل على إجمالي الشهر)
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'operational' | 'capital'>('all');
+  const [filterCurrency, setFilterCurrency] = useState<'all' | Currency>('all');
 
   const [formData, setFormData] = useState({
     amount: '' as number | '',
@@ -93,6 +97,19 @@ const Expenses: React.FC = () => {
   // المرتجعات (عملاء ألغوا اشتراكهم) منفصلة عن المصروفات العادية
   const regularExpenses = filteredExpenses.filter(e => e.type !== 'refund');
   const refunds = filteredExpenses.filter((e: any) => e.type === 'refund');
+
+  // فلترة صفوف الجدول المعروضة (بحث + نوع + عملة) — لا تؤثر على بطاقات الملخّص
+  const searchLc = search.trim().toLowerCase();
+  const displayedExpenses = regularExpenses.filter((e: any) => {
+    if (filterType !== 'all' && e.type !== filterType) return false;
+    if (filterCurrency !== 'all' && e.currency !== filterCurrency) return false;
+    if (searchLc) {
+      const hay = `${e.title || ''} ${e.description || ''} ${e.category || ''}`.toLowerCase();
+      if (!hay.includes(searchLc)) return false;
+    }
+    return true;
+  });
+  const isFiltering = !!searchLc || filterType !== 'all' || filterCurrency !== 'all';
 
   const expensesByCurrency = {
     EGP: regularExpenses.filter(e => e.currency === 'EGP').reduce((sum, e) => sum + e.amount, 0),
@@ -569,6 +586,38 @@ const Expenses: React.FC = () => {
           </div>
         </Card.Header>
         <Card.Body className="p-0">
+          {/* شريط بحث وفلاتر (يفلتر الجدول فقط) */}
+          {regularExpenses.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 p-3 border-b border-gray-100 dark:border-gray-800">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-gray-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ابحث بالفئة أو الوصف..."
+                  className="w-full ps-9 pe-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                <option value="all">كل الأنواع</option>
+                <option value="operational">تشغيلي</option>
+                <option value="capital">رأسمالي</option>
+              </select>
+              <select value={filterCurrency} onChange={(e) => setFilterCurrency(e.target.value as any)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                <option value="all">كل العملات</option>
+                <option value="EGP">جنيه</option>
+                <option value="SAR">ريال</option>
+                <option value="USD">دولار</option>
+                <option value="AED">درهم</option>
+              </select>
+              {isFiltering && (
+                <button onClick={() => { setSearch(''); setFilterType('all'); setFilterCurrency('all'); }}
+                  className="text-xs text-gray-500 hover:text-brand-600 px-2 py-1">مسح الفلاتر ({displayedExpenses.length})</button>
+              )}
+            </div>
+          )}
           {regularExpenses.length === 0 ? (
             <div className="p-12 text-center">
               <TrendingDown className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
@@ -580,6 +629,11 @@ const Expenses: React.FC = () => {
                   إضافة مصروف
                 </Button>
               )}
+            </div>
+          ) : displayedExpenses.length === 0 ? (
+            <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+              <Search className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+              مفيش نتائج مطابقة للبحث/الفلاتر
             </div>
           ) : (
             <Table>
@@ -594,7 +648,7 @@ const Expenses: React.FC = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {regularExpenses.map((expense) => (
+                {displayedExpenses.map((expense) => (
                   <Table.Row key={expense.id}>
                     <Table.Cell>
                       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
