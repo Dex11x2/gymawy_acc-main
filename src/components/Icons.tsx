@@ -209,6 +209,7 @@ export const iconComponents = {
   posts: PostIcon,
   reviews: ReviewIcon,
   reports: ReportIcon,
+  'daily-report': ReportIcon,
   'ads-funding': AdsFundingIcon,
   complaints: ComplaintIcon,
   instructions: InstructionIcon,

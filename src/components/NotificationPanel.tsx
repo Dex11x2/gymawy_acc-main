@@ -15,6 +15,7 @@ const MUTE_TYPES: Array<{ key: string; label: string; icon: string }> = [
   { key: 'attendance', label: 'الحضور', icon: '📅' },
   { key: 'payment', label: 'الرواتب والمدفوعات', icon: '💰' },
   { key: 'video_review', label: 'مراجعة الفيديو', icon: '🎬' },
+  { key: 'daily_report', label: 'التقرير اليومي', icon: '📝' },
 ];
 
 // نمط لكل نوع إشعار: أيقونة + ألوان
@@ -29,6 +30,7 @@ const typeStyles: Record<string, { icon: string; ring: string; chip: string }> =
   complaint:    { icon: '⚠️', ring: 'bg-warning-500', chip: 'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-300' },
   attendance:   { icon: '📅', ring: 'bg-blue-500',    chip: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300' },
   video_review: { icon: '🎬', ring: 'bg-purple-500',  chip: 'bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300' },
+  daily_report: { icon: '📝', ring: 'bg-teal-500',    chip: 'bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300' },
   general:      { icon: '🔔', ring: 'bg-brand-500',   chip: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300' },
   system:       { icon: '⚙️', ring: 'bg-gray-400',    chip: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300' },
 };
@@ -89,6 +91,7 @@ export const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void 
     payment: '/my-space',
     payroll: '/my-space',
     video_review: '/video-reviews',
+    daily_report: '/daily-report?tab=review',
     general: '/my-space',
   };
 

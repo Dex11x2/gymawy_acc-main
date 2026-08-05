@@ -202,6 +202,7 @@ const Branches: React.FC = () => {
       { module: 'video_reviews', name: 'مراجعة الفيديوهات', nameEn: 'Video Reviews', actions: ['view', 'write', 'delete'] },
       { module: 'reviews', name: 'تقييمات الموظفين', nameEn: 'Employee Reviews', actions: ['view', 'write', 'delete'] },
       { module: 'reports', name: 'التقارير', nameEn: 'Reports', actions: ['view', 'write'] },
+      { module: 'daily_report', name: 'التقرير اليومي (view=مراجعة / write=تعبئة)', nameEn: 'Daily Report', actions: ['view', 'write', 'delete'] },
       { module: 'ads_funding', name: 'تقرير تمويل الإعلانات', nameEn: 'Ads Funding Report', actions: ['view', 'write', 'delete'] },
       { module: 'complaints', name: 'الشكاوى والمقترحات', nameEn: 'Complaints', actions: ['view', 'write', 'delete'] },
       { module: 'instructions', name: 'التعليمات', nameEn: 'Instructions', actions: ['view', 'write', 'delete'] },

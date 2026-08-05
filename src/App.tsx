@@ -19,6 +19,7 @@ import ContentCalendar from './pages/ContentCalendar';
 import CalendarMonth from './pages/CalendarMonth';
 import VideoReviews from './pages/VideoReviews';
 import Reports from './pages/Reports';
+import DailyReport from './pages/DailyReport';
 import Tasks from './pages/Tasks';
 import DevTasks from './pages/DevTasks';
 import MySpace from './pages/MySpace';
@@ -135,6 +136,7 @@ const App: React.FC = () => {
             <Route path="/content-calendar/:monthId" element={<Protected module="content_calendar"><CalendarMonth /></Protected>} />
             <Route path="/video-reviews" element={<Protected module="video_reviews"><VideoReviews /></Protected>} />
             <Route path="/reports" element={<Protected module="reports"><Reports /></Protected>} />
+            <Route path="/daily-report" element={<DailyReport />} />
             <Route path="/tasks" element={<Protected module="tasks"><Tasks /></Protected>} />
             <Route path="/dev-tasks" element={<Protected module="dev_tasks"><DevTasks /></Protected>} />
             <Route path="/password-management" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><PasswordManagement /></Protected>} />

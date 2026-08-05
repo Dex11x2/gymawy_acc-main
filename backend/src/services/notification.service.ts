@@ -20,7 +20,7 @@ interface NotificationData {
   userId: string | string[];
   title: string;
   message: string;
-  type: 'message' | 'task' | 'payment' | 'attendance' | 'complaint' | 'review' | 'post' | 'general' | 'video_review';
+  type: 'message' | 'task' | 'payment' | 'attendance' | 'complaint' | 'review' | 'post' | 'general' | 'video_review' | 'daily_report';
   link?: string;
   senderId?: string;
   senderName?: string;

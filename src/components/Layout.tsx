@@ -271,6 +271,7 @@ const Layout: React.FC = () => {
     { id: 'video-reviews' as IconName, name: language === 'ar' ? 'مراجعة الفيديوهات' : 'Video Reviews', path: '/video-reviews', show: user?.role === 'dev' || hasPermission('video_reviews') },
     { id: 'reviews' as IconName, name: language === 'ar' ? 'تقييمات الموظفين' : 'Employee Reviews', path: '/reviews', show: user?.role === 'dev' || hasPermission('reviews') },
     { id: 'reports' as IconName, name: t.reports, path: '/reports', show: user?.role === 'dev' || hasPermission('reports') },
+    { id: 'daily-report' as IconName, name: language === 'ar' ? 'التقرير اليومي' : 'Daily Report', path: '/daily-report', show: ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '') || hasPermission('daily_report') || (user?.permissions?.some((p: any) => p.module === 'daily_report' && Array.isArray(p.actions) && p.actions.some((a: string) => ['write', 'edit'].includes(a))) ?? false) },
     { id: 'ads-funding' as IconName, name: language === 'ar' ? 'تقرير تمويل الإعلانات' : 'Ads Funding Report', path: '/ads-funding', show: user?.role === 'dev' || hasPermission('ads_funding') },
     { id: 'complaints' as IconName, name: language === 'ar' ? 'الشكاوى والمقترحات' : 'Complaints', path: '/complaints', show: user?.role === 'dev' || hasPermission('complaints') },
     { id: 'instructions' as IconName, name: language === 'ar' ? 'التعليمات' : 'Instructions', path: '/instructions', show: user?.role === 'dev' || hasPermission('instructions') },
