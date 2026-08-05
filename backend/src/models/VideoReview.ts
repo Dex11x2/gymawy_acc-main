@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type ReviewStepKind = 'upload' | 'revision' | 'edit_request' | 'approve';
+export type ReviewStepKind = 'upload' | 'revision' | 'edit_request' | 'approve' | 'unapprove';
 
 export interface IReviewSeen {
   userId: mongoose.Types.ObjectId;
@@ -41,7 +41,7 @@ const ReviewStepSchema = new Schema({
   id: { type: String, required: true },
   byId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   byName: { type: String },
-  kind: { type: String, enum: ['upload', 'revision', 'edit_request', 'approve'], required: true },
+  kind: { type: String, enum: ['upload', 'revision', 'edit_request', 'approve', 'unapprove'], required: true },
   link: { type: String },
   note: { type: String },
   mentionIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],

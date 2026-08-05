@@ -274,6 +274,79 @@ export const approve = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const unapprove = async (req: AuthRequest, res: Response) => {
+  try {
+    const review = await VideoReview.findById(req.params.id);
+    if (!review) return res.status(404).json({ message: 'المراجعة غير موجودة' });
+
+    // Same gate as approve — undoing an approval is a manager decision.
+    const me = String(req.user!.userId);
+    if (!isManager(req)) {
+      return res.status(403).json({ message: 'التراجع عن الاعتماد متاح للمدير فقط' });
+    }
+    if (review.status !== 'approved') {
+      return res.status(400).json({ message: 'المراجعة غير معتمدة أصلًا' });
+    }
+
+    // Unlink the calendar row: only clear the link we ourselves wrote, so a link
+    // someone edited by hand afterwards survives. Publish date / platforms stay —
+    // they are the row's own scheduling data, not something the approval owns.
+    if (review.linkedEntryId) {
+      const entry = await CalendarEntry.findById(review.linkedEntryId);
+      if (entry) {
+        if (review.finalLink && entry.videoLink === review.finalLink) entry.videoLink = '';
+        entry.scheduled = false;
+        await entry.save();
+      }
+    }
+
+    // Restore the state the review was in right before it got approved, so the
+    // right people are asked to act again.
+    const prev = [...review.steps].reverse().find((s) => s.kind !== 'approve' && s.kind !== 'unapprove');
+    review.status = prev?.kind === 'edit_request' ? 'changes_requested' : 'in_review';
+    review.currentMentionIds = (prev?.mentionIds || []) as any;
+    review.finalLink = undefined;
+    review.approvedById = undefined;
+    review.approvedAt = undefined;
+    review.linkedEntryId = undefined;
+    review.steps.push({
+      id: genId(),
+      byId: req.user!.userId,
+      byName: req.user!.name,
+      kind: 'unapprove',
+      note: (req.body.note || '').trim() || undefined,
+      mentionIds: review.currentMentionIds,
+      mentionNames: prev?.mentionNames || [],
+      seenBy: [],
+      createdAt: new Date(),
+    } as any);
+    await review.save();
+
+    // Notify all participants (creator + everyone who acted) except the actor.
+    const participants = new Set<string>();
+    participants.add(String(review.createdById));
+    review.steps.forEach((s) => participants.add(String(s.byId)));
+    participants.delete(me);
+    if (participants.size) {
+      const io = (req.app as any)?.get?.('io');
+      createNotification({
+        userId: Array.from(participants),
+        title: 'تم التراجع عن الاعتماد',
+        message: `«${review.title}» رجع تحت المراجعة تاني`,
+        type: 'video_review',
+        link: '/video-reviews',
+        senderId: me,
+        senderName: req.user!.name,
+      }, io).catch(() => { /* non-critical */ });
+    }
+
+    const populated = await populateReview(VideoReview.findById(review._id));
+    res.json(populated);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const deleteReview = async (req: AuthRequest, res: Response) => {
   try {
     if (!can(req, 'delete')) return res.status(403).json({ message: 'ليس لديك صلاحية للحذف' });

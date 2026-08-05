@@ -9,7 +9,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import Avatar from '../components/ui/Avatar';
-import { Plus, ExternalLink, Trash2, CheckCircle2, Clock, Eye, EyeOff, Film, MessageSquarePlus, Send, ClipboardCheck } from 'lucide-react';
+import { Plus, ExternalLink, Trash2, CheckCircle2, Clock, Eye, EyeOff, Film, MessageSquarePlus, Send, ClipboardCheck, RotateCcw } from 'lucide-react';
 
 interface UserOpt { id: string; name: string }
 
@@ -38,6 +38,7 @@ const KIND: Record<string, { label: string; icon: any; color: string }> = {
   revision: { label: 'نسخة/تعديل', icon: Film, color: '#8B5CF6' },
   edit_request: { label: 'طلب تعديل', icon: MessageSquarePlus, color: '#EF4444' },
   approve: { label: 'اعتماد', icon: CheckCircle2, color: '#22C55E' },
+  unapprove: { label: 'تراجع عن الاعتماد', icon: RotateCcw, color: '#F59E0B' },
 };
 
 const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
@@ -73,6 +74,11 @@ const VideoReviews: React.FC = () => {
   const [months, setMonths] = useState<CalMonth[]>([]);
   const [approveForm, setApproveForm] = useState({ monthId: '', account: '', entryId: '', publishDate: '', platforms: [] as string[] });
   const [approveEntries, setApproveEntries] = useState<CalEntry[]>([]);
+
+  // Unapprove modal
+  const [showUnapprove, setShowUnapprove] = useState(false);
+  const [unapproveNote, setUnapproveNote] = useState('');
+  const [unapproving, setUnapproving] = useState(false);
 
   const load = async () => {
     try {
@@ -185,6 +191,23 @@ const VideoReviews: React.FC = () => {
       notify('تم الاعتماد وربطه بالجدول');
     } catch (e: any) {
       notify(e?.response?.data?.message || 'فشل الاعتماد', 'error');
+    }
+  };
+
+  const handleUnapprove = async () => {
+    if (!open || unapproving) return;
+    try {
+      setUnapproving(true);
+      const updated = await videoReviewApi.unapprove(open.id, { note: unapproveNote.trim() || undefined });
+      setOpen(updated);
+      replaceReview(updated);
+      setShowUnapprove(false);
+      setUnapproveNote('');
+      notify('تم التراجع عن الاعتماد — تقدر تعدّل تاني');
+    } catch (e: any) {
+      notify(e?.response?.data?.message || 'فشل التراجع عن الاعتماد', 'error');
+    } finally {
+      setUnapproving(false);
     }
   };
 
@@ -369,8 +392,18 @@ const VideoReviews: React.FC = () => {
             )}
 
             {open.status === 'approved' && (
-              <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                ✅ تم الاعتماد بواسطة {personName(open.approvedById)} — واتربط بصف في الجدول.
+              <div className="space-y-3 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-500/10">
+                <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                  ✅ تم الاعتماد بواسطة {personName(open.approvedById)} — واتربط بصف في الجدول.
+                </p>
+                {isManager && (
+                  <button
+                    onClick={() => { setUnapproveNote(''); setShowUnapprove(true); }}
+                    className="flex items-center gap-2 rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-medium text-amber-600 hover:bg-amber-50 dark:border-amber-500/50 dark:bg-transparent dark:text-amber-400 dark:hover:bg-amber-500/10"
+                  >
+                    <RotateCcw className="h-4 w-4" /> تراجع عن الاعتماد
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -441,6 +474,29 @@ const VideoReviews: React.FC = () => {
           <div className="flex gap-2 pt-1">
             <button onClick={handleApprove} className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-600">اعتماد</button>
             <button onClick={() => setShowApprove(false)} className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm text-gray-700 dark:border-gray-600 dark:text-gray-200">إلغاء</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Unapprove modal */}
+      <Modal isOpen={showUnapprove} onClose={() => setShowUnapprove(false)} title="تراجع عن الاعتماد" size="sm">
+        <div className="space-y-3" dir="rtl">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            المراجعة هترجع تحت المراجعة تاني وتقدروا تكملوا تعديل، والصف المرتبط في الجدول هيتفك منه اللينك المعتمد وعلامة «اتجدول».
+          </p>
+          <p className="text-xs text-gray-400">تاريخ الرفع والمنصات في الصف هيفضلوا زي ما هما.</p>
+          <textarea
+            className={inputCls}
+            rows={3}
+            placeholder="سبب التراجع (اختياري) — هيظهر في التايم لاين"
+            value={unapproveNote}
+            onChange={(e) => setUnapproveNote(e.target.value)}
+          />
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleUnapprove} disabled={unapproving} className="flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-60">
+              <RotateCcw className="h-4 w-4" /> {unapproving ? 'جارٍ…' : 'تراجع عن الاعتماد'}
+            </button>
+            <button onClick={() => setShowUnapprove(false)} className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm text-gray-700 dark:border-gray-600 dark:text-gray-200">إلغاء</button>
           </div>
         </div>
       </Modal>

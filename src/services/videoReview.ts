@@ -1,7 +1,7 @@
 import api from './api';
 import { PersonRef, personName, personId } from './contentCalendar';
 
-export type ReviewStepKind = 'upload' | 'revision' | 'edit_request' | 'approve';
+export type ReviewStepKind = 'upload' | 'revision' | 'edit_request' | 'approve' | 'unapprove';
 
 export interface ReviewSeen {
   userId?: PersonRef | string;
@@ -73,6 +73,8 @@ export const videoReviewApi = {
     api.post(`/video-reviews/${id}/seen`).then((r) => r.data),
   approve: (id: string, data: ApproveInput): Promise<VideoReview> =>
     api.post(`/video-reviews/${id}/approve`, data).then((r) => r.data),
+  unapprove: (id: string, data?: { note?: string }): Promise<VideoReview> =>
+    api.post(`/video-reviews/${id}/unapprove`, data || {}).then((r) => r.data),
   deleteReview: (id: string): Promise<any> =>
     api.delete(`/video-reviews/${id}`).then((r) => r.data),
 };

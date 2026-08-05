@@ -12,6 +12,7 @@ router.post('/', controller.createReview);
 router.post('/:id/steps', controller.addStep);
 router.post('/:id/seen', controller.markSeen);
 router.post('/:id/approve', controller.approve);
+router.post('/:id/unapprove', controller.unapprove);
 router.delete('/:id', controller.deleteReview);
 
 export default router;
