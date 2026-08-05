@@ -139,6 +139,7 @@ const Layout: React.FC = () => {
     // تهيئة الصوت بعد أول تفاعل من المستخدم (سياسات المتصفح)
     const prime = () => primeNotificationSound();
     window.addEventListener('pointerdown', prime, { once: true });
+    window.addEventListener('touchstart', prime, { once: true });
     window.addEventListener('keydown', prime, { once: true });
 
     let socket = (window as any).socket;
@@ -175,6 +176,7 @@ const Layout: React.FC = () => {
 
     return () => {
       window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('touchstart', prime);
       window.removeEventListener('keydown', prime);
       cleanup();
     };

@@ -52,27 +52,37 @@ export const primeNotificationSound = (): void => {
   if (c && c.state === 'suspended') c.resume().catch(() => {});
 };
 
-// نغمة قصيرة لطيفة من نبرتين
+// نغمة إشعار واضحة (3 نبرات صاعدة) + اهتزاز خفيف على الموبايل عشان تاخد البال
 export const playNotificationSound = (): void => {
   if (!isSoundEnabled()) return;
+
+  // اهتزاز خفيف على الأندرويد/الموبايل (لو مدعوم)
+  try { (navigator as any).vibrate?.([40, 40, 40]); } catch { /* ignore */ }
+
   const c = getCtx();
   if (!c) return;
   try {
     if (c.state === 'suspended') c.resume().catch(() => {});
     const now = c.currentTime;
-    const tones: Array<[number, number]> = [[880, 0], [1174.66, 0.12]];
+    // نغمة "دِن-دِن-دِن" صاعدة (ثلاثي كبير)
+    const tones: Array<[number, number]> = [[659.25, 0], [830.61, 0.11], [987.77, 0.22]];
     tones.forEach(([freq, offset]) => {
       const osc = c.createOscillator();
+      const osc2 = c.createOscillator();
       const gain = c.createGain();
       osc.type = 'sine';
+      osc2.type = 'triangle';
       osc.frequency.value = freq;
+      osc2.frequency.value = freq * 2; // طبقة أعلى لصوت أوضح
       const start = now + offset;
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.22, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
-      osc.connect(gain).connect(c.destination);
-      osc.start(start);
-      osc.stop(start + 0.36);
+      gain.gain.exponentialRampToValueAtTime(0.34, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+      osc.connect(gain);
+      osc2.connect(gain);
+      gain.connect(c.destination);
+      osc.start(start); osc2.start(start);
+      osc.stop(start + 0.32); osc2.stop(start + 0.32);
     });
   } catch {
     // تجاهل بصمت
