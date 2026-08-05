@@ -15,7 +15,8 @@ export const generateToken = (userId: string): string => {
   const payload = { id: userId };
   const secret = getSecret();
   const options: any = {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+    // جلسة طويلة جداً: المستخدم يسجّل دخول مرة ويفضل داخل لحد ما يعمل خروج بنفسه
+    expiresIn: process.env.JWT_EXPIRE || '3650d'
   };
 
   return jwt.sign(payload, secret, options);

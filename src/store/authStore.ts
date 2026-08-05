@@ -90,9 +90,15 @@ const authStore = create<AuthState>((set, get) => ({
     try {
       const response = await api.get('/auth/me');
       set({ user: response.data, isAuthenticated: true, isLoading: false });
-    } catch {
-      clearStoredToken();
-      set({ user: null, isAuthenticated: false, isLoading: false });
+    } catch (err: any) {
+      // نخرج المستخدم فقط لو التوكن نفسه باطل/منتهي (401)؛
+      // أي خطأ شبكة/سيرفر مؤقت مانمسحش التوكن عشان يفضل مسجّل دخول لما يفتح تاني
+      if (err?.response?.status === 401) {
+        clearStoredToken();
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      } else {
+        set({ isAuthenticated: false, isLoading: false });
+      }
     }
   },
 
