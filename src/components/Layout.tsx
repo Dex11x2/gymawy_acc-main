@@ -9,7 +9,8 @@ import { GlobalSearch } from './GlobalSearch';
 import Logo from './Logo';
 import { NotificationPanel } from './NotificationPanel';
 import { autoBackup } from '../utils/backup';
-import { playNotificationSound, primeNotificationSound, isTypeMuted } from '../utils/notificationSound';
+import { playNotificationSound, primeNotificationSound, isTypeMuted, isSoundEnabled, setSoundEnabled } from '../utils/notificationSound';
+import { initWebPush, webPushState } from '../services/webPush';
 import { attentionCount, empIdOf } from '../utils/tasks';
 import { iconComponents, IconName } from './Icons';
 import { Avatar, Button } from './ui';
@@ -32,11 +33,14 @@ const Layout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [pushStatus, setPushStatus] = useState<'granted' | 'denied' | 'default' | 'unavailable'>(webPushState());
+  const [enablingPush, setEnablingPush] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const { user, logout } = useAuthStore();
-  const { language, theme, setLanguage, toggleTheme } = useSettingsStore();
+  const { language, theme, toggleTheme } = useSettingsStore();
   const { getUnreadCount, loadNotifications, addNotification } = useNotificationStore();
   const { loadRevenues, loadExpenses, loadDepartments, loadEmployees, loadDevTasks, devTasks, tasks, loadTasks, employees } = useDataStore();
   const location = useLocation();
@@ -567,29 +571,58 @@ const Layout: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-6">{t.settings}</h3>
 
             <div className="space-y-6">
-              {/* Language Selection */}
+              {/* Notification Sound */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  {t.language}
+                  {language === 'ar' ? 'صوت الإشعارات' : 'Notification Sound'}
                 </label>
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => setLanguage('ar')}
-                    variant={language === 'ar' ? 'primary' : 'outline'}
+                    onClick={() => { setSoundEnabled(true); setSoundOn(true); primeNotificationSound(); playNotificationSound(); }}
+                    variant={soundOn ? 'primary' : 'outline'}
                     size="sm"
                     fullWidth
                   >
-                    العربية
+                    {language === 'ar' ? 'مُفعّل' : 'On'}
                   </Button>
                   <Button
-                    onClick={() => setLanguage('en')}
-                    variant={language === 'en' ? 'primary' : 'outline'}
+                    onClick={() => { setSoundEnabled(false); setSoundOn(false); }}
+                    variant={!soundOn ? 'primary' : 'outline'}
                     size="sm"
                     fullWidth
                   >
-                    English
+                    {language === 'ar' ? 'صامت' : 'Off'}
                   </Button>
                 </div>
+              </div>
+
+              {/* Device Push Notifications */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  {language === 'ar' ? 'إشعارات الجهاز' : 'Device Notifications'}
+                </label>
+                {pushStatus === 'granted' ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-success-50 dark:bg-success-500/10 px-3 py-2 text-sm font-medium text-success-700 dark:text-success-300">
+                    <Bell className="h-4 w-4" /> {language === 'ar' ? 'مُفعّلة على هذا الجهاز' : 'Enabled on this device'}
+                  </div>
+                ) : pushStatus === 'unavailable' ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'غير مدعومة على هذا المتصفح' : 'Not supported on this browser'}</p>
+                ) : (
+                  <div>
+                    <Button
+                      onClick={async () => { setEnablingPush(true); const r = await initWebPush(true); setPushStatus(webPushState()); setEnablingPush(false); if (r === 'denied') { /* المستخدم رفض */ } }}
+                      variant="outline"
+                      size="sm"
+                      fullWidth
+                      icon={<Bell className="h-4 w-4" />}
+                    >
+                      {enablingPush ? (language === 'ar' ? '...جاري التفعيل' : 'Enabling...') : (language === 'ar' ? 'فعّل إشعارات الجهاز' : 'Enable device notifications')}
+                    </Button>
+                    {pushStatus === 'denied' && (
+                      <p className="text-xs text-error-500 mt-1">{language === 'ar' ? 'الإشعارات مرفوضة — فعّلها من إعدادات المتصفح' : 'Blocked — enable from browser settings'}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Theme Selection */}
