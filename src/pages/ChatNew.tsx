@@ -123,7 +123,6 @@ const Chat: React.FC = () => {
               name: u.name,
               email: u.email,
               role: u.role || 'User',
-              isOnline: Math.random() > 0.3, // Mock online status if not real
               avatarColor: getAvatarColor(index),
               initials: getInitials(u.name),
               avatar: u.avatar || ''
