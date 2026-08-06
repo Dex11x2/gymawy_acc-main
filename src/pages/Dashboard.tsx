@@ -208,32 +208,37 @@ const Dashboard: React.FC = () => {
     { code: 'AED', name: 'درهم إماراتي', flag: '🇦🇪', color: 'warning' as const, borderColor: 'border-warning-500' },
   ];
 
+  // الوقت النسبي بالعربي
+  const timeAgoAr = (d: any): string => {
+    const t = new Date(d).getTime();
+    if (!t) return '';
+    const secs = Math.floor((Date.now() - t) / 1000);
+    if (secs < 60) return 'الآن';
+    const mins = Math.floor(secs / 60); if (mins < 60) return `منذ ${mins} دقيقة`;
+    const hrs = Math.floor(mins / 60); if (hrs < 24) return `منذ ${hrs} ساعة`;
+    const days = Math.floor(hrs / 24); if (days < 30) return `منذ ${days} يوم`;
+    return new Date(d).toLocaleDateString('ar-EG');
+  };
+
+  // أنشطة حقيقية من آخر الإيرادات والمصروفات المسجّلة
   const recentActivities = [
-    {
-      id: 1,
-      text: "تم إضافة موظف جديد: أحمد محمد",
-      time: "منذ ساعة",
-      type: "employee",
-    },
-    {
-      id: 2,
-      text: "تم إضافة إيراد جديد: 5000 ج.م",
-      time: "منذ ساعتين",
-      type: "revenue",
-    },
-    {
-      id: 3,
-      text: "تم صرف راتب لقسم المحاسبة",
-      time: "منذ 3 ساعات",
-      type: "payroll",
-    },
-    {
-      id: 4,
-      text: "تم إضافة مصروف: مستلزمات مكتبية",
-      time: "منذ 4 ساعات",
-      type: "expense",
-    },
-  ];
+    ...(revenues || []).map((r: any) => ({
+      id: 'r' + (r.id || r._id),
+      dot: 'bg-success-500',
+      text: `إيراد: ${r.title || r.category || 'إيراد'} — ${(r.amount || 0).toLocaleString()} ${getCurrencySymbol(r.currency)}`,
+      date: r.date || r.createdAt,
+    })),
+    ...(expenses || []).map((e: any) => ({
+      id: 'e' + (e.id || e._id),
+      dot: e.type === 'refund' ? 'bg-amber-500' : 'bg-error-500',
+      text: `${e.type === 'refund' ? 'مرتجع' : 'مصروف'}: ${e.title || e.category || ''} — ${(e.amount || 0).toLocaleString()} ${getCurrencySymbol(e.currency)}`,
+      date: e.date || e.createdAt,
+    })),
+  ]
+    .filter((a) => a.date)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 6)
+    .map((a) => ({ ...a, time: timeAgoAr(a.date) }));
 
   return (
     <div className="space-y-6">
@@ -475,13 +480,24 @@ const Dashboard: React.FC = () => {
           <Card.Body>
             <RevenueExpenseChart
               data={useMemo(() => {
-                const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-                return months.map((month) => ({
-                  month,
-                  revenue: Math.floor(Math.random() * 50000) + 10000,
-                  expense: Math.floor(Math.random() * 30000) + 5000,
+                // آخر 6 شهور — بالجنيه المصري (العملة الأساسية)
+                const now = new Date();
+                const buckets: { y: number; m: number; label: string }[] = [];
+                for (let i = 5; i >= 0; i--) {
+                  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                  buckets.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleDateString('ar-EG', { month: 'short' }) });
+                }
+                const sumIn = (arr: any[], y: number, m: number, pred: (x: any) => boolean) =>
+                  (arr || []).filter((x) => {
+                    const dt = new Date(x.date || x.createdAt);
+                    return dt.getFullYear() === y && dt.getMonth() === m && x.currency === 'EGP' && pred(x);
+                  }).reduce((s, x) => s + (x.amount || 0), 0);
+                return buckets.map(({ y, m, label }) => ({
+                  month: label,
+                  revenue: sumIn(revenues, y, m, () => true),
+                  expense: sumIn(expenses, y, m, (e) => e.type !== 'refund'),
                 }));
-              }, [])}
+              }, [revenues, expenses])}
             />
           </Card.Body>
         </Card>
@@ -497,16 +513,21 @@ const Dashboard: React.FC = () => {
           </Card.Header>
           <Card.Body>
             <CategoryPieChart
-              data={useMemo(
-                () => [
-                  { name: "رواتب", value: 40 },
-                  { name: "إيجار", value: 25 },
-                  { name: "مرافق", value: 15 },
-                  { name: "صيانة", value: 10 },
-                  { name: "أخرى", value: 10 },
-                ],
-                []
-              )}
+              data={useMemo(() => {
+                // توزيع حقيقي للمصروفات حسب الفئة (بالجنيه المصري)
+                const map: Record<string, number> = {};
+                (expenses || [])
+                  .filter((e: any) => e.type !== 'refund' && e.currency === 'EGP')
+                  .forEach((e: any) => {
+                    const cat = e.category || 'أخرى';
+                    map[cat] = (map[cat] || 0) + (e.amount || 0);
+                  });
+                const entries = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+                const top = entries.slice(0, 5);
+                const rest = entries.slice(5).reduce((s, e) => s + e.value, 0);
+                if (rest > 0) top.push({ name: 'أخرى', value: rest });
+                return top;
+              }, [expenses])}
             />
           </Card.Body>
         </Card>
@@ -590,12 +611,14 @@ const Dashboard: React.FC = () => {
           </Card.Header>
           <Card.Body>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
+              {recentActivities.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">لا توجد أنشطة بعد</p>
+              ) : recentActivities.map((activity) => (
                 <div
                   key={activity.id}
                   className="flex items-start gap-3"
                 >
-                  <div className="w-2 h-2 bg-brand-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className={`w-2 h-2 ${(activity as any).dot || 'bg-brand-500'} rounded-full mt-2 flex-shrink-0`}></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-800 dark:text-white/90">{activity.text}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{activity.time}</p>
