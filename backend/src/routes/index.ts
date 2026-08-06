@@ -98,6 +98,9 @@ router.use('/video-reviews', videoReviewRoutes);
 import dailyReportRoutes from './dailyReport.routes';
 router.use('/daily-reports', dailyReportRoutes);
 
+import financialReportRoutes from './financialReport.routes';
+router.use('/financial-reports', financialReportRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

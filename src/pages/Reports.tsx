@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from "../store/dataStore";
 import { usePermissions } from '../hooks/usePermissions';
 import { Card, Button, Table } from '../components/ui';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { toast } from '../store/toastStore';
+import { financialReportApi, FinancialReportSend } from '../services/financialReport';
 import {
   FileBarChart,
   Lock,
@@ -16,7 +19,9 @@ import {
   Users,
   Building2,
   Wallet,
-  AlertCircle
+  AlertCircle,
+  Send,
+  CheckCircle2
 } from 'lucide-react';
 
 type Currency = "EGP" | "SAR" | "USD" | "AED";
@@ -33,6 +38,14 @@ const Reports: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency | "all">("all");
+  const [sending, setSending] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
+  const [lastSends, setLastSends] = useState<FinancialReportSend[]>([]);
+
+  const loadSends = useCallback(async () => {
+    try { setLastSends(await financialReportApi.recent(selectedMonth, selectedYear)); } catch { /* ignore */ }
+  }, [selectedMonth, selectedYear]);
+  useEffect(() => { loadSends(); }, [loadSends]);
 
   const getCurrencySymbol = (currency: Currency) => {
     const symbols = { EGP: "ج.م", SAR: "ر.س", USD: "$", AED: "د.إ" };
@@ -97,6 +110,30 @@ const Reports: React.FC = () => {
   };
 
   const currencies: Currency[] = ["EGP", "SAR", "USD", "AED"];
+
+  // ملخّص مختصر للإشعار (صافي الربح لكل عملة فيها حركة)
+  const buildSummary = () => {
+    const parts: string[] = [];
+    for (const c of currencies) {
+      const d = calculateByCurrency(c);
+      if (d.totalRevenue || d.totalExpense) parts.push(`${getCurrencySymbol(c)} صافي ${Math.round(d.netProfit).toLocaleString()}`);
+    }
+    return parts.join(' · ');
+  };
+
+  const handleSend = async () => {
+    setShowSendConfirm(false);
+    setSending(true);
+    try {
+      await financialReportApi.send({ month: selectedMonth, year: selectedYear, summary: buildSummary() });
+      toast('تم إرسال التقرير للمدير الإداري والمدير العام ✅', 'success');
+      loadSends();
+    } catch (e: any) {
+      toast(e?.response?.data?.message || 'تعذّر إرسال التقرير', 'error');
+    } finally { setSending(false); }
+  };
+
+  const monthLabel = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
 
   const periodText = selectedPeriod === "month"
     ? new Date(selectedYear, selectedMonth - 1).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
@@ -280,12 +317,36 @@ const Reports: React.FC = () => {
               إعدادات التقارير اليومية
             </Button>
           )}
-          <Button onClick={generatePDF}>
+          <Button variant="outline" onClick={generatePDF}>
             <FileText className="w-4 h-4" />
             تصدير PDF
           </Button>
+          <Button onClick={() => setShowSendConfirm(true)} disabled={sending}>
+            <Send className="w-4 h-4" />
+            {sending ? 'جاري الإرسال...' : 'إرسال التقرير للمدراء'}
+          </Button>
         </div>
       </div>
+
+      {/* حالة آخر إرسال للشهر المحدد */}
+      {lastSends.length > 0 && (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          <span className="text-emerald-800 dark:text-emerald-300">
+            اتبعت تقارير {monthLabel} للمدراء — آخر إرسال بواسطة <b>{lastSends[0].sentByName}</b> ({new Date(lastSends[0].createdAt).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })})
+          </span>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={showSendConfirm}
+        onClose={() => setShowSendConfirm(false)}
+        onConfirm={handleSend}
+        type="info"
+        title="إرسال التقرير المالي"
+        message={`هيتبعت تقرير ${monthLabel} للمدير الإداري (حسين) والمدير العام (يوسف) مع إشعار. متأكد إن التقرير خلص وجاهز؟`}
+        confirmText="تأكيد وإرسال"
+      />
 
       {/* Filters */}
       <Card>
