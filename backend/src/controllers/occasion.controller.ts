@@ -5,23 +5,10 @@ import User from '../models/User';
 
 export const getOccasions = async (req: AuthRequest, res: Response) => {
   try {
-    const companyId = req.user?.companyId || req.user?._id;
-    console.log('🔍 Getting occasions for companyId:', companyId);
-    console.log('👤 User info:', { id: req.user?._id, companyId: req.user?.companyId, role: req.user?.role });
-    
-    const occasions = await Occasion.find({ companyId })
+    // المناسبات مشتركة للفريق كله (عشان الباقي يعرفوا بأعياد الميلاد والمناسبات)
+    const occasions = await Occasion.find({})
       .populate('createdBy', 'name avatar')
       .sort({ date: 1 });
-    
-    console.log('📋 Found occasions:', occasions.length);
-    
-    // جلب جميع المناسبات بدون فلتر للتأكد
-    const allOccasions = await Occasion.find({});
-    console.log('📋 Total occasions in DB:', allOccasions.length);
-    if (allOccasions.length > 0) {
-      console.log('📋 Sample occasion companyId:', allOccasions[0].companyId);
-    }
-    
     res.json({ success: true, data: occasions });
   } catch (error: any) {
     console.error('Error getting occasions:', error);
@@ -36,13 +23,17 @@ export const getTodayOccasions = async (req: AuthRequest, res: Response) => {
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayEnd = new Date(today.setHours(23, 59, 59, 999));
 
-    const occasions = await Occasion.find({
-      companyId,
-      date: { $gte: todayStart, $lte: todayEnd }
-    }).populate('createdBy', 'name avatar');
+    // المناسبات المشتركة: اليوم بالضبط أو المتكررة بنفس الشهر/اليوم
+    const allOccasions = await Occasion.find({}).populate('createdBy', 'name avatar');
+    const occasions = allOccasions.filter((oc: any) => {
+      const d = new Date(oc.date);
+      return oc.isRecurring
+        ? (d.getMonth() === today.getMonth() && d.getDate() === today.getDate())
+        : (d >= todayStart && d <= todayEnd);
+    });
 
-    // Get birthdays
-    const employees = await User.find({ companyId });
+    // أعياد ميلاد كل الموظفين (من تاريخ الميلاد)
+    const employees = await User.find({ isActive: true });
     const birthdays = employees.filter(emp => {
       if (!emp.birthDate) return false;
       const birthDate = new Date(emp.birthDate);
@@ -64,16 +55,13 @@ export const createOccasion = async (req: AuthRequest, res: Response) => {
   try {
     const companyId = req.user?.companyId || req.user?._id;
     const createdBy = req.user?._id || req.user?.userId;
-    
-    console.log('Creating occasion:', { ...req.body, companyId, createdBy });
-    
+
     const occasion = await Occasion.create({
       ...req.body,
       companyId,
       createdBy
     });
-    
-    console.log('Occasion created:', occasion);
+
     res.status(201).json({ success: true, data: occasion });
   } catch (error: any) {
     console.error('Error creating occasion:', error);
@@ -81,15 +69,21 @@ export const createOccasion = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
+const canManageOccasion = (req: AuthRequest, oc: any): boolean => {
+  const myId = (req.user?._id || req.user?.userId)?.toString();
+  const ownerId = (oc.createdBy?._id || oc.createdBy)?.toString();
+  return MANAGER_ROLES.includes(req.user?.role as string) || ownerId === myId;
+};
+
 export const updateOccasion = async (req: AuthRequest, res: Response) => {
   try {
-    const companyId = req.user?.companyId || req.user?._id;
-    const occasion = await Occasion.findOneAndUpdate(
-      { _id: req.params.id, companyId },
-      req.body,
-      { new: true }
-    );
-    if (!occasion) return res.status(404).json({ success: false, message: 'المناسبة غير موجودة' });
+    const existing = await Occasion.findById(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'المناسبة غير موجودة' });
+    if (!canManageOccasion(req, existing)) return res.status(403).json({ success: false, message: 'تقدر تعدّل مناسباتك أنت فقط' });
+
+    const { companyId, createdBy, ...allowed } = req.body; // منع تغيير المالك
+    const occasion = await Occasion.findByIdAndUpdate(req.params.id, allowed, { new: true });
     res.json({ success: true, data: occasion });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -98,12 +92,11 @@ export const updateOccasion = async (req: AuthRequest, res: Response) => {
 
 export const deleteOccasion = async (req: AuthRequest, res: Response) => {
   try {
-    const companyId = req.user?.companyId || req.user?._id;
-    const occasion = await Occasion.findOneAndDelete({
-      _id: req.params.id,
-      companyId
-    });
-    if (!occasion) return res.status(404).json({ success: false, message: 'المناسبة غير موجودة' });
+    const existing = await Occasion.findById(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'المناسبة غير موجودة' });
+    if (!canManageOccasion(req, existing)) return res.status(403).json({ success: false, message: 'تقدر تحذف مناسباتك أنت فقط' });
+
+    await Occasion.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'تم الحذف بنجاح' });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

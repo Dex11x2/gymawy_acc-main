@@ -275,7 +275,7 @@ const Layout: React.FC = () => {
     { id: 'ads-funding' as IconName, name: language === 'ar' ? 'تقرير تمويل الإعلانات' : 'Ads Funding Report', path: '/ads-funding', show: user?.role === 'dev' || hasPermission('ads_funding') },
     { id: 'complaints' as IconName, name: language === 'ar' ? 'الشكاوى والمقترحات' : 'Complaints', path: '/complaints', show: user?.role === 'dev' || hasPermission('complaints') },
     { id: 'instructions' as IconName, name: language === 'ar' ? 'التعليمات' : 'Instructions', path: '/instructions', show: user?.role === 'dev' || hasPermission('instructions') },
-    { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: user?.role === 'dev' || hasPermission('occasions') },
+    { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: true },
   ].filter(item => item.show);
 
   const sidebarWidth = sidebarOpen ? 'w-[290px]' : 'w-[90px]';

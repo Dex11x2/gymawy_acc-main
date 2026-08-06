@@ -151,7 +151,7 @@ const App: React.FC = () => {
             <Route path="/branches" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><Branches /></Protected>} />
             <Route path="/attendance-management" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><AttendanceManagement /></Protected>} />
             <Route path="/attendance-map" element={<AttendanceWithMap />} />
-            <Route path="/occasions" element={<Protected module="occasions"><Occasions /></Protected>} />
+            <Route path="/occasions" element={<Occasions />} />
             <Route path="/report-settings" element={<Protected roles={['dev', 'general_manager', 'administrative_manager']}><ReportSettings /></Protected>} />
             <Route path="/ads-funding" element={<Protected module="ads_funding"><AdsFundingReport /></Protected>} />
             <Route path="/media-salaries" element={<Protected module="media_salaries"><MediaSalaries /></Protected>} />

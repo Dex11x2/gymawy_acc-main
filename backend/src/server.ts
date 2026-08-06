@@ -14,6 +14,7 @@ import { startDailyReportJob } from './jobs/dailyReport.job';
 import { startSelfieCleanupJob } from './jobs/selfieCleanup.job';
 import { startContentReminderJob } from './jobs/contentReminder.job';
 import { startBackupJob } from './jobs/backup.job';
+import { startOccasionReminderJob } from './jobs/occasionReminder.job';
 
 // Load environment variables from backend/.env
 dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
@@ -262,6 +263,7 @@ const startServer = async () => {
     startSelfieCleanupJob(); // تنظيف صور السيلفي شهرياً
     startContentReminderJob(); // تذكيرات جدولة المحتوى يومياً
     startBackupJob(); // نسخة احتياطية يومية لقاعدة البيانات
+    startOccasionReminderJob(); // تذكيرات المناسبات وأعياد الميلاد يومياً
 
     httpServer.listen(PORT, () => {
       console.log('');

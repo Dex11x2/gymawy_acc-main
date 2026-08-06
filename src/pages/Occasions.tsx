@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePermissions } from '../hooks/usePermissions';
+import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import Toast from '../components/Toast';
@@ -7,7 +7,6 @@ import { Card, Badge, Button } from '../components/ui';
 import {
   PartyPopper,
   Plus,
-  Lock,
   Edit2,
   Trash2,
   Cake,
@@ -21,12 +20,17 @@ import {
 } from 'lucide-react';
 
 const Occasions: React.FC = () => {
-  const { canRead, canWrite, canUpdate, canDelete } = usePermissions();
-  const canViewOccasions = canRead('occasions');
-  const canWriteOccasions = canWrite('occasions');
-  const canUpdateOccasions = canUpdate('occasions');
-  const canDeleteOccasions = canDelete('occasions');
+  const { user } = useAuthStore();
+  const MANAGER_ROLES = ['dev', 'general_manager', 'administrative_manager'];
+  const isManager = MANAGER_ROLES.includes(user?.role || '');
+  // كل الموظفين يقدروا يدخلوا ويضيفوا مناسباتهم
+  const canManage = (oc: any): boolean => {
+    if (isManager) return true;
+    const ownerId = (oc?.createdBy?._id || oc?.createdBy?.id || oc?.createdBy)?.toString?.() || oc?.createdBy;
+    return ownerId === user?.id;
+  };
   const [occasions, setOccasions] = useState<any[]>([]);
+  const [todayOccasions, setTodayOccasions] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', type: 'holiday', date: '', description: '', isRecurring: false });
@@ -34,6 +38,7 @@ const Occasions: React.FC = () => {
 
   useEffect(() => {
     loadOccasions();
+    api.get('/occasions/today').then((r) => setTodayOccasions(r.data?.data || [])).catch(() => {});
   }, []);
 
   const loadOccasions = async () => {
@@ -143,21 +148,6 @@ const Occasions: React.FC = () => {
     return colors[type] || colors.other;
   };
 
-  // Permission Guard
-  if (!canViewOccasions) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center">
-            <Lock className="w-10 h-10 text-error-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">ليس لديك صلاحية</h2>
-          <p className="text-gray-600 dark:text-gray-400">لا يمكنك الوصول إلى المناسبات</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
@@ -169,15 +159,30 @@ const Occasions: React.FC = () => {
             </div>
             المناسبات
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة المناسبات والأعياد</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">ضيف مناسبتك (عيد ميلادك أو غيره) — هييجي تذكير النهاردة وقبلها بيوم، والفريق كله هيعرف 🎉</p>
         </div>
-        {canWriteOccasions && (
-          <Button onClick={resetForm}>
-            <Plus className="w-4 h-4" />
-            إضافة مناسبة
-          </Button>
-        )}
+        <Button onClick={resetForm}>
+          <Plus className="w-4 h-4" />
+          إضافة مناسبة
+        </Button>
       </div>
+
+      {/* بانر مناسبات النهاردة */}
+      {todayOccasions.length > 0 && (
+        <div className="rounded-2xl border border-pink-200 bg-gradient-to-l from-pink-50 to-amber-50 p-4 dark:border-pink-500/30 dark:from-pink-500/10 dark:to-amber-500/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Cake className="w-5 h-5 text-pink-500" />
+            <span className="font-bold text-gray-800 dark:text-gray-100">مناسبات النهاردة 🎉</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {todayOccasions.map((t: any, i: number) => (
+              <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-white/70 dark:bg-gray-800/60 px-3 py-1 text-sm font-semibold text-pink-700 dark:text-pink-300">
+                {t.type === 'birthday' ? '🎂' : '📅'} {t.title}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Occasions Grid */}
       {occasions.length === 0 ? (
@@ -203,28 +208,24 @@ const Occasions: React.FC = () => {
                     <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${getTypeColor(occasion.type)}`}>
                       {getTypeIcon(occasion.type)}
                     </div>
-                    {(canUpdateOccasions || canDeleteOccasions) && (
+                    {canManage(occasion) && (
                       <div className="flex gap-2">
-                        {canUpdateOccasions && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(occasion)}
-                            className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/20"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {canDeleteOccasions && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(occasionId)}
-                            className="text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/20"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(occasion)}
+                          className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/20"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(occasionId)}
+                          className="text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/20"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     )}
                   </div>
