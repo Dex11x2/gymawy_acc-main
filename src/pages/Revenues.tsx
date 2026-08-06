@@ -6,8 +6,8 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
-import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, Search, BarChart3 } from 'lucide-react';
-import { DailyBarChart } from '../components/Charts';
+import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, Search } from 'lucide-react';
+import ProgressMetricCard from '../components/metric/ProgressMetricCard';
 
 type Currency = "EGP" | "USD" | "SAR" | "AED";
 
@@ -363,18 +363,17 @@ const Revenues: React.FC = () => {
         />
       </div>
 
-      {/* الرسم اليومي */}
-      <Card>
-        <Card.Header className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-brand-500" /> الإيرادات اليومية — {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
-          </h2>
-          <span className="text-xs text-gray-500 dark:text-gray-400">بالعملة: {curSymbol} (غيّرها من فلتر العملة فوق)</span>
-        </Card.Header>
-        <Card.Body>
-          <DailyBarChart data={dailyRevenue} label={`إيرادات (${curSymbol})`} color="#12b76a" />
-        </Card.Body>
-      </Card>
+      {/* الرسم اليومي التفاعلي */}
+      <ProgressMetricCard
+        title={`إيرادات ${new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long' })} (${curSymbol})`}
+        data={dailyRevenue.map((d) => ({ date: d.day, value: d.value }))}
+        accent="emerald"
+        unit={curSymbol}
+        deltaLabel="مقارنة بأمس"
+        period="كل الشهر"
+        periodOptions={[{ label: 'كل الشهر' }, { label: 'آخر 14 يوم', points: 14 }, { label: 'آخر 7 أيام', points: 7 }]}
+        dateFormatter={(d) => `يوم ${d}`}
+      />
 
       {/* Revenues Table */}
       <Card>

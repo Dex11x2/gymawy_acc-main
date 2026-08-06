@@ -2,7 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDataStore } from "../store/dataStore";
 import { useAuthStore } from "../store/authStore";
-import { RevenueExpenseChart, CategoryPieChart } from "../components/Charts";
+import { CategoryPieChart } from "../components/Charts";
+import ProgressMetricCard from "../components/metric/ProgressMetricCard";
 import Modal from '../components/Modal';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Alert } from '../components/ui';
@@ -468,39 +469,32 @@ const Dashboard: React.FC = () => {
 
       {/* Charts - TailAdmin Card Pattern */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        <Card>
-          <Card.Header>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-brand-500" />
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-                الإيرادات والمصروفات
-              </h3>
-            </div>
-          </Card.Header>
-          <Card.Body>
-            <RevenueExpenseChart
-              data={useMemo(() => {
-                // آخر 6 شهور — بالجنيه المصري (العملة الأساسية)
-                const now = new Date();
-                const buckets: { y: number; m: number; label: string }[] = [];
-                for (let i = 5; i >= 0; i--) {
-                  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                  buckets.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleDateString('ar-EG', { month: 'short' }) });
-                }
-                const sumIn = (arr: any[], y: number, m: number, pred: (x: any) => boolean) =>
-                  (arr || []).filter((x) => {
-                    const dt = new Date(x.date || x.createdAt);
-                    return dt.getFullYear() === y && dt.getMonth() === m && x.currency === 'EGP' && pred(x);
-                  }).reduce((s, x) => s + (x.amount || 0), 0);
-                return buckets.map(({ y, m, label }) => ({
-                  month: label,
-                  revenue: sumIn(revenues, y, m, () => true),
-                  expense: sumIn(expenses, y, m, (e) => e.type !== 'refund'),
-                }));
-              }, [revenues, expenses])}
-            />
-          </Card.Body>
-        </Card>
+        <ProgressMetricCard
+          title="الإيرادات والمصروفات — آخر 6 شهور (ج.م)"
+          unit="ج.م"
+          defaultView="bars"
+          period="آخر 6 شهور"
+          periodOptions={[{ label: 'آخر 6 شهور' }, { label: 'آخر 3 شهور', points: 3 }]}
+          deltaLabel="مقارنة بالشهر السابق"
+          series={useMemo(() => {
+            // آخر 6 شهور — بالجنيه المصري (العملة الأساسية)
+            const now = new Date();
+            const buckets: { y: number; m: number; label: string }[] = [];
+            for (let i = 5; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              buckets.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleDateString('ar-EG', { month: 'short' }) });
+            }
+            const sumIn = (arr: any[], y: number, m: number, pred: (x: any) => boolean) =>
+              (arr || []).filter((x) => {
+                const dt = new Date(x.date || x.createdAt);
+                return dt.getFullYear() === y && dt.getMonth() === m && x.currency === 'EGP' && pred(x);
+              }).reduce((s, x) => s + (x.amount || 0), 0);
+            return [
+              { name: 'الإيرادات', accent: 'emerald' as const, data: buckets.map((b) => ({ date: b.label, value: sumIn(revenues, b.y, b.m, () => true) })) },
+              { name: 'المصروفات', accent: 'rose' as const, data: buckets.map((b) => ({ date: b.label, value: sumIn(expenses, b.y, b.m, (e) => e.type !== 'refund') })) },
+            ];
+          }, [revenues, expenses])}
+        />
 
         <Card>
           <Card.Header>

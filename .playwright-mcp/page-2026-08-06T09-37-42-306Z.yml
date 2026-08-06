@@ -1,0 +1,368 @@
+- generic [ref=e389]:
+  - complementary [ref=e390]:
+    - link [ref=e392] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=e393]
+    - generic [ref=e394]: القائمة
+    - navigation [ref=e395]:
+      - list [ref=e396]:
+        - listitem [ref=e397]:
+          - link "مساحتي" [ref=e398] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=e404]:
+          - link "الأجازات والإذونات" [ref=e405] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=e410]:
+          - link "لوحة التحكم" [ref=e411] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=e419]:
+          - link "تسجيل الحضور" [ref=e420] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=e426]:
+          - link "إدارة الحضور" [ref=e427] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=e432]:
+          - link "الفروع والصلاحيات" [ref=e433] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=e439]:
+          - link "إدارة الصلاحيات" [ref=e440] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=e446]:
+          - link "الأقسام" [ref=e447] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=e455]:
+          - link "الموظفون" [ref=e456] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=e462]:
+          - link "الرواتب الشهرية" [ref=e463] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=e468]:
+          - link "رواتب الميديا" [ref=e469] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=e474]:
+          - link "الإيرادات" [ref=e475] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=e481]:
+          - link "المصروفات" [ref=e482] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=e488]:
+          - link "العهد والسلف" [ref=e489] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=e496]:
+          - link "المهام" [ref=e497] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=e503]:
+          - link "مهام التطوير" [ref=e504] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=e511]:
+          - link "المحادثات" [ref=e512] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=e517]:
+          - link "المنشورات" [ref=e518] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=e524]:
+          - link "جدولة المحتوى" [ref=e525] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=e531]:
+          - link "مراجعة الفيديوهات" [ref=e532] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=e539]:
+          - link "تقييمات الموظفين" [ref=e540] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=e545]:
+          - link "التقارير" [ref=e546] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=e551]:
+          - link "التقرير اليومي" [ref=e552] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=e556]:
+          - link "تقرير تمويل الإعلانات" [ref=e557] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=e562]:
+          - link "الشكاوى والمقترحات" [ref=e563] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=e568]:
+          - link "التعليمات" [ref=e569] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=e575]:
+          - link "المناسبات" [ref=e576] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=e582] [cursor=pointer]
+  - generic [ref=e586]:
+    - banner [ref=e587]:
+      - button "بحث أو أمر... ⌘K" [ref=e589] [cursor=pointer]:
+        - generic [ref=e593]: بحث أو أمر...
+        - generic [ref=e594]: ⌘K
+      - generic [ref=e595]:
+        - button "الوضع الداكن" [ref=e596] [cursor=pointer]
+        - button [ref=e600] [cursor=pointer]
+        - button [ref=e607] [cursor=pointer]:
+          - img "Dev" [ref=e609]
+          - generic [ref=e611]:
+            - paragraph [ref=e612]: Dev
+            - paragraph [ref=e613]: Dev
+    - main [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]:
+            - heading [level=1] [ref=e8]
+            - paragraph [ref=e13]: تقارير مفصلة لكل عملة على حدة
+          - generic [ref=e14]:
+            - button [ref=e15] [cursor=pointer]
+            - button [active] [ref=e20] [cursor=pointer]
+            - button [ref=e25] [cursor=pointer]
+        - generic [ref=e643]: اتبعت تقارير أغسطس ٢٠٢٦ للمدراء — آخر إرسال بواسطة Dev (٦ أغسطس، ١٢:٣٦ م)
+        - generic [ref=e30]:
+          - heading "الفلاتر" [level=2] [ref=e32]
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]: الفترة
+              - combobox [ref=e39]:
+                - option "شهري" [selected]
+                - option "سنوي"
+            - generic [ref=e40]:
+              - generic [ref=e41]: الشهر
+              - combobox [ref=e42]:
+                - option "يناير"
+                - option "فبراير"
+                - option "مارس"
+                - option "أبريل"
+                - option "مايو"
+                - option "يونيو"
+                - option "يوليو"
+                - option "أغسطس" [selected]
+                - option "سبتمبر"
+                - option "أكتوبر"
+                - option "نوفمبر"
+                - option "ديسمبر"
+            - generic [ref=e43]:
+              - generic [ref=e44]: السنة
+              - combobox [ref=e45]:
+                - option "2024"
+                - option "2025"
+                - option "2026" [selected]
+                - option "2027"
+                - option "2028"
+                - option "2029"
+                - option "2030"
+                - option "2031"
+                - option "2032"
+                - option "2033"
+            - generic [ref=e46]:
+              - generic [ref=e47]: العملة
+              - combobox [ref=e48]:
+                - option "جميع العملات" [selected]
+                - option "🇪🇬 جنيه مصري"
+                - option "🇸🇦 ريال سعودي"
+                - option "🇺🇸 دولار أمريكي"
+                - option "🇦🇪 درهم إماراتي"
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e52]:
+              - heading "🇪🇬 جنيه مصري" [level=2] [ref=e53]:
+                - generic [ref=e54]: 🇪🇬
+                - text: جنيه مصري
+              - generic [ref=e55]: ج.م
+            - generic [ref=e56]:
+              - generic [ref=e57]:
+                - generic [ref=e58]:
+                  - paragraph [ref=e63]: إجمالي الإيرادات
+                  - paragraph [ref=e64]: 65,403
+                  - paragraph [ref=e65]: 5 إيراد
+                - generic [ref=e66]:
+                  - paragraph [ref=e71]: مصروفات تشغيلية
+                  - paragraph [ref=e72]: "0"
+                  - paragraph [ref=e73]: تُخصم من الربح
+                - generic [ref=e74]:
+                  - paragraph [ref=e78]: مصروفات رأسمالية
+                  - paragraph [ref=e79]: "0"
+                  - paragraph [ref=e80]: لا تُخصم من الربح
+                - generic [ref=e81]:
+                  - paragraph [ref=e86]: صافي الربح
+                  - paragraph [ref=e87]: 65,403
+                  - paragraph [ref=e88]: 100% هامش ربح
+              - table [ref=e92]:
+                - rowgroup [ref=e93]:
+                  - row [ref=e94]:
+                    - columnheader "البيان" [ref=e95]
+                    - columnheader "القيمة" [ref=e96]
+                    - columnheader "النسبة" [ref=e97]
+                - rowgroup [ref=e98]:
+                  - row [ref=e99]:
+                    - cell "إجمالي الإيرادات" [ref=e100]
+                    - cell "65,403 ج.م" [ref=e101]
+                    - cell "100%" [ref=e103]
+                  - row [ref=e104]:
+                    - cell "المصروفات التشغيلية" [ref=e105]
+                    - cell "-0 ج.م" [ref=e106]
+                    - cell "0%" [ref=e108]
+                  - row [ref=e110]:
+                    - cell "صافي الربح" [ref=e111]
+                    - cell "65,403 ج.م" [ref=e112]
+                    - cell "100%" [ref=e114]
+                  - row [ref=e116]:
+                    - cell "المصروفات الرأسمالية" [ref=e117]
+                    - cell "0 ج.م" [ref=e118]
+                    - cell "لا تُخصم" [ref=e120]
+          - generic [ref=e121]:
+            - generic [ref=e123]:
+              - heading "🇸🇦 ريال سعودي" [level=2] [ref=e124]:
+                - generic [ref=e125]: 🇸🇦
+                - text: ريال سعودي
+              - generic [ref=e126]: ر.س
+            - generic [ref=e127]:
+              - generic [ref=e128]:
+                - generic [ref=e129]:
+                  - paragraph [ref=e134]: إجمالي الإيرادات
+                  - paragraph [ref=e135]: 8,194
+                  - paragraph [ref=e136]: 5 إيراد
+                - generic [ref=e137]:
+                  - paragraph [ref=e142]: مصروفات تشغيلية
+                  - paragraph [ref=e143]: "0"
+                  - paragraph [ref=e144]: تُخصم من الربح
+                - generic [ref=e145]:
+                  - paragraph [ref=e149]: مصروفات رأسمالية
+                  - paragraph [ref=e150]: "0"
+                  - paragraph [ref=e151]: لا تُخصم من الربح
+                - generic [ref=e152]:
+                  - paragraph [ref=e157]: صافي الربح
+                  - paragraph [ref=e158]: 8,194
+                  - paragraph [ref=e159]: 100% هامش ربح
+              - table [ref=e163]:
+                - rowgroup [ref=e164]:
+                  - row [ref=e165]:
+                    - columnheader "البيان" [ref=e166]
+                    - columnheader "القيمة" [ref=e167]
+                    - columnheader "النسبة" [ref=e168]
+                - rowgroup [ref=e169]:
+                  - row [ref=e170]:
+                    - cell "إجمالي الإيرادات" [ref=e171]
+                    - cell "8,194 ر.س" [ref=e172]
+                    - cell "100%" [ref=e174]
+                  - row [ref=e175]:
+                    - cell "المصروفات التشغيلية" [ref=e176]
+                    - cell "-0 ر.س" [ref=e177]
+                    - cell "0%" [ref=e179]
+                  - row [ref=e181]:
+                    - cell "صافي الربح" [ref=e182]
+                    - cell "8,194 ر.س" [ref=e183]
+                    - cell "100%" [ref=e185]
+                  - row [ref=e187]:
+                    - cell "المصروفات الرأسمالية" [ref=e188]
+                    - cell "0 ر.س" [ref=e189]
+                    - cell "لا تُخصم" [ref=e191]
+          - generic [ref=e192]:
+            - generic [ref=e194]:
+              - heading "🇺🇸 دولار أمريكي" [level=2] [ref=e195]:
+                - generic [ref=e196]: 🇺🇸
+                - text: دولار أمريكي
+              - generic [ref=e197]: $
+            - generic [ref=e198]:
+              - generic [ref=e199]:
+                - generic [ref=e200]:
+                  - paragraph [ref=e205]: إجمالي الإيرادات
+                  - paragraph [ref=e206]: "378"
+                  - paragraph [ref=e207]: 3 إيراد
+                - generic [ref=e208]:
+                  - paragraph [ref=e213]: مصروفات تشغيلية
+                  - paragraph [ref=e214]: "0"
+                  - paragraph [ref=e215]: تُخصم من الربح
+                - generic [ref=e216]:
+                  - paragraph [ref=e220]: مصروفات رأسمالية
+                  - paragraph [ref=e221]: "0"
+                  - paragraph [ref=e222]: لا تُخصم من الربح
+                - generic [ref=e223]:
+                  - paragraph [ref=e228]: صافي الربح
+                  - paragraph [ref=e229]: "378"
+                  - paragraph [ref=e230]: 100% هامش ربح
+              - table [ref=e234]:
+                - rowgroup [ref=e235]:
+                  - row [ref=e236]:
+                    - columnheader "البيان" [ref=e237]
+                    - columnheader "القيمة" [ref=e238]
+                    - columnheader "النسبة" [ref=e239]
+                - rowgroup [ref=e240]:
+                  - row [ref=e241]:
+                    - cell "إجمالي الإيرادات" [ref=e242]
+                    - cell "378 $" [ref=e243]
+                    - cell "100%" [ref=e245]
+                  - row [ref=e246]:
+                    - cell "المصروفات التشغيلية" [ref=e247]
+                    - cell "-0 $" [ref=e248]
+                    - cell "0%" [ref=e250]
+                  - row [ref=e252]:
+                    - cell "صافي الربح" [ref=e253]
+                    - cell "378 $" [ref=e254]
+                    - cell "100%" [ref=e256]
+                  - row [ref=e258]:
+                    - cell "المصروفات الرأسمالية" [ref=e259]
+                    - cell "0 $" [ref=e260]
+                    - cell "لا تُخصم" [ref=e262]
+          - generic [ref=e263]:
+            - generic [ref=e265]:
+              - heading "🇦🇪 درهم إماراتي" [level=2] [ref=e266]:
+                - generic [ref=e267]: 🇦🇪
+                - text: درهم إماراتي
+              - generic [ref=e268]: د.إ
+            - generic [ref=e269]:
+              - generic [ref=e270]:
+                - generic [ref=e271]:
+                  - paragraph [ref=e276]: إجمالي الإيرادات
+                  - paragraph [ref=e277]: "0"
+                  - paragraph [ref=e278]: 0 إيراد
+                - generic [ref=e279]:
+                  - paragraph [ref=e284]: مصروفات تشغيلية
+                  - paragraph [ref=e285]: "0"
+                  - paragraph [ref=e286]: تُخصم من الربح
+                - generic [ref=e287]:
+                  - paragraph [ref=e291]: مصروفات رأسمالية
+                  - paragraph [ref=e292]: "0"
+                  - paragraph [ref=e293]: لا تُخصم من الربح
+                - generic [ref=e294]:
+                  - paragraph [ref=e299]: صافي الربح
+                  - paragraph [ref=e300]: "0"
+                  - paragraph [ref=e301]: 0% هامش ربح
+              - table [ref=e305]:
+                - rowgroup [ref=e306]:
+                  - row [ref=e307]:
+                    - columnheader "البيان" [ref=e308]
+                    - columnheader "القيمة" [ref=e309]
+                    - columnheader "النسبة" [ref=e310]
+                - rowgroup [ref=e311]:
+                  - row [ref=e312]:
+                    - cell "إجمالي الإيرادات" [ref=e313]
+                    - cell "0 د.إ" [ref=e314]
+                    - cell "100%" [ref=e316]
+                  - row [ref=e317]:
+                    - cell "المصروفات التشغيلية" [ref=e318]
+                    - cell "-0 د.إ" [ref=e319]
+                    - cell "0%" [ref=e321]
+                  - row [ref=e323]:
+                    - cell "صافي الربح" [ref=e324]
+                    - cell "0 د.إ" [ref=e325]
+                    - cell "0%" [ref=e327]
+                  - row [ref=e329]:
+                    - cell "المصروفات الرأسمالية" [ref=e330]
+                    - cell "0 د.إ" [ref=e331]
+                    - cell "لا تُخصم" [ref=e333]
+        - generic [ref=e334]:
+          - heading "معلومات الشركة - أغسطس ٢٠٢٦" [level=3] [ref=e336]
+          - generic [ref=e342]:
+            - generic [ref=e343]:
+              - generic [ref=e350]: "24"
+              - paragraph [ref=e351]: إجمالي الموظفين
+            - generic [ref=e352]:
+              - generic [ref=e359]: "24"
+              - paragraph [ref=e360]: الموظفين النشطين
+            - generic [ref=e361]:
+              - generic [ref=e367]: "10"
+              - paragraph [ref=e368]: عدد الأقسام
+            - generic [ref=e369]:
+              - generic [ref=e374]: "0"
+              - paragraph [ref=e375]: إجمالي الرواتب (ر.س)
+        - generic [ref=e381]:
+          - paragraph [ref=e382]: ملاحظة مهمة
+          - list [ref=e383]:
+            - listitem [ref=e384]: • صافي الربح = الإيرادات - المصروفات التشغيلية فقط
+            - listitem [ref=e385]: • المصروفات الرأسمالية لا تُخصم من صافي الربح
+            - listitem [ref=e386]: • كل عملة محسوبة بشكل منفصل تماماً

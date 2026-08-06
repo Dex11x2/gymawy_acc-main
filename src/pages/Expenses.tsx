@@ -8,7 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
 import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, FileDown, FileSpreadsheet, Wrench, Building2, BarChart3, Lock, Search } from 'lucide-react';
-import { DailyBarChart } from '../components/Charts';
+import ProgressMetricCard from '../components/metric/ProgressMetricCard';
 
 type Currency = 'EGP' | 'USD' | 'SAR' | 'AED';
 
@@ -555,18 +555,17 @@ const Expenses: React.FC = () => {
         </Card.Body>
       </Card>
 
-      {/* الرسم اليومي */}
-      <Card>
-        <Card.Header className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-error-500" /> المصروفات اليومية — {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
-          </h2>
-          <span className="text-xs text-gray-500 dark:text-gray-400">بالعملة: {getCurrencySymbol(chartCurrency)} (غيّرها من فلتر العملة)</span>
-        </Card.Header>
-        <Card.Body>
-          <DailyBarChart data={dailyExpense} label={`مصروفات (${getCurrencySymbol(chartCurrency)})`} color="#f04438" />
-        </Card.Body>
-      </Card>
+      {/* الرسم اليومي التفاعلي */}
+      <ProgressMetricCard
+        title={`مصروفات ${new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long' })} (${getCurrencySymbol(chartCurrency)})`}
+        data={dailyExpense.map((d) => ({ date: d.day, value: d.value }))}
+        accent="rose"
+        unit={getCurrencySymbol(chartCurrency)}
+        deltaLabel="مقارنة بأمس"
+        period="كل الشهر"
+        periodOptions={[{ label: 'كل الشهر' }, { label: 'آخر 14 يوم', points: 14 }, { label: 'آخر 7 أيام', points: 7 }]}
+        dateFormatter={(d) => `يوم ${d}`}
+      />
 
       {/* Expenses Table */}
       <Card>
