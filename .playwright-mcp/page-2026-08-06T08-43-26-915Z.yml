@@ -1,0 +1,159 @@
+- generic [ref=f6e77]:
+  - complementary [ref=f6e78]:
+    - link [ref=f6e80] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=f6e81]
+    - generic [ref=f6e82]: القائمة
+    - navigation [ref=f6e83]:
+      - list [ref=f6e84]:
+        - listitem [ref=f6e85]:
+          - link "مساحتي" [ref=f6e86] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=f6e92]:
+          - link "الأجازات والإذونات" [ref=f6e93] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=f6e98]:
+          - link "لوحة التحكم" [ref=f6e99] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f6e107]:
+          - link "تسجيل الحضور" [ref=f6e108] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=f6e114]:
+          - link "إدارة الحضور" [ref=f6e115] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=f6e120]:
+          - link "الفروع والصلاحيات" [ref=f6e121] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=f6e127]:
+          - link "إدارة الصلاحيات" [ref=f6e128] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=f6e134]:
+          - link "الأقسام" [ref=f6e135] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=f6e143]:
+          - link "الموظفون" [ref=f6e144] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=f6e150]:
+          - link "الرواتب الشهرية" [ref=f6e151] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=f6e156]:
+          - link "رواتب الميديا" [ref=f6e157] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=f6e162]:
+          - link "الإيرادات" [ref=f6e163] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=f6e169]:
+          - link "المصروفات" [ref=f6e170] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=f6e176]:
+          - link "العهد والسلف" [ref=f6e177] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=f6e184]:
+          - link "المهام" [ref=f6e185] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=f6e191]:
+          - link "مهام التطوير" [ref=f6e192] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=f6e199]:
+          - link "المحادثات" [ref=f6e200] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=f6e205]:
+          - link "المنشورات" [ref=f6e206] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=f6e212]:
+          - link "جدولة المحتوى" [ref=f6e213] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=f6e219]:
+          - link "مراجعة الفيديوهات" [ref=f6e220] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=f6e227]:
+          - link "تقييمات الموظفين" [ref=f6e228] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=f6e233]:
+          - link "التقارير" [ref=f6e234] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=f6e238]:
+          - link "التقرير اليومي" [ref=f6e239] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=f6e243]:
+          - link "تقرير تمويل الإعلانات" [ref=f6e244] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=f6e249]:
+          - link "الشكاوى والمقترحات" [ref=f6e250] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=f6e255]:
+          - link "التعليمات" [ref=f6e256] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=f6e262]:
+          - link "المناسبات" [ref=f6e263] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=f6e269] [cursor=pointer]
+  - generic [ref=f6e273]:
+    - banner [ref=f6e274]:
+      - button "بحث أو أمر... ⌘K" [ref=f6e276] [cursor=pointer]:
+        - generic [ref=f6e280]: بحث أو أمر...
+        - generic [ref=f6e281]: ⌘K
+      - generic [ref=f6e282]:
+        - button "الوضع الداكن" [ref=f6e283] [cursor=pointer]
+        - button [ref=f6e287] [cursor=pointer]
+        - generic [ref=f6e293]:
+          - button [active] [ref=f6e294] [cursor=pointer]:
+            - img "Dev" [ref=f6e296]
+            - generic [ref=f6e298]:
+              - paragraph [ref=f6e299]: Dev
+              - paragraph [ref=f6e300]: Dev
+          - generic [ref=f6e303]:
+            - generic [ref=f6e304]:
+              - paragraph [ref=f6e305]: Dev
+              - paragraph [ref=f6e306]: dexter11x2@gmail.com
+            - link "الملف الشخصي" [ref=f6e307] [cursor=pointer]:
+              - /url: /profile
+            - button "الإعدادات" [ref=f6e312] [cursor=pointer]
+            - button "تسجيل الخروج" [ref=f6e318] [cursor=pointer]
+    - main [ref=f6e3]:
+      - generic [ref=f6e5]:
+        - generic [ref=f6e6]:
+          - heading "Profile" [level=2] [ref=f6e7]
+          - navigation [ref=f6e8]:
+            - list [ref=f6e9]:
+              - listitem [ref=f6e10]: Home
+              - listitem [ref=f6e11]
+              - listitem [ref=f6e14]: Profile
+        - generic [ref=f6e15]:
+          - generic [ref=f6e21]:
+            - paragraph [ref=f6e22]: لسه مسجّلتش حضورك النهاردة
+            - paragraph [ref=f6e23]: سجّل حضورك عشان يظهر في بروفايلك
+          - link "تسجيل الحضور" [ref=f6e24] [cursor=pointer]:
+            - /url: /attendance-map
+        - generic [ref=f6e25]:
+          - heading "Profile" [level=3] [ref=f6e26]
+          - generic [ref=f6e29]:
+            - generic [ref=f6e30]:
+              - generic [ref=f6e31]:
+                - img "Dev" [ref=f6e32]
+                - button "تغيير صورة البروفايل" [ref=f6e34] [cursor=pointer]
+              - generic [ref=f6e38]:
+                - heading "Dev" [level=4] [ref=f6e39]
+                - paragraph [ref=f6e40]: Dev
+            - button "Edit" [ref=f6e42] [cursor=pointer]
+        - generic [ref=f6e46]:
+          - generic [ref=f6e47]:
+            - heading "Personal Information" [level=4] [ref=f6e48]
+            - button "Edit" [ref=f6e49] [cursor=pointer]
+          - generic [ref=f6e54]:
+            - generic [ref=f6e55]:
+              - paragraph [ref=f6e56]: First Name
+              - paragraph [ref=f6e57]: Dev
+            - generic [ref=f6e58]:
+              - paragraph [ref=f6e59]: Last Name
+              - paragraph [ref=f6e60]: "-"
+            - generic [ref=f6e61]:
+              - paragraph [ref=f6e62]: Email address
+              - paragraph [ref=f6e63]: dexter11x2@gmail.com
+            - generic [ref=f6e64]:
+              - paragraph [ref=f6e65]: Phone
+              - paragraph [ref=f6e66]: "+201550801179"
+            - generic [ref=f6e67]:
+              - paragraph [ref=f6e68]: Bio
+              - paragraph [ref=f6e69]: Dev
+        - button "Sign Out" [ref=f6e71] [cursor=pointer]

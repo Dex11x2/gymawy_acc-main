@@ -560,7 +560,7 @@ const Layout: React.FC = () => {
       {showSettings && (
         <div className="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto">
           <div className="modal-backdrop animate-fadeIn" onClick={() => setShowSettings(false)} />
-          <div className="modal-content max-w-md p-6 m-4 animate-fadeInScale" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content relative z-[100000] max-w-md p-6 m-4 animate-fadeInScale" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowSettings(false)}
               className="modal-close-btn"

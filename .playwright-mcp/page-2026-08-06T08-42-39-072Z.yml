@@ -1,0 +1,182 @@
+- generic [ref=f5e114]:
+  - complementary [ref=f5e115]:
+    - link [ref=f5e117] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=f5e118]
+    - generic [ref=f5e119]: القائمة
+    - navigation [ref=f5e120]:
+      - list [ref=f5e121]:
+        - listitem [ref=f5e122]:
+          - link "مساحتي" [ref=f5e123] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=f5e129]:
+          - link "الأجازات والإذونات" [ref=f5e130] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=f5e135]:
+          - link "لوحة التحكم" [ref=f5e136] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f5e144]:
+          - link "تسجيل الحضور" [ref=f5e145] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=f5e151]:
+          - link "إدارة الحضور" [ref=f5e152] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=f5e157]:
+          - link "الفروع والصلاحيات" [ref=f5e158] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=f5e164]:
+          - link "إدارة الصلاحيات" [ref=f5e165] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=f5e171]:
+          - link "الأقسام" [ref=f5e172] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=f5e180]:
+          - link "الموظفون" [ref=f5e181] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=f5e187]:
+          - link "الرواتب الشهرية" [ref=f5e188] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=f5e193]:
+          - link "رواتب الميديا" [ref=f5e194] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=f5e199]:
+          - link "الإيرادات" [ref=f5e200] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=f5e206]:
+          - link "المصروفات" [ref=f5e207] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=f5e213]:
+          - link "العهد والسلف" [ref=f5e214] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=f5e221]:
+          - link "المهام" [ref=f5e222] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=f5e228]:
+          - link "مهام التطوير" [ref=f5e229] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=f5e236]:
+          - link "المحادثات" [ref=f5e237] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=f5e242]:
+          - link "المنشورات" [ref=f5e243] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=f5e249]:
+          - link "جدولة المحتوى" [ref=f5e250] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=f5e256]:
+          - link "مراجعة الفيديوهات" [ref=f5e257] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=f5e264]:
+          - link "تقييمات الموظفين" [ref=f5e265] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=f5e270]:
+          - link "التقارير" [ref=f5e271] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=f5e275]:
+          - link "التقرير اليومي" [ref=f5e276] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=f5e281]:
+          - link "تقرير تمويل الإعلانات" [ref=f5e282] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=f5e287]:
+          - link "الشكاوى والمقترحات" [ref=f5e288] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=f5e293]:
+          - link "التعليمات" [ref=f5e294] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=f5e300]:
+          - link "المناسبات" [ref=f5e301] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=f5e307] [cursor=pointer]
+  - generic [ref=f5e311]:
+    - banner [ref=f5e312]:
+      - button "بحث أو أمر... ⌘K" [ref=f5e314] [cursor=pointer]:
+        - generic [ref=f5e318]: بحث أو أمر...
+        - generic [ref=f5e319]: ⌘K
+      - generic [ref=f5e320]:
+        - button "الوضع الداكن" [ref=f5e321] [cursor=pointer]
+        - button [ref=f5e325] [cursor=pointer]
+        - button [ref=f5e332] [cursor=pointer]:
+          - img "Dev" [ref=f5e334]
+          - generic [ref=f5e336]:
+            - paragraph [ref=f5e337]: Dev
+            - paragraph [ref=f5e338]: Dev
+    - main [ref=f5e3]:
+      - generic [ref=f5e5]:
+        - generic [ref=f5e6]:
+          - heading "التقرير اليومي" [level=1] [ref=f5e7]
+          - paragraph [ref=f5e11]: تقرير يومي من الإدارة للمدير العام — 5 أقسام بحالة سريعة 🟢🟡🔴
+        - generic [ref=f5e12]:
+          - button "تعبئة الريبورت" [ref=f5e13] [cursor=pointer]
+          - button "المراجعة" [ref=f5e16] [cursor=pointer]
+        - generic [ref=f5e20]:
+          - generic [ref=f5e341]:
+            - generic [ref=f5e342]:
+              - generic [ref=f5e343]: شريط النبض
+              - generic [ref=f5e347]: 🔴 فيه مشكلة محتاجة تدخّل
+            - generic [ref=f5e348]:
+              - generic [ref=f5e349]: 💰
+              - generic [ref=f5e352]: 🧑‍🤝‍🧑
+              - generic [ref=f5e355]: 🛠️
+              - generic [ref=f5e358]: ⚠️
+              - generic [ref=f5e361]: ✅
+          - generic [ref=f5e44]:
+            - generic [ref=f5e45]: تاريخ التقرير
+            - textbox [ref=f5e46]: 2026-08-06
+          - generic [ref=f5e47]:
+            - generic [ref=f5e48]:
+              - generic [ref=f5e49]:
+                - generic [ref=f5e50]:
+                  - generic [ref=f5e51]: 💰
+                  - text: إيرادات ومصروفات
+                - generic [ref=f5e52]:
+                  - button "🟢" [ref=f5e53] [cursor=pointer]
+                  - button "🟡" [ref=f5e54] [cursor=pointer]
+                  - button "🔴" [active] [ref=f5e55] [cursor=pointer]
+              - textbox "إجمالي إيرادات النهاردة، أي مصروفات كبيرة، ملاحظات مالية..." [ref=f5e57]
+            - generic [ref=f5e58]:
+              - generic [ref=f5e59]:
+                - generic [ref=f5e60]:
+                  - generic [ref=f5e61]: 🧑‍🤝‍🧑
+                  - text: حضور واشتراكات
+                - generic [ref=f5e62]:
+                  - button "🟢" [ref=f5e63] [cursor=pointer]
+                  - button "🟡" [ref=f5e64] [cursor=pointer]
+                  - button "🔴" [ref=f5e65] [cursor=pointer]
+              - textbox "الحضور والغياب، اشتراكات جديدة/ملغاة، ملاحظات على الموظفين..." [ref=f5e67]
+            - generic [ref=f5e68]:
+              - generic [ref=f5e69]:
+                - generic [ref=f5e70]:
+                  - generic [ref=f5e71]: 🛠️
+                  - text: صيانة ومشاكل تقنية
+                - generic [ref=f5e72]:
+                  - button "🟢" [ref=f5e73] [cursor=pointer]
+                  - button "🟡" [ref=f5e74] [cursor=pointer]
+                  - button "🔴" [ref=f5e75] [cursor=pointer]
+              - textbox "أعطال أجهزة، صيانة، مشاكل نظام/إنترنت، حاجة محتاجة تصليح..." [ref=f5e77]
+            - generic [ref=f5e78]:
+              - generic [ref=f5e79]:
+                - generic [ref=f5e80]:
+                  - generic [ref=f5e81]: ⚠️
+                  - text: شكاوى وحوادث
+                - generic [ref=f5e82]:
+                  - button "🟢" [ref=f5e83] [cursor=pointer]
+                  - button "🟡" [ref=f5e84] [cursor=pointer]
+                  - button "🔴" [ref=f5e85] [cursor=pointer]
+              - textbox "شكاوى عملاء، أي حادث أو موقف حصل النهاردة..." [ref=f5e87]
+            - generic [ref=f5e88]:
+              - generic [ref=f5e89]:
+                - generic [ref=f5e90]:
+                  - generic [ref=f5e91]: ✅
+                  - text: التاسكات
+                - generic [ref=f5e92]:
+                  - button "🟢" [ref=f5e93] [cursor=pointer]
+                  - button "🟡" [ref=f5e94] [cursor=pointer]
+                  - button "🔴" [ref=f5e95] [cursor=pointer]
+              - textbox "اللي اتعمل النهاردة، اللي لسه، أي حاجة متأخرة..." [ref=f5e97]
+          - generic [ref=f5e98]:
+            - generic [ref=f5e99]: ملاحظة عامة (اختياري)
+            - textbox "أي حاجة إضافية عايز تقولها للمدير العام..." [ref=f5e101]
+          - generic [ref=f5e102]:
+            - generic [ref=f5e103]: بيتحفظ تلقائي وانت بتملّي
+            - button [ref=f5e107] [cursor=pointer]

@@ -109,7 +109,11 @@ export const getMine = async (req: any, res: Response) => {
 export const getMyBalance = async (req: any, res: Response) => {
   try {
     const employee = await Employee.findOne({ userId: req.user.id || req.user._id });
-    if (!employee) return res.status(404).json({ message: 'لا يوجد سجل موظف لحسابك' });
+    // الحسابات اللي مش موظفين (مدير/سوبر أدمن) بترجّع رصيد فاضي بدل خطأ 404
+    if (!employee) return res.json({
+      annual: null, annualTotal: 21, emergency: null, emergencyTotal: 7,
+      permissionHoursUsed: 0, permissionHoursTotal: 2, permissionHoursLeft: null, noEmployee: true,
+    });
     res.json(await buildBalance(employee));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
