@@ -38,11 +38,6 @@ export const getSalaries = async (req: any, res: Response) => {
     // Convert to JSON and ensure _id is present
     const salariesJSON = ensureId(validSalaries);
 
-    console.log('📤 Sending salaries:', {
-      count: salariesJSON.length,
-      sampleId: salariesJSON[0]?._id,
-      sampleKeys: salariesJSON[0] ? Object.keys(salariesJSON[0]) : []
-    });
 
     res.json(salariesJSON);
   } catch (error: any) {
@@ -79,7 +74,6 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
   try {
     const { month, year } = req.body;
 
-    console.log('🔥 Generate salaries request:', { month, year, user: req.user });
 
     if (!month || !year) {
       console.error('❌ Month and year are required');
@@ -95,9 +89,7 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
       query.companyId = req.user?.companyId;
     }
 
-    console.log('🔍 Searching for employees with query:', query);
     const employees = await Employee.find(query);
-    console.log(`✅ Found ${employees.length} active employees`);
 
     if (employees.length === 0) {
       console.warn('⚠️ No active employees found');
@@ -113,7 +105,6 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
     const skipped = [];
 
     for (const employee of employees) {
-      console.log(`Processing employee: ${employee.name} (${employee._id})`);
 
       // Check if salary already exists
       const existingSalary = await Salary.findOne({
@@ -123,7 +114,6 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
       });
 
       if (existingSalary) {
-        console.log(`⏭️ Skipping ${employee.name} - salary already exists`);
         skipped.push({ employeeId: employee._id, name: employee.name });
         continue;
       }
@@ -146,7 +136,6 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
       });
 
       await salary.save();
-      console.log(`✅ Created salary for ${employee.name}`);
       created.push({ employeeId: employee._id, name: employee.name });
     }
 
@@ -157,7 +146,6 @@ export const generateMonthlySalaries = async (req: any, res: Response) => {
       details: { created, skipped }
     };
 
-    console.log('📊 Generation complete:', response);
     res.json(response);
   } catch (error: any) {
     console.error('❌ Error generating salaries:', error);

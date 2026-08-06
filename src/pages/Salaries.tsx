@@ -118,12 +118,6 @@ const Salaries: React.FC = () => {
       setLoading(true);
       const response = await api.get(`/salaries?month=${selectedMonth}&year=${selectedYear}`);
 
-      console.log('📦 Received salaries data:', {
-        count: response.data.length,
-        sample: response.data[0],
-        sampleKeys: response.data[0] ? Object.keys(response.data[0]) : [],
-        sampleId: response.data[0]?._id
-      });
 
       // Set salaries directly without filtering for now
       setSalaries(response.data);
@@ -161,13 +155,6 @@ const Salaries: React.FC = () => {
   };
 
   const handleGenerateSalaries = async () => {
-    console.log('🔥 handleGenerateSalaries called', {
-      canEdit,
-      user,
-      selectedMonth,
-      selectedYear,
-      showGenerateDialog
-    });
 
     if (!canEdit) {
       console.error('❌ No permission to generate salaries');
@@ -177,19 +164,12 @@ const Salaries: React.FC = () => {
 
     try {
       setLoading(true);
-      console.log('📤 Sending generate request:', {
+
+      await api.post('/salaries/generate', {
         month: selectedMonth,
         year: selectedYear,
         companyId: user?.companyId
       });
-
-      const response = await api.post('/salaries/generate', {
-        month: selectedMonth,
-        year: selectedYear,
-        companyId: user?.companyId
-      });
-
-      console.log('✅ Generate response:', response.data);
 
       setToast({ message: 'تم توليد الرواتب بنجاح', type: 'success', isOpen: true });
       setShowGenerateDialog(false);
@@ -206,7 +186,6 @@ const Salaries: React.FC = () => {
       setToast({ message: errorMsg, type: 'error', isOpen: true });
     } finally {
       setLoading(false);
-      console.log('🏁 Generate salaries finished');
     }
   };
 
@@ -281,12 +260,6 @@ const Salaries: React.FC = () => {
   };
 
   const togglePaymentStatus = async (salaryId: string) => {
-    console.log('💰 togglePaymentStatus called with:', {
-      salaryId,
-      type: typeof salaryId,
-      isUndefined: salaryId === 'undefined',
-      isEmpty: !salaryId
-    });
 
     if (!canEdit) {
       setToast({ message: 'ليس لديك صلاحية لتغيير حالة الصرف', type: 'error', isOpen: true });
@@ -301,12 +274,10 @@ const Salaries: React.FC = () => {
     }
 
     try {
-      console.log('📤 Sending toggle payment request for:', salaryId);
       await api.patch(`/salaries/${salaryId}/toggle-payment`, {
         paymentMethod: 'bank_transfer'
       });
 
-      console.log('✅ Payment status toggled successfully');
       setToast({ message: 'تم تحديث حالة الصرف بنجاح', type: 'success', isOpen: true });
       await loadSalaries();
       await loadStatistics();
@@ -397,7 +368,6 @@ const Salaries: React.FC = () => {
           {canEdit && salaries.length === 0 && (
             <Button
               onClick={() => {
-                console.log('🔵 Generate button clicked - opening dialog');
                 setShowGenerateDialog(true);
               }}
               variant="primary"
@@ -516,7 +486,6 @@ const Salaries: React.FC = () => {
               {canEdit && (
                 <Button
                   onClick={() => {
-                    console.log('Generate button clicked');
                     setShowGenerateDialog(true);
                   }}
                   variant="primary"
@@ -592,12 +561,6 @@ const Salaries: React.FC = () => {
                           {canEdit ? (
                             <button
                               onClick={() => {
-                                console.log('🔴 Button clicked, salary object:', {
-                                  _id: salary._id,
-                                  id: (salary as any).id,
-                                  keys: Object.keys(salary),
-                                  fullObject: salary
-                                });
                                 togglePaymentStatus(salary._id);
                               }}
                               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${

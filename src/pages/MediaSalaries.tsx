@@ -364,7 +364,7 @@ const MediaSalaries: React.FC = () => {
     try {
       setIsLoadingContentTypes(true);
       const response = await api.get('/content-types');
-      console.log('Content types from backend:', response.data); // Debug log
+ // Debug log
       setContentTypes(response.data);
     } catch (error) {
       console.error('Error fetching content types:', error);
@@ -397,7 +397,6 @@ const MediaSalaries: React.FC = () => {
       if (editingContentType) {
         // ✅ FIX: Use proper ID field from MongoDB
         const contentTypeId = editingContentType._id || editingContentType.id;
-        console.log('Editing content type:', editingContentType, 'ID:', contentTypeId);
 
         if (!contentTypeId) {
           showToast('خطأ: معرف نوع المحتوى غير موجود', 'error');
@@ -458,7 +457,7 @@ const MediaSalaries: React.FC = () => {
   };
 
   const openEditContentType = (contentType: any) => {
-    console.log('Opening edit for content type:', contentType); // Debug log
+ // Debug log
     setContentTypeFormData({
       key: contentType.key,
       nameAr: contentType.nameAr,
@@ -1256,7 +1255,7 @@ const MediaSalaries: React.FC = () => {
             {isAdmin && (
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={handleSyncAllAchievements}
                   disabled={achievements.every(a => a.syncedToPayroll)}
                   title="مزامنة جميع الإنجازات غير المتزامنة مع الرواتب"

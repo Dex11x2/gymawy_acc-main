@@ -77,14 +77,11 @@ const AttendanceWithMap: React.FC = () => {
   const checkNearestBranch = () => {
     if (!location) return;
 
-    console.log('🔍 Checking branches:', branches);
-    console.log('📍 Current location:', location);
 
     let nearest = null;
     let minDistance = Infinity;
 
     branches.forEach(branch => {
-      console.log('🏢 Branch:', branch.name, 'Lat:', branch.latitude, 'Lng:', branch.longitude);
       if (branch.latitude && branch.longitude) {
         const distance = calculateDistance(
           location.lat,
@@ -93,7 +90,6 @@ const AttendanceWithMap: React.FC = () => {
           branch.longitude
         );
 
-        console.log('📏 Distance to', branch.name, ':', Math.round(distance), 'm');
 
         if (distance < minDistance) {
           minDistance = distance;
@@ -102,7 +98,6 @@ const AttendanceWithMap: React.FC = () => {
       }
     });
 
-    console.log('✅ Nearest branch:', nearest);
     setNearestBranch(nearest);
   };
 
@@ -124,11 +119,9 @@ const AttendanceWithMap: React.FC = () => {
   };
 
   const attemptGetLocation = (highAccuracy: boolean) => {
-    console.log(`📍 Attempting location (highAccuracy: ${highAccuracy}, attempt: ${retryCountRef.current + 1})`);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log('📍 Location obtained:', position.coords);
         setLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -150,7 +143,6 @@ const AttendanceWithMap: React.FC = () => {
 
         // لو لسه عندنا محاولات
         if (retryCountRef.current < MAX_RETRIES) {
-          console.log(`🔄 Retrying... (${retryCountRef.current}/${MAX_RETRIES})`);
 
           // ننتظر ثانيتين ثم نحاول بدقة عالية
           setTimeout(() => {
@@ -180,7 +172,6 @@ const AttendanceWithMap: React.FC = () => {
       message = '❌ انتهى وقت الطلب - حاول مرة أخرى';
     }
 
-    console.log('❌ Final error:', message);
     setLocationError(message);
     setLocationLoading(false);
     setToast({ message, type: 'error', isOpen: true });

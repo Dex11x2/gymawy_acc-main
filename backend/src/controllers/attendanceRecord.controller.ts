@@ -83,14 +83,12 @@ export const checkIn = async (req: any, res: Response) => {
     // استخدام توقيت مصر (UTC+2)
     const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
 
-    console.log(`🔍 checkIn: Looking for existing record for userId=${userId}, range=${todayUTC.toISOString()} to ${tomorrowUTC.toISOString()}`);
 
     const existing = await AttendanceRecord.findOne({
       userId,
       date: { $gte: todayUTC, $lt: tomorrowUTC },
     });
 
-    console.log(`📋 checkIn: Found existing record: ${existing ? existing._id : 'null'}, checkIn: ${existing?.checkIn || 'none'}`);
 
     if (existing?.checkIn) {
       return res
@@ -277,14 +275,12 @@ export const checkOut = async (req: any, res: Response) => {
     // استخدام توقيت مصر (UTC+2)
     const { todayUTC, tomorrowUTC } = getEgyptDayBounds();
 
-    console.log(`🔍 checkOut: Looking for record for userId=${userId}, range=${todayUTC.toISOString()} to ${tomorrowUTC.toISOString()}`);
 
     const record = await AttendanceRecord.findOne({
       userId,
       date: { $gte: todayUTC, $lt: tomorrowUTC },
     });
 
-    console.log(`📋 checkOut: Found record: ${record ? record._id : 'null'}, checkIn: ${record?.checkIn || 'none'}, checkOut: ${record?.checkOut || 'none'}`);
 
     if (!record) {
       return res
@@ -321,7 +317,6 @@ export const checkOut = async (req: any, res: Response) => {
 
     await record.save();
 
-    console.log(`✅ checkOut: Saved successfully. workHours=${record.workHours}, overtime=${record.overtime}`);
 
     // ✅ PRIVACY FIX: Don't send exact times to user (only to managers)
     const sanitizedRecord = {
@@ -364,14 +359,12 @@ export const getTodayRecord = async (req: any, res: Response) => {
     const tomorrow = new Date(todayUTC);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
-    console.log(`🔍 getTodayRecord: userId=${userId}, range=${todayUTC.toISOString()} to ${tomorrow.toISOString()}`);
 
     const record = await AttendanceRecord.findOne({
       userId,
       date: { $gte: todayUTC, $lt: tomorrow },
     }).populate("branchId", "name");
 
-    console.log(`📋 Found record: ${record ? record._id : 'null'}`);
 
     // ✅ PRIVACY FIX: Filter sensitive data based on user role
     const userRole = req.user?.role;
@@ -540,7 +533,6 @@ export const getMonthlyReport = async (req: any, res: Response) => {
     );
     const endDate = new Date(endDateEgypt.getTime() - egyptOffset);
 
-    console.log(`📅 getMonthlyReport: البحث من ${startDate.toISOString()} إلى ${endDate.toISOString()}`);
 
     const query: any = { date: { $gte: startDate, $lte: endDate } };
 
@@ -555,11 +547,9 @@ export const getMonthlyReport = async (req: any, res: Response) => {
     // إذا كان موظف عادي، فرض الفلترة على سجلاته فقط
     else if (!isManager) {
       query.userId = req.user.userId;
-      console.log(`🔒 موظف عادي ${req.user.userId} - عرض سجلاته فقط`);
     }
     // إذا كان مدير ولم يحدد موظف، عرض جميع السجلات
     else {
-      console.log(`👔 مدير ${req.user.userId} - عرض جميع السجلات للشهر ${month}/${year}`);
     }
 
     const records = await AttendanceRecord.find(query)
@@ -569,7 +559,6 @@ export const getMonthlyReport = async (req: any, res: Response) => {
       .populate("deduction.appliedBy", "name avatar") // NEW: من أضاف الخصم
       .sort({ date: 1 });
 
-    console.log(`📊 تم إيجاد ${records.length} سجل`);
 
     const summary = {
       totalPresent: records.filter(

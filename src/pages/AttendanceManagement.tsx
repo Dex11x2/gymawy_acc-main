@@ -72,15 +72,6 @@ const AttendanceManagement: React.FC = () => {
 
   // Logging تشخيصي للصلاحيات
   useEffect(() => {
-    console.log('🔐 صلاحيات إدارة الحضور:', {
-      المستخدم: { id: user?.id, name: user?.name, role: user?.role },
-      يمكن_القراءة_attendance: canRead('attendance'),
-      يمكن_القراءة_attendance_management: canRead('attendance_management'),
-      هل_مدير: isManager,
-      صلاحيات_الحضور: user?.permissions?.filter(p =>
-        p.module.includes('attendance')
-      )
-    });
   }, [user]);
 
   useEffect(() => {
@@ -95,14 +86,9 @@ const AttendanceManagement: React.FC = () => {
       const params: any = { month: selectedMonth, year: selectedYear };
       if (selectedEmployee) params.userId = selectedEmployee;
 
-      console.log('📡 تحميل سجلات الحضور:', params);
 
       const response = await api.get('/attendance-records/monthly-report', { params });
 
-      console.log('✅ تم استلام:', {
-        عدد_السجلات: response.data.data.records.length,
-        الملخص: response.data.data.summary
-      });
 
       let filteredRecords = response.data.data.records;
 
@@ -119,7 +105,6 @@ const AttendanceManagement: React.FC = () => {
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
-      console.log(`📋 عرض ${sortedRecords.length} سجل`);
       setRecords(sortedRecords);
     } catch (error: any) {
       console.error('❌ فشل تحميل سجلات الحضور:', error);
@@ -188,7 +173,6 @@ const AttendanceManagement: React.FC = () => {
           setToast({ message: 'معرف السجل غير صحيح', type: 'error', isOpen: true });
           return;
         }
-        console.log('Updating record:', recordId, data);
         await api.put(`/attendance-records/${recordId}`, data);
       } else {
         await api.post('/attendance-records/manual', data);
@@ -209,7 +193,6 @@ const AttendanceManagement: React.FC = () => {
       setToast({ message: 'معرف السجل غير صحيح', type: 'error', isOpen: true });
       return;
     }
-    console.log('Editing record:', record);
     setEditingRecord(record);
     setShowModal(true);
   };
@@ -222,7 +205,6 @@ const AttendanceManagement: React.FC = () => {
     if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
 
     try {
-      console.log('Deleting record with ID:', id);
       await api.delete(`/attendance-records/${id}`);
       setToast({ message: 'تم الحذف بنجاح', type: 'success', isOpen: true });
       loadRecords();

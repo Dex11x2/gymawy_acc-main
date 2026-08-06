@@ -7,12 +7,10 @@ import { sendPushToUser } from '../services/fcm.service';
 export const getAll = async (req: any, res: Response) => {
   try {
     const userId = req.user._id || req.user.id;
-    console.log(`🔍 Searching messages for user: ${userId}`);
     
     const messages = await Message.find({
       $or: [{ senderId: userId }, { receiverId: userId }]
     }).sort({ createdAt: -1 });
-    console.log(`📥 Fetched ${messages.length} messages for user ${userId}`);
     res.json(messages);
   } catch (error: any) {
     console.error('❌ Error fetching messages:', error);
@@ -25,7 +23,6 @@ export const create = async (req: any, res: Response) => {
     const userId = req.user._id || req.user.id;
     const { receiverId, content } = req.body;
     
-    console.log('📨 Creating message:', { senderId: userId, receiverId, content });
     
     const message = await Message.create({
       senderId: userId,
@@ -33,7 +30,6 @@ export const create = async (req: any, res: Response) => {
       content
     });
     
-    console.log('✅ Message created:', message._id);
     
     // Create notification for receiver
     const sender = await User.findById(userId);

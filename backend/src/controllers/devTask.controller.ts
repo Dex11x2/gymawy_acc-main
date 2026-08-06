@@ -27,15 +27,10 @@ export const getDevTaskById = async (req: Request, res: Response) => {
 // Create dev task
 export const createDevTask = async (req: Request, res: Response) => {
   try {
-    console.log('🔵 createDevTask called');
-    console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
-    console.log('👤 User:', (req as any).user);
 
     const devTask = new DevTask(req.body);
-    console.log('💾 Attempting to save dev task...');
 
     const savedDevTask = await devTask.save();
-    console.log('✅ Dev task saved successfully:', savedDevTask._id);
 
     res.status(201).json(savedDevTask);
   } catch (error: any) {
