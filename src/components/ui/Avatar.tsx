@@ -6,6 +6,7 @@ export type AvatarStatus = 'online' | 'offline' | 'busy' | 'away';
 export interface AvatarProps {
   src?: string;
   alt?: string;
+  name?: string; // اسم يُستخدم لاشتقاق الأحرف الأولى والبديل النصي
   size?: AvatarSize;
   status?: AvatarStatus;
   showStatus?: boolean;
@@ -16,7 +17,8 @@ export interface AvatarProps {
 
 const Avatar: React.FC<AvatarProps> = ({
   src,
-  alt = 'Avatar',
+  alt,
+  name,
   size = 'medium',
   status,
   showStatus = false,
@@ -24,6 +26,7 @@ const Avatar: React.FC<AvatarProps> = ({
   className = '',
   onClick,
 }) => {
+  const label = alt || name || 'Avatar';
   const [imageError, setImageError] = React.useState(false);
 
   // Size classes for the avatar
@@ -85,8 +88,8 @@ const Avatar: React.FC<AvatarProps> = ({
   // Get initials from alt text if not provided
   const getInitials = () => {
     if (initials) return initials.toUpperCase().slice(0, 2);
-    if (alt) {
-      const words = alt.split(' ').filter(Boolean);
+    if (label && label !== 'Avatar') {
+      const words = label.split(' ').filter(Boolean);
       if (words.length >= 2) {
         return (words[0][0] + words[1][0]).toUpperCase();
       }
@@ -105,7 +108,7 @@ const Avatar: React.FC<AvatarProps> = ({
       {showImage ? (
         <img
           src={src}
-          alt={alt}
+          alt={label}
           onError={() => setImageError(true)}
           className={`
             rounded-full object-cover

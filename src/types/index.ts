@@ -59,6 +59,7 @@ export interface Employee {
   position: string;
   departmentId: string;
   companyId: string;
+  avatar?: string;
   salary: number;
   salaryCurrency: 'EGP' | 'USD' | 'SAR' | 'AED';
   salaryType: 'fixed' | 'variable';
