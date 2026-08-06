@@ -57,6 +57,7 @@ export const updateSettings = async (req: Request, res: Response) => {
       upsert: true,
     });
 
+    await rescheduleReports(); // إعادة الجدولة بعد أي تعديل
     res.json({ message: "تم تحديث الإعدادات بنجاح", settings });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -73,6 +74,7 @@ export const toggleEnabled = async (req: Request, res: Response) => {
       { new: true, upsert: true }
     );
 
+    await rescheduleReports(); // تفعيل/إيقاف يعيد جدولة الـcron فورًا
     res.json({
       message: enabled
         ? "تم تفعيل التقارير اليومية"
@@ -101,6 +103,7 @@ export const updateRecipients = async (req: Request, res: Response) => {
       { new: true, upsert: true }
     );
 
+    await rescheduleReports(); // المستلمون الجدد يتفعّلوا فورًا
     res.json({ message: "تم تحديث المستلمين بنجاح", settings });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
