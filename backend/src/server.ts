@@ -34,7 +34,12 @@ const allowedOrigins = [
   'http://gymmawy.net',
   'http://www.gymmawy.net',
   'https://gymmawy.net',
-  'https://www.gymmawy.net'
+  'https://www.gymmawy.net',
+  // التطبيق الأصلي المدمج (Capacitor WebView) — origin بيبقى localhost/capacitor
+  'https://localhost',
+  'http://localhost',
+  'capacitor://localhost',
+  'ionic://localhost'
 ];
 
 // Initialize Socket.io

@@ -1,7 +1,12 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 import { useToastStore } from '../store/toastStore';
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+// في التطبيق الأصلي (المدمج) الـorigin بيبقى localhost — فلازم نكلّم السيرفر بعنوان مطلق.
+// على الويب بنكمّل بالإعداد النسبي (VITE_API_URL=/api) زي ما هو.
+const API_URL = Capacitor.isNativePlatform()
+  ? 'https://gymmawy.net/api'
+  : ((import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api');
 
 const TOKEN_KEY = 'gemawi-token';
 

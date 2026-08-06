@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { io } from 'socket.io-client';
+import { Capacitor } from '@capacitor/core';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginForm from './components/LoginForm';
@@ -62,8 +63,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    // لو مفيش SOCKET_URL، منحاولش نتصل
-    const socketUrl = import.meta.env.VITE_SOCKET_URL;
+    // لو مفيش SOCKET_URL، منحاولش نتصل — وفي التطبيق الأصلي نستخدم العنوان المطلق
+    const socketUrl = import.meta.env.VITE_SOCKET_URL
+      || (Capacitor.isNativePlatform() ? 'https://gymmawy.net' : '');
     if (!socketUrl) {
       console.log('ℹ️ Socket.IO disabled - no VITE_SOCKET_URL configured');
       return;

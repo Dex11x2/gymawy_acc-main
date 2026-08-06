@@ -9,6 +9,12 @@ on:
       - 'android/**'
       - 'capacitor.config.ts'
       - '.github/workflows/android.yml'
+      # الواجهة متحزّمة جوّه التطبيق دلوقتي — فتغييرها بيعيد بناء الـAPK
+      - 'src/**'
+      - 'index.html'
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'public/**'
 
 jobs:
   build-apk:
