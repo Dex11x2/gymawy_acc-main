@@ -801,3 +801,14 @@ main {
 .modal-wrapper {
   @apply fixed inset-0 z-[99999] flex items-center justify-center overflow-y-auto p-4;
 }
+
+/* ===== Metric chart animations (رسوم تفاعلية مميّزة) ===== */
+@keyframes metric-line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes metric-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes metric-bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes metric-pulse { 0%, 100% { r: 4.5; opacity: 1; } 50% { r: 7; opacity: 0.6; } }
+
+.metric-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: metric-line-draw 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+.metric-area { animation: metric-fade-in 1s ease-out both; }
+.metric-bar { transform-box: fill-box; transform-origin: bottom; animation: metric-bar-grow 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.metric-dot-pulse { animation: metric-pulse 1.8s ease-in-out infinite; }

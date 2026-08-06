@@ -135,13 +135,15 @@ export const MetricChart = ({ series, view, defaultIndex, valueFormatter, dateFo
                   return (
                     <rect
                       key={i}
+                      className="metric-bar"
+                      style={{ animationDelay: `${Math.min(i * 12, 300)}ms` }}
                       x={bx}
                       y={yAt(d.value)}
                       width={innerBarW}
                       height={h}
                       rx={Math.min(4, innerBarW / 2)}
                       fill={s.color}
-                      opacity={i === active ? 1 : 0.55}
+                      opacity={i === active ? 1 : 0.5}
                     />
                   );
                 })}
@@ -153,9 +155,19 @@ export const MetricChart = ({ series, view, defaultIndex, valueFormatter, dateFo
           const area = `${line} L ${xAt(n - 1)} ${H - padBottom} L ${xAt(0)} ${H - padBottom} Z`;
           return (
             <g key={si}>
-              <path d={area} fill={`url(#grad-${si}-${s.name.replace(/\W/g, '')})`} />
-              <path d={line} fill="none" stroke={s.color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx={xAt(active)} cy={yAt(s.data[active]?.value ?? 0)} r="4.5" fill={s.color} stroke="#fff" strokeWidth="2" className="dark:[stroke:#0b1220]" />
+              <path className="metric-area" d={area} fill={`url(#grad-${si}-${s.name.replace(/\W/g, '')})`} />
+              <path
+                className="metric-line"
+                d={line}
+                pathLength={1}
+                fill="none"
+                stroke={s.color}
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ filter: `drop-shadow(0 3px 6px ${s.color}55)` }}
+              />
+              <circle className="metric-dot-pulse" cx={xAt(active)} cy={yAt(s.data[active]?.value ?? 0)} r="4.5" fill={s.color} stroke="#fff" strokeWidth="2.5" style={{ transition: 'cx 0.15s ease, cy 0.15s ease' }} />
             </g>
           );
         })}
@@ -163,7 +175,7 @@ export const MetricChart = ({ series, view, defaultIndex, valueFormatter, dateFo
 
       {/* التلميح (tooltip) */}
       <div
-        className="pointer-events-none absolute top-1 z-20 -translate-x-1/2 rounded-lg border border-gray-200 bg-white/95 px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95"
+        className="pointer-events-none absolute top-1 z-20 -translate-x-1/2 rounded-lg border border-gray-200 bg-white/95 px-2.5 py-1.5 text-[11px] shadow-lg backdrop-blur transition-[left] duration-150 dark:border-gray-700 dark:bg-gray-900/95"
         style={{ left: Math.min(Math.max(xAt(active), 54), W - 54) }}
       >
         <div className="mb-0.5 font-semibold text-gray-500 dark:text-gray-400">{fmtD(activeDate)}</div>
