@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import {
   ACCENTS,
@@ -47,13 +47,12 @@ const DEFAULT_PERIODS: PeriodOption[] = [
   { label: 'Past 30 days' },
 ];
 
-const REGION_W = 62; // %
 const NEUTRAL_PCT = 0.5;
 
-const SIZES: Record<CardSize, { minH: string; pad: string; footer: string; title: string; headline: string }> = {
-  sm: { minH: 'min-h-[260px]', pad: 'px-6 pt-5', footer: 'px-6 py-3', title: 'text-[15px]', headline: 'text-[40px]' },
-  md: { minH: 'min-h-[340px]', pad: 'px-8 pt-7', footer: 'px-8 py-4', title: 'text-[17px]', headline: 'text-[56px]' },
-  lg: { minH: 'min-h-[440px]', pad: 'px-10 pt-9', footer: 'px-10 py-5', title: 'text-[19px]', headline: 'text-[76px]' },
+const SIZES: Record<CardSize, { minH: string; pad: string; footer: string; title: string; headline: string; chartH: string }> = {
+  sm: { minH: 'min-h-[300px]', pad: 'px-5 pt-5', footer: 'px-5 py-3', title: 'text-[15px]', headline: 'text-[34px]', chartH: 'min-h-[150px]' },
+  md: { minH: 'min-h-[360px]', pad: 'px-6 pt-6', footer: 'px-6 py-3.5', title: 'text-[17px]', headline: 'text-[40px]', chartH: 'min-h-[190px]' },
+  lg: { minH: 'min-h-[440px]', pad: 'px-8 pt-8', footer: 'px-8 py-4', title: 'text-[19px]', headline: 'text-[52px]', chartH: 'min-h-[240px]' },
 };
 
 const sliceWindow = (points: SeriesPoint[], n?: number) => (n && n < points.length ? points.slice(-n) : points);
@@ -81,7 +80,6 @@ export default function ProgressMetricCard({
   loading = false,
   className = '',
 }: ProgressMetricCardProps) {
-  const gridId = `grid-${useId().replace(/:/g, '')}`;
   const sz = SIZES[size];
   const shell = `relative flex ${sz.minH} w-full flex-col overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 ${className}`;
 
@@ -187,45 +185,23 @@ export default function ProgressMetricCard({
 
   return (
     <div className={shell}>
-      {/* منطقة الرسم (يمين، خلف المحتوى) */}
-      <div className="absolute inset-y-0 right-0 z-0" style={{ width: `${REGION_W}%` }}>
-        <div className="absolute inset-0" style={{ background: `linear-gradient(to left, ${color.stroke}1f, transparent 75%)` }} />
-        <div
-          className="absolute inset-0 text-gray-300 dark:text-gray-700"
-          style={{
-            WebkitMaskImage: 'linear-gradient(to right, transparent, black 55%)',
-            maskImage: 'linear-gradient(to right, transparent, black 55%)',
-          }}
-        >
-          <svg className="h-full w-full" aria-hidden>
-            <defs>
-              <pattern id={gridId} width="14" height="14" patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="1" fill="currentColor" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill={`url(#${gridId})`} />
-          </svg>
-        </div>
-
-        <MetricChart series={chartSeries} view={view} defaultIndex={fallback} valueFormatter={fmtFull} dateFormatter={fmtDate} />
-      </div>
-
-      {/* المحتوى الأساسي */}
-      <div className={`pointer-events-none relative z-10 flex flex-1 flex-col ${sz.pad}`}>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className={`${sz.title} font-semibold tracking-tight text-gray-900 dark:text-white`}>{title}</h3>
+      <div className={`flex flex-1 flex-col ${sz.pad}`}>
+        {/* الهيدر */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <h3 className={`${sz.title} truncate font-semibold tracking-tight text-gray-900 dark:text-white`}>{title}</h3>
             <ViewToggle value={view} onChange={setView} />
           </div>
-          <div className="flex items-center gap-3.5 text-[14px]">
+          <div className="flex shrink-0 items-center gap-2.5 text-[13px]">
             <span className="flex items-center gap-1 font-medium" style={{ color: color.text }}>
-              <TrendIcon size={16} strokeWidth={2.5} />
+              <TrendIcon size={15} strokeWidth={2.5} />
               {displayPercent}
             </span>
             <PeriodSelect value={selectedLabel} options={periods} onChange={handlePeriodChange} accentText={color.text} />
           </div>
         </div>
 
+        {/* الليجند (متعدد السلاسل) */}
         {isMulti && (
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
             {chartSeries.map((s) => (
@@ -237,27 +213,37 @@ export default function ProgressMetricCard({
           </div>
         )}
 
-        <div className={`mt-5 ${sz.headline} font-medium leading-none tracking-tight text-gray-900 dark:text-white`}>
-          {displayTotal}
+        {/* الإجمالي + التغيّر */}
+        <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-1">
+          <div className={`${sz.headline} font-semibold leading-none tracking-tight text-gray-900 dark:text-white`}>
+            {displayTotal}
+          </div>
+          <div className="mb-0.5 text-[13px]">
+            <span className="font-medium" style={{ color: color.text }}>{displayDelta}</span>{' '}
+            <span className="text-gray-400">{deltaLabel}</span>
+          </div>
+        </div>
+
+        {/* الرسم بالعرض الكامل */}
+        <div className={`relative mt-3 -mx-1 flex-1 ${sz.chartH}`}>
+          <div className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(to top, ${color.stroke}0f, transparent 60%)` }} />
+          <MetricChart series={chartSeries} view={view} defaultIndex={fallback} valueFormatter={fmtFull} dateFormatter={fmtDate} />
         </div>
       </div>
 
-      {/* الفوتر: التغيّر يسار، إحصائيات يمين */}
-      <div className={`relative z-10 flex items-center justify-between gap-4 border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 ${sz.footer} text-[14px]`}>
-        <div>
-          <span className="font-medium" style={{ color: color.text }}>{displayDelta}</span>{' '}
-          <span className="text-gray-500 dark:text-gray-400">{deltaLabel}</span>
-        </div>
-        {showStats && (
-          <div className="flex items-center gap-2.5 text-[12px] text-gray-500 dark:text-gray-400">
+      {/* الفوتر: التغيّر + إحصائيات */}
+      {showStats && (
+        <div className={`flex items-center justify-between gap-4 border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 ${sz.footer} text-[12px]`}>
+          <span className="text-gray-400">آخر {primary?.data.length ?? 0} نقطة</span>
+          <div className="flex items-center gap-2.5 text-gray-500 dark:text-gray-400">
             <span><span className="font-medium text-gray-700 dark:text-gray-200">{fmtCompact(stats.peak)}</span> الأعلى</span>
             <span className="opacity-40">·</span>
             <span><span className="font-medium text-gray-700 dark:text-gray-200">{fmtCompact(stats.low)}</span> الأدنى</span>
             <span className="opacity-40">·</span>
             <span><span className="font-medium text-gray-700 dark:text-gray-200">{fmtCompact(Math.round(stats.avg))}</span> المتوسط</span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

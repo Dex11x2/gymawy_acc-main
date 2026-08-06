@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from "../store/dataStore";
@@ -7,6 +7,7 @@ import { Card, Button, Table } from '../components/ui';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from '../store/toastStore';
 import { financialReportApi, FinancialReportSend } from '../services/financialReport';
+import ProgressMetricCard from '../components/metric/ProgressMetricCard';
 import {
   FileBarChart,
   Lock,
@@ -134,6 +135,21 @@ const Reports: React.FC = () => {
   };
 
   const monthLabel = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+
+  // سلسلتان يوميّتان (إيرادات/مصروفات بالجنيه) للرسم التفاعلي — تُحسب دائمًا (rules of hooks)
+  const dailyEgpSeries = useMemo(() => {
+    const days = new Date(selectedYear, selectedMonth, 0).getDate();
+    const rev: { date: string; value: number }[] = [];
+    const exp: { date: string; value: number }[] = [];
+    for (let d = 1; d <= days; d++) {
+      rev.push({ date: String(d), value: filteredRevenues.filter((r) => r.currency === 'EGP' && new Date(r.date).getDate() === d).reduce((s, r) => s + (r.amount || 0), 0) });
+      exp.push({ date: String(d), value: filteredExpenses.filter((e) => e.currency === 'EGP' && e.type !== 'refund' && new Date(e.date).getDate() === d).reduce((s, e) => s + (e.amount || 0), 0) });
+    }
+    return [
+      { name: 'الإيرادات', accent: 'emerald' as const, data: rev },
+      { name: 'المصروفات', accent: 'rose' as const, data: exp },
+    ];
+  }, [filteredRevenues, filteredExpenses, selectedMonth, selectedYear]);
 
   const periodText = selectedPeriod === "month"
     ? new Date(selectedYear, selectedMonth - 1).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
@@ -452,6 +468,20 @@ const Reports: React.FC = () => {
           </div>
         </Card.Body>
       </Card>
+
+      {/* الرسم اليومي التفاعلي (شهري فقط، بالجنيه) */}
+      {selectedPeriod === 'month' && (
+        <ProgressMetricCard
+          title={`الإيرادات والمصروفات اليومية — ${monthLabel} (ج.م)`}
+          unit="ج.م"
+          defaultView="curve"
+          size="lg"
+          period="كل الشهر"
+          periodOptions={[{ label: 'كل الشهر' }, { label: 'آخر 14 يوم', points: 14 }, { label: 'آخر 7 أيام', points: 7 }]}
+          dateFormatter={(d) => `يوم ${d}`}
+          series={dailyEgpSeries}
+        />
+      )}
 
       {/* Currency Reports */}
       <div className="space-y-6">
