@@ -25,9 +25,10 @@ const canReview = (u: any, c: any): boolean => {
 };
 
 // إخفاء هوية صاحب الطلب لو مجهول (للجميع ماعدا صاحبه)
+// نستخدم toJSON عشان تحويل _id→id العام يتطبّق (toObject بيتخطّاه)
 const sanitize = (c: any, viewerId: string) => {
-  const obj = c.toObject ? c.toObject() : c;
-  const ownerId = (obj.userId?._id || obj.userId)?.toString();
+  const obj = c.toJSON ? c.toJSON() : c;
+  const ownerId = (obj.userId?._id || obj.userId?.id || obj.userId)?.toString();
   if (obj.isAnonymous && ownerId !== viewerId) {
     return { ...obj, userName: 'مجهول', userId: undefined, userAvatar: undefined };
   }

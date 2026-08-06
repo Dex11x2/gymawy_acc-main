@@ -1,0 +1,121 @@
+- generic [ref=f2e19]:
+  - complementary [ref=f2e20]:
+    - link [ref=f2e22] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=f2e23]
+    - generic [ref=f2e24]: القائمة
+    - navigation [ref=f2e25]:
+      - list [ref=f2e26]:
+        - listitem [ref=f2e27]:
+          - link "مساحتي" [ref=f2e28] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=f2e34]:
+          - link "الأجازات والإذونات" [ref=f2e35] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=f2e40]:
+          - link "لوحة التحكم" [ref=f2e41] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f2e49]:
+          - link "تسجيل الحضور" [ref=f2e50] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=f2e56]:
+          - link "إدارة الحضور" [ref=f2e57] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=f2e62]:
+          - link "الفروع والصلاحيات" [ref=f2e63] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=f2e69]:
+          - link "إدارة الصلاحيات" [ref=f2e70] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=f2e76]:
+          - link "الأقسام" [ref=f2e77] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=f2e85]:
+          - link "الموظفون" [ref=f2e86] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=f2e92]:
+          - link "الرواتب الشهرية" [ref=f2e93] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=f2e98]:
+          - link "رواتب الميديا" [ref=f2e99] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=f2e104]:
+          - link "الإيرادات" [ref=f2e105] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=f2e111]:
+          - link "المصروفات" [ref=f2e112] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=f2e118]:
+          - link "العهد والسلف" [ref=f2e119] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=f2e126]:
+          - link "المهام" [ref=f2e127] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=f2e133]:
+          - link "مهام التطوير" [ref=f2e134] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=f2e141]:
+          - link "المحادثات" [ref=f2e142] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=f2e147]:
+          - link "المنشورات" [ref=f2e148] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=f2e154]:
+          - link "جدولة المحتوى" [ref=f2e155] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=f2e161]:
+          - link "مراجعة الفيديوهات" [ref=f2e162] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=f2e169]:
+          - link "تقييمات الموظفين" [ref=f2e170] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=f2e175]:
+          - link "التقارير" [ref=f2e176] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=f2e180]:
+          - link "التقرير اليومي" [ref=f2e181] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=f2e185]:
+          - link "تقرير تمويل الإعلانات" [ref=f2e186] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=f2e191]:
+          - link "الشكاوى والمقترحات" [ref=f2e192] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=f2e197]:
+          - link "التعليمات" [ref=f2e198] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=f2e204]:
+          - link "المناسبات" [ref=f2e205] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=f2e212] [cursor=pointer]
+  - generic [ref=f2e216]:
+    - banner [ref=f2e217]:
+      - button "بحث أو أمر... ⌘K" [ref=f2e219] [cursor=pointer]:
+        - generic [ref=f2e223]: بحث أو أمر...
+        - generic [ref=f2e224]: ⌘K
+      - generic [ref=f2e225]:
+        - button "الوضع الداكن" [ref=f2e226] [cursor=pointer]
+        - button [ref=f2e230] [cursor=pointer]
+        - button [ref=f2e237] [cursor=pointer]:
+          - img "Dev" [ref=f2e239]
+          - generic [ref=f2e241]:
+            - paragraph [ref=f2e242]: Dev
+            - paragraph [ref=f2e243]: Dev
+    - main [ref=f2e246]:
+      - generic [ref=f2e248]:
+        - generic [ref=f2e249]:
+          - generic [ref=f2e250]:
+            - heading [level=1] [ref=f2e251]
+            - paragraph [ref=f2e259]: ضيف مناسبتك (عيد ميلادك أو غيره) — هييجي تذكير النهاردة وقبلها بيوم، والفريق كله هيعرف 🎉
+          - button [ref=f2e260] [cursor=pointer]
+        - generic [ref=f2e263]:
+          - generic [ref=f2e264]: مناسبات النهاردة 🎉
+          - generic [ref=f2e269]: 🎂 اختبار — عيد ميلاد النهاردة
+        - generic [ref=f2e273]:
+          - generic [ref=f2e279]:
+            - button [ref=f2e280] [cursor=pointer]
+            - button [ref=f2e284] [cursor=pointer]
+          - heading "اختبار — عيد ميلاد النهاردة" [level=3] [ref=f2e289]
+          - generic [ref=f2e290]: عيد ميلاد
+          - generic [ref=f2e295]: الخميس، ٦ أغسطس ٢٠٢٦
+          - generic [ref=f2e300]: متكررة سنوياً

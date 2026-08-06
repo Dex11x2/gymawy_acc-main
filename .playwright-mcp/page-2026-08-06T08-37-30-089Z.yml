@@ -1,0 +1,158 @@
+- generic [ref=f3e5]:
+  - complementary [ref=f3e6]:
+    - link [ref=f3e8] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=f3e9]
+    - generic [ref=f3e10]: القائمة
+    - navigation [ref=f3e11]:
+      - list [ref=f3e12]:
+        - listitem [ref=f3e13]:
+          - link "مساحتي" [ref=f3e14] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=f3e20]:
+          - link "الأجازات والإذونات" [ref=f3e21] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=f3e26]:
+          - link "لوحة التحكم" [ref=f3e27] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f3e35]:
+          - link "تسجيل الحضور" [ref=f3e36] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=f3e42]:
+          - link "إدارة الحضور" [ref=f3e43] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=f3e48]:
+          - link "الفروع والصلاحيات" [ref=f3e49] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=f3e55]:
+          - link "إدارة الصلاحيات" [ref=f3e56] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=f3e62]:
+          - link "الأقسام" [ref=f3e63] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=f3e71]:
+          - link "الموظفون" [ref=f3e72] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=f3e78]:
+          - link "الرواتب الشهرية" [ref=f3e79] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=f3e84]:
+          - link "رواتب الميديا" [ref=f3e85] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=f3e90]:
+          - link "الإيرادات" [ref=f3e91] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=f3e97]:
+          - link "المصروفات" [ref=f3e98] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=f3e104]:
+          - link "العهد والسلف" [ref=f3e105] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=f3e112]:
+          - link "المهام" [ref=f3e113] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=f3e119]:
+          - link "مهام التطوير" [ref=f3e120] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=f3e127]:
+          - link "المحادثات" [ref=f3e128] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=f3e133]:
+          - link "المنشورات" [ref=f3e134] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=f3e140]:
+          - link "جدولة المحتوى" [ref=f3e141] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=f3e147]:
+          - link "مراجعة الفيديوهات" [ref=f3e148] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=f3e155]:
+          - link "تقييمات الموظفين" [ref=f3e156] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=f3e161]:
+          - link "التقارير" [ref=f3e162] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=f3e166]:
+          - link "التقرير اليومي" [ref=f3e167] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=f3e171]:
+          - link "تقرير تمويل الإعلانات" [ref=f3e172] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=f3e177]:
+          - link "الشكاوى والمقترحات" [ref=f3e178] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=f3e184]:
+          - link "التعليمات" [ref=f3e185] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=f3e191]:
+          - link "المناسبات" [ref=f3e192] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=f3e198] [cursor=pointer]
+  - generic [ref=f3e202]:
+    - banner [ref=f3e203]:
+      - button "بحث أو أمر... ⌘K" [ref=f3e205] [cursor=pointer]:
+        - generic [ref=f3e209]: بحث أو أمر...
+        - generic [ref=f3e210]: ⌘K
+      - generic [ref=f3e211]:
+        - button "الوضع الداكن" [ref=f3e212] [cursor=pointer]
+        - button [ref=f3e216] [cursor=pointer]
+        - button [ref=f3e223] [cursor=pointer]:
+          - img "Dev" [ref=f3e225]
+          - generic [ref=f3e227]:
+            - paragraph [ref=f3e228]: Dev
+            - paragraph [ref=f3e229]: Dev
+    - main [ref=f3e232]:
+      - generic [ref=f3e234]:
+        - generic [ref=f3e235]:
+          - generic [ref=f3e236]:
+            - heading [level=1] [ref=f3e237]
+            - paragraph [ref=f3e241]: اكتب شكواك أو مقترحك، اختار يوصل لمين، وتقدر تخليه باسمك أو مجهول
+          - button [active] [ref=f3e242] [cursor=pointer]
+        - generic [ref=f3e245]:
+          - generic [ref=f3e248]:
+            - text: قيد الانتظار
+            - heading "0" [level=3] [ref=f3e250]
+          - generic [ref=f3e257]:
+            - text: قيد المعالجة
+            - heading "0" [level=3] [ref=f3e259]
+          - generic [ref=f3e268]:
+            - text: تم الحل
+            - heading "0" [level=3] [ref=f3e270]
+          - generic [ref=f3e277]:
+            - text: مرفوض
+            - heading "0" [level=3] [ref=f3e279]
+        - generic [ref=f3e285]:
+          - heading "الطلبات" [level=2] [ref=f3e287]
+          - paragraph [ref=f3e294]: لا توجد شكاوى أو مقترحات
+        - generic [ref=f3e298]:
+          - generic [ref=f3e299]:
+            - heading "طلب جديد" [level=3] [ref=f3e300]
+            - button "إغلاق" [ref=f3e301] [cursor=pointer]
+          - generic [ref=f3e306]:
+            - generic [ref=f3e307]:
+              - generic [ref=f3e308]: النوع
+              - combobox [ref=f3e309]:
+                - option "شكوى" [selected]
+                - option "مقترح"
+                - option "مشكلة تقنية"
+            - generic [ref=f3e310]:
+              - generic [ref=f3e311]: يتقدّم لمين؟
+              - combobox [ref=f3e312]:
+                - option "المدير العام" [selected]
+                - option "المدير الإداري"
+                - option "السوبر أدمن"
+              - paragraph [ref=f3e313]: الطلب هيوصل للشخص ده بس.
+            - generic [ref=f3e314]:
+              - generic [ref=f3e315]: العنوان
+              - textbox [ref=f3e316]
+            - generic [ref=f3e317]:
+              - generic [ref=f3e318]: التفاصيل
+              - textbox [ref=f3e319]
+            - generic [ref=f3e320] [cursor=pointer]:
+              - checkbox "تقديم مجهول (إخفاء اسمي) لو فعّلته، المستلم مش هيشوف اسمك — هيظهر «مجهول». تقدر تكتب بصراحة." [ref=f3e321]
+              - generic [ref=f3e322]:
+                - generic [ref=f3e323]: تقديم مجهول (إخفاء اسمي)
+                - generic [ref=f3e329]: لو فعّلته، المستلم مش هيشوف اسمك — هيظهر «مجهول». تقدر تكتب بصراحة.
+            - generic [ref=f3e330]:
+              - button [ref=f3e331] [cursor=pointer]
+              - button "إلغاء" [ref=f3e336] [cursor=pointer]
