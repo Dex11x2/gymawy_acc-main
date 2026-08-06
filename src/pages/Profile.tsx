@@ -1,9 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
-import { Pencil, LogOut, Save, X, ChevronRight, Camera, Loader2 } from 'lucide-react';
+import { Pencil, LogOut, Save, X, ChevronRight, Camera, Loader2, CheckCircle2, Clock, MapPin, CalendarX } from 'lucide-react';
 import Toast from '../components/Toast';
 import api from '../services/api';
+
+const fmtTimeEg = (iso?: string) => {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' }); }
+  catch { return ''; }
+};
+const statusAr = (s?: string): string => ({
+  present: 'حاضر', late: 'متأخر', absent: 'غائب', early_leave: 'انصراف مبكر',
+  on_leave: 'في أجازة', holiday: 'عطلة', weekend: 'إجازة أسبوعية',
+} as Record<string, string>)[s || ''] || (s || '');
 
 // Downscale the picked image to a 256px square JPEG data-URL so the upload
 // stays tiny regardless of the original photo size.
@@ -34,6 +45,16 @@ const Profile: React.FC = () => {
   const { departments } = useDataStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // حضور النهاردة (بيظهر في البروفايل إن الشخص سجّل حضوره)
+  const [todayAtt, setTodayAtt] = useState<any | undefined>(undefined); // undefined=بيحمّل, null=مفيش تسجيل
+  useEffect(() => {
+    let alive = true;
+    api.get('/attendance-records/today')
+      .then((res) => { if (alive) setTodayAtt(res.data?.data ?? null); })
+      .catch(() => { if (alive) setTodayAtt(null); });
+    return () => { alive = false; };
+  }, []);
 
   const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,6 +161,50 @@ const Profile: React.FC = () => {
           </ol>
         </nav>
       </div>
+
+      {/* حضور النهاردة */}
+      {todayAtt !== undefined && (
+        (() => {
+          const checkedIn = !!(todayAtt && (todayAtt.hasCheckedIn || todayAtt.checkIn));
+          const checkedOut = !!(todayAtt && (todayAtt.hasCheckedOut || todayAtt.checkOut));
+          const branch = todayAtt?.branchId?.name;
+          if (!checkedIn) {
+            return (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <div className="flex items-center gap-3">
+                  <CalendarX className="h-6 w-6 text-amber-500" />
+                  <div>
+                    <p className="font-semibold text-amber-800 dark:text-amber-300">لسه مسجّلتش حضورك النهاردة</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400/80">سجّل حضورك عشان يظهر في بروفايلك</p>
+                  </div>
+                </div>
+                <Link to="/attendance-map" className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">تسجيل الحضور</Link>
+              </div>
+            );
+          }
+          return (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                <div>
+                  <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                    {checkedOut ? 'سجّلت حضورك وانصرافك النهاردة' : 'سجّلت حضورك النهاردة'} ✅
+                  </p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-700 dark:text-emerald-400/90">
+                    {todayAtt?.status && <span>{statusAr(todayAtt.status)}</span>}
+                    {todayAtt?.checkIn && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> حضور {fmtTimeEg(todayAtt.checkIn)}</span>}
+                    {todayAtt?.checkOut && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> انصراف {fmtTimeEg(todayAtt.checkOut)}</span>}
+                    {branch && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {branch}</span>}
+                  </div>
+                </div>
+              </div>
+              {!checkedOut && (
+                <Link to="/attendance-map" className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/40 dark:text-emerald-300 dark:hover:bg-emerald-500/10">تسجيل الانصراف</Link>
+              )}
+            </div>
+          );
+        })()
+      )}
 
       {/* Profile Section */}
       <div className="mb-6">
