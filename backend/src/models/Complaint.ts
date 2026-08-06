@@ -7,11 +7,13 @@ export interface IComplaint extends Document {
   type: 'complaint' | 'suggestion' | 'technical_issue';
   title: string;
   description: string;
-  recipientType: 'general_manager' | 'administrative_manager' | 'technical_support';
+  recipientType: 'general_manager' | 'administrative_manager' | 'technical_support' | 'dev';
   recipientId: string;
+  isAnonymous: boolean;
   status: 'pending' | 'in-progress' | 'resolved' | 'rejected';
   response?: string;
   respondedBy?: mongoose.Types.ObjectId;
+  respondedByName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,19 +29,21 @@ const ComplaintSchema = new Schema({
   },
   title: { type: String, required: true },
   description: { type: String, required: true },
-  recipientType: { 
-    type: String, 
-    enum: ['general_manager', 'administrative_manager', 'technical_support'], 
-    required: true 
+  recipientType: {
+    type: String,
+    enum: ['general_manager', 'administrative_manager', 'technical_support', 'dev'],
+    required: true
   },
-  recipientId: { type: String, required: true },
-  status: { 
-    type: String, 
-    enum: ['pending', 'in-progress', 'resolved', 'rejected'], 
-    default: 'pending' 
+  recipientId: { type: String, required: false, default: '' },
+  isAnonymous: { type: Boolean, default: false },
+  status: {
+    type: String,
+    enum: ['pending', 'in-progress', 'resolved', 'rejected'],
+    default: 'pending'
   },
   response: { type: String },
-  respondedBy: { type: Schema.Types.ObjectId, ref: 'User' }
+  respondedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  respondedByName: { type: String }
 }, { timestamps: true });
 
 export default mongoose.model<IComplaint>('Complaint', ComplaintSchema);
