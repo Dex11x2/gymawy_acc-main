@@ -227,7 +227,10 @@ export default function ProgressMetricCard({
         {/* الرسم بالعرض الكامل */}
         <div className={`relative mt-3 -mx-1 flex-1 ${sz.chartH}`}>
           <div className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(to top, ${color.stroke}0f, transparent 60%)` }} />
-          <MetricChart series={chartSeries} view={view} defaultIndex={fallback} valueFormatter={fmtFull} dateFormatter={fmtDate} />
+          {/* غلاف مطلق يضمن ارتفاع مؤكّد للرسم (h-full ما بيتحسبش جوّه flex بدون ارتفاع صريح) */}
+          <div className="absolute inset-0">
+            <MetricChart series={chartSeries} view={view} defaultIndex={fallback} valueFormatter={fmtFull} dateFormatter={fmtDate} />
+          </div>
         </div>
       </div>
 
