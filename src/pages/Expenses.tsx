@@ -8,6 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
 import { TrendingDown, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, FileDown, FileSpreadsheet, Wrench, Building2, BarChart3, Lock, Search } from 'lucide-react';
+import { DailyBarChart } from '../components/Charts';
 
 type Currency = 'EGP' | 'USD' | 'SAR' | 'AED';
 
@@ -95,6 +96,17 @@ const Expenses: React.FC = () => {
     return true;
   });
   const isFiltering = !!searchLc || filterType !== 'all' || filterCurrency !== 'all';
+
+  // بيانات الرسم اليومي للمصروفات (بالعملة المختارة، الافتراضي جنيه)
+  const chartCurrency = (filterCurrency === 'all' ? 'EGP' : filterCurrency) as Currency;
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const dailyExpense = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const value = regularExpenses
+      .filter((e: any) => e.currency === chartCurrency && new Date(e.date).getDate() === day)
+      .reduce((s: number, e: any) => s + (e.amount || 0), 0);
+    return { day: String(day), value };
+  });
 
   const expensesByCurrency = {
     EGP: regularExpenses.filter(e => e.currency === 'EGP').reduce((sum, e) => sum + e.amount, 0),
@@ -540,6 +552,19 @@ const Expenses: React.FC = () => {
               </select>
             </div>
           </div>
+        </Card.Body>
+      </Card>
+
+      {/* الرسم اليومي */}
+      <Card>
+        <Card.Header className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-error-500" /> المصروفات اليومية — {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+          </h2>
+          <span className="text-xs text-gray-500 dark:text-gray-400">بالعملة: {getCurrencySymbol(chartCurrency)} (غيّرها من فلتر العملة)</span>
+        </Card.Header>
+        <Card.Body>
+          <DailyBarChart data={dailyExpense} label={`مصروفات (${getCurrencySymbol(chartCurrency)})`} color="#f04438" />
         </Card.Body>
       </Card>
 

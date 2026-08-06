@@ -17,6 +17,23 @@ export const RevenueExpenseChart: React.FC<{ data: any[] }> = ({ data }) => (
   </ResponsiveContainer>
 );
 
+// رسم يومي: أعمدة لكل يوم في الشهر (للإيرادات أو المصروفات)
+export const DailyBarChart: React.FC<{ data: any[]; label: string; color?: string }> = ({ data, label, color = '#F97316' }) => (
+  <ResponsiveContainer width="100%" height={300}>
+    <BarChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 10 }}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="day" tick={{ fontSize: 10 }} interval={0} />
+      <YAxis tick={{ fontSize: 11 }} width={70} tickFormatter={(v: any) => Number(v).toLocaleString()} />
+      <Tooltip
+        contentStyle={{ fontSize: 12 }}
+        formatter={(v: any) => [Number(v).toLocaleString(), label]}
+        labelFormatter={(d: any) => `يوم ${d}`}
+      />
+      <Bar dataKey="value" fill={color} name={label} radius={[4, 4, 0, 0]} />
+    </BarChart>
+  </ResponsiveContainer>
+);
+
 export const DepartmentPerformanceChart: React.FC<{ data: any[] }> = ({ data }) => (
   <ResponsiveContainer width="100%" height={300}>
     <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>

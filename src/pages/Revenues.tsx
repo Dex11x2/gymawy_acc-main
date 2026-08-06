@@ -6,7 +6,8 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Input, Textarea, Table } from '../components/ui';
-import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, Search } from 'lucide-react';
+import { TrendingUp, Wallet, Plus, Edit2, Trash2, Eye, Calculator, Calendar, Search, BarChart3 } from 'lucide-react';
+import { DailyBarChart } from '../components/Charts';
 
 type Currency = "EGP" | "USD" | "SAR" | "AED";
 
@@ -98,6 +99,18 @@ const Revenues: React.FC = () => {
     return true;
   });
   const isFiltering = !!searchLc || filterCurrency !== 'all';
+
+  // بيانات الرسم اليومي: إجمالي كل يوم في الشهر (بالعملة المختارة، الافتراضي جنيه)
+  const chartCurrency = (filterCurrency === 'all' ? 'EGP' : filterCurrency) as Currency;
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const dailyRevenue = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const value = filteredRevenues
+      .filter((r: any) => r.currency === chartCurrency && new Date(r.date).getDate() === day)
+      .reduce((s: number, r: any) => s + (r.amount || 0), 0);
+    return { day: String(day), value };
+  });
+  const curSymbol = ({ EGP: 'ج.م', SAR: 'ر.س', USD: '$', AED: 'د.إ' } as Record<string, string>)[chartCurrency] || '';
 
   const openAdd = () => {
     if (!canCreateRevenue) {
@@ -349,6 +362,19 @@ const Revenues: React.FC = () => {
           iconColor="orange"
         />
       </div>
+
+      {/* الرسم اليومي */}
+      <Card>
+        <Card.Header className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-brand-500" /> الإيرادات اليومية — {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+          </h2>
+          <span className="text-xs text-gray-500 dark:text-gray-400">بالعملة: {curSymbol} (غيّرها من فلتر العملة فوق)</span>
+        </Card.Header>
+        <Card.Body>
+          <DailyBarChart data={dailyRevenue} label={`إيرادات (${curSymbol})`} color="#12b76a" />
+        </Card.Body>
+      </Card>
 
       {/* Revenues Table */}
       <Card>
