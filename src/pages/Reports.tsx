@@ -153,6 +153,27 @@ const Reports: React.FC = () => {
         const data = calculateByCurrency(currency);
         const profitMargin = data.totalRevenue > 0 ? Math.round((data.netProfit / data.totalRevenue) * 100) : 0;
         const opExpensePercent = data.totalRevenue > 0 ? Math.round((data.operationalExpense / data.totalRevenue) * 100) : 0;
+        if (!data.totalRevenue && !data.totalExpense) return ''; // نتخطّى العملات بدون حركة
+
+        const sym = getCurrencySymbol(currency);
+        const curRevs = filteredRevenues.filter((r: any) => r.currency === currency);
+        const curExps = filteredExpenses.filter((e: any) => e.currency === currency);
+
+        // تفصيل يومي (الأيام اللي فيها حركة)
+        const daysInM = new Date(selectedYear, selectedMonth, 0).getDate();
+        let dailyRows = '';
+        for (let d = 1; d <= daysInM; d++) {
+          const rev = curRevs.filter((r: any) => new Date(r.date).getDate() === d).reduce((s: number, r: any) => s + (r.amount || 0), 0);
+          const exp = curExps.filter((e: any) => new Date(e.date).getDate() === d && e.type !== 'refund').reduce((s: number, e: any) => s + (e.amount || 0), 0);
+          if (rev || exp) dailyRows += `<tr><td>${d}</td><td style="color:#059669">${rev.toLocaleString()}</td><td style="color:#ea580c">${exp.toLocaleString()}</td><td style="font-weight:bold;color:${rev - exp >= 0 ? '#059669' : '#dc2626'}">${(rev - exp).toLocaleString()}</td></tr>`;
+        }
+
+        // كل العمليات بالتفصيل
+        const txRows = [
+          ...curRevs.map((r: any) => ({ date: r.date, kind: 'إيراد', desc: r.title || r.category || '', amount: r.amount || 0, color: '#059669' })),
+          ...curExps.map((e: any) => ({ date: e.date, kind: e.type === 'refund' ? 'مرتجع' : 'مصروف', desc: e.title || e.category || e.description || '', amount: e.amount || 0, color: '#dc2626' })),
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .map((t) => `<tr><td>${new Date(t.date).toLocaleDateString('ar-EG')}</td><td>${t.kind}</td><td>${t.desc}</td><td style="color:${t.color};font-weight:bold">${t.amount.toLocaleString()} ${sym}</td></tr>`).join('');
 
         return `
           <div style="margin: 30px 0; page-break-inside: avoid;">
@@ -200,6 +221,20 @@ const Reports: React.FC = () => {
                 </tr>
               </tbody>
             </table>
+
+            ${dailyRows ? `
+            <h3 style="color:#1e40af;margin:20px 0 10px;">التفصيل اليومي</h3>
+            <table>
+              <thead><tr><th>اليوم</th><th>الإيرادات</th><th>المصروفات</th><th>الصافي</th></tr></thead>
+              <tbody>${dailyRows}</tbody>
+            </table>` : ''}
+
+            ${txRows ? `
+            <h3 style="color:#1e40af;margin:20px 0 10px;">كل العمليات (${curRevs.length + curExps.length})</h3>
+            <table>
+              <thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>المبلغ</th></tr></thead>
+              <tbody>${txRows}</tbody>
+            </table>` : ''}
           </div>
         `;
       }).join('')}
