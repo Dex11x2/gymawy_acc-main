@@ -2,8 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDataStore } from "../store/dataStore";
 import { useAuthStore } from "../store/authStore";
-import { CategoryPieChart } from "../components/Charts";
 import ProgressMetricCard from "../components/metric/ProgressMetricCard";
+import { CategoryDonut } from "../components/metric/CategoryDonut";
 import Modal from '../components/Modal';
 import Toast from '../components/Toast';
 import { Card, StatCard, Badge, Button, Alert } from '../components/ui';
@@ -506,7 +506,8 @@ const Dashboard: React.FC = () => {
             </div>
           </Card.Header>
           <Card.Body>
-            <CategoryPieChart
+            <CategoryDonut
+              unit="ج.م"
               data={useMemo(() => {
                 // توزيع حقيقي للمصروفات حسب الفئة (بالجنيه المصري)
                 const map: Record<string, number> = {};
