@@ -1,0 +1,146 @@
+- generic [ref=f8e102]:
+  - complementary [ref=f8e103]:
+    - link [ref=f8e105] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=f8e106]
+    - generic [ref=f8e107]: القائمة
+    - navigation [ref=f8e108]:
+      - list [ref=f8e109]:
+        - listitem [ref=f8e110]:
+          - link "مساحتي" [ref=f8e111] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=f8e117]:
+          - link "الأجازات والإذونات" [ref=f8e118] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=f8e123]:
+          - link "لوحة التحكم" [ref=f8e124] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f8e132]:
+          - link "تسجيل الحضور" [ref=f8e133] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=f8e139]:
+          - link "إدارة الحضور" [ref=f8e140] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=f8e145]:
+          - link "الفروع والصلاحيات" [ref=f8e146] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=f8e152]:
+          - link "إدارة الصلاحيات" [ref=f8e153] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=f8e159]:
+          - link "الأقسام" [ref=f8e160] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=f8e168]:
+          - link "الموظفون" [ref=f8e169] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=f8e175]:
+          - link "الرواتب الشهرية" [ref=f8e176] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=f8e181]:
+          - link "رواتب الميديا" [ref=f8e182] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=f8e187]:
+          - link "الإيرادات" [ref=f8e188] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=f8e194]:
+          - link "المصروفات" [ref=f8e195] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=f8e201]:
+          - link "العهد والسلف" [ref=f8e202] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=f8e209]:
+          - link "المهام" [ref=f8e210] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=f8e216]:
+          - link "مهام التطوير" [ref=f8e217] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=f8e224]:
+          - link "المحادثات" [ref=f8e225] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=f8e230]:
+          - link "المنشورات" [ref=f8e231] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=f8e237]:
+          - link "جدولة المحتوى" [ref=f8e238] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=f8e244]:
+          - link "مراجعة الفيديوهات" [ref=f8e245] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=f8e252]:
+          - link "تقييمات الموظفين" [ref=f8e253] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=f8e258]:
+          - link "التقارير" [ref=f8e259] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=f8e263]:
+          - link "التقرير اليومي" [ref=f8e264] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=f8e268]:
+          - link "تقرير تمويل الإعلانات" [ref=f8e269] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=f8e274]:
+          - link "الشكاوى والمقترحات" [ref=f8e275] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=f8e281]:
+          - link "التعليمات" [ref=f8e282] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=f8e288]:
+          - link "المناسبات" [ref=f8e289] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=f8e295] [cursor=pointer]
+  - generic [ref=f8e299]:
+    - banner [ref=f8e300]:
+      - button "بحث أو أمر... ⌘K" [ref=f8e302] [cursor=pointer]:
+        - generic [ref=f8e306]: بحث أو أمر...
+        - generic [ref=f8e307]: ⌘K
+      - generic [ref=f8e308]:
+        - button "الوضع الداكن" [ref=f8e309] [cursor=pointer]
+        - button [ref=f8e313] [cursor=pointer]
+        - button [ref=f8e320] [cursor=pointer]:
+          - img "Dev" [ref=f8e322]
+          - generic [ref=f8e324]:
+            - paragraph [ref=f8e325]: Dev
+            - paragraph [ref=f8e326]: Dev
+    - main [ref=f8e3]:
+      - generic [ref=f8e5]:
+        - generic [ref=f8e6]:
+          - generic [ref=f8e7]:
+            - heading [level=1] [ref=f8e8]
+            - paragraph [ref=f8e12]: اكتب شكواك أو مقترحك، اختار يوصل لمين، وتقدر تخليه باسمك أو مجهول
+          - button [ref=f8e13] [cursor=pointer]
+        - generic [ref=f8e16]:
+          - generic [ref=f8e19]:
+            - text: قيد الانتظار
+            - heading "1" [level=3] [ref=f8e21]
+          - generic [ref=f8e28]:
+            - text: قيد المعالجة
+            - heading "0" [level=3] [ref=f8e30]
+          - generic [ref=f8e39]:
+            - text: تم الحل
+            - heading "0" [level=3] [ref=f8e41]
+          - generic [ref=f8e48]:
+            - text: مرفوض
+            - heading "0" [level=3] [ref=f8e50]
+        - generic [ref=f8e56]:
+          - heading "الطلبات" [level=2] [ref=f8e58]
+          - generic [ref=f8e61]:
+            - generic [ref=f8e62]:
+              - heading "اختبار مقترح مجهول" [level=3] [ref=f8e66]
+              - generic [ref=f8e67]: قيد الانتظار
+              - generic [ref=f8e68]: مجهول
+            - paragraph [ref=f8e75]: ده مقترح تجريبي للفحص
+            - generic [ref=f8e76]:
+              - generic [ref=f8e77]: Dev
+              - generic [ref=f8e81]: "إلى: السوبر أدمن"
+              - generic [ref=f8e85]: ٦‏/٨‏/٢٠٢٦
+            - generic [ref=f8e88]:
+              - generic [ref=f8e89]:
+                - button "قيد المعالجة" [ref=f8e90] [cursor=pointer]
+                - button "تم الحل" [ref=f8e91] [cursor=pointer]
+                - button "رفض" [ref=f8e92] [cursor=pointer]
+              - generic [ref=f8e93]:
+                - textbox "اكتب ردك على الموظف..." [ref=f8e94]: تمام وصلني — شكرًا 👍
+                - button [ref=f8e95] [cursor=pointer]
+        - generic [ref=f8e331]:
+          - paragraph [ref=f8e335]: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Complaint"
+          - button "إغلاق" [ref=f8e336] [cursor=pointer]

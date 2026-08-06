@@ -1,0 +1,149 @@
+- generic [ref=f9e102]:
+  - complementary [ref=f9e103]:
+    - link [ref=f9e105] [cursor=pointer]:
+      - /url: /dashboard
+      - img "Gymmawy Logo" [ref=f9e106]
+    - generic [ref=f9e107]: القائمة
+    - navigation [ref=f9e108]:
+      - list [ref=f9e109]:
+        - listitem [ref=f9e110]:
+          - link "مساحتي" [ref=f9e111] [cursor=pointer]:
+            - /url: /my-space
+        - listitem [ref=f9e117]:
+          - link "الأجازات والإذونات" [ref=f9e118] [cursor=pointer]:
+            - /url: /leave-requests
+        - listitem [ref=f9e123]:
+          - link "لوحة التحكم" [ref=f9e124] [cursor=pointer]:
+            - /url: /dashboard
+        - listitem [ref=f9e132]:
+          - link "تسجيل الحضور" [ref=f9e133] [cursor=pointer]:
+            - /url: /attendance-map
+        - listitem [ref=f9e139]:
+          - link "إدارة الحضور" [ref=f9e140] [cursor=pointer]:
+            - /url: /attendance-management
+        - listitem [ref=f9e145]:
+          - link "الفروع والصلاحيات" [ref=f9e146] [cursor=pointer]:
+            - /url: /branches
+        - listitem [ref=f9e152]:
+          - link "إدارة الصلاحيات" [ref=f9e153] [cursor=pointer]:
+            - /url: /role-permissions
+        - listitem [ref=f9e159]:
+          - link "الأقسام" [ref=f9e160] [cursor=pointer]:
+            - /url: /departments
+        - listitem [ref=f9e168]:
+          - link "الموظفون" [ref=f9e169] [cursor=pointer]:
+            - /url: /employees
+        - listitem [ref=f9e175]:
+          - link "الرواتب الشهرية" [ref=f9e176] [cursor=pointer]:
+            - /url: /payroll
+        - listitem [ref=f9e181]:
+          - link "رواتب الميديا" [ref=f9e182] [cursor=pointer]:
+            - /url: /media-salaries
+        - listitem [ref=f9e187]:
+          - link "الإيرادات" [ref=f9e188] [cursor=pointer]:
+            - /url: /revenues
+        - listitem [ref=f9e194]:
+          - link "المصروفات" [ref=f9e195] [cursor=pointer]:
+            - /url: /expenses
+        - listitem [ref=f9e201]:
+          - link "العهد والسلف" [ref=f9e202] [cursor=pointer]:
+            - /url: /custody
+        - listitem [ref=f9e209]:
+          - link "المهام" [ref=f9e210] [cursor=pointer]:
+            - /url: /tasks
+        - listitem [ref=f9e216]:
+          - link "مهام التطوير" [ref=f9e217] [cursor=pointer]:
+            - /url: /dev-tasks
+        - listitem [ref=f9e224]:
+          - link "المحادثات" [ref=f9e225] [cursor=pointer]:
+            - /url: /chat
+        - listitem [ref=f9e230]:
+          - link "المنشورات" [ref=f9e231] [cursor=pointer]:
+            - /url: /posts
+        - listitem [ref=f9e237]:
+          - link "جدولة المحتوى" [ref=f9e238] [cursor=pointer]:
+            - /url: /content-calendar
+        - listitem [ref=f9e244]:
+          - link "مراجعة الفيديوهات" [ref=f9e245] [cursor=pointer]:
+            - /url: /video-reviews
+        - listitem [ref=f9e252]:
+          - link "تقييمات الموظفين" [ref=f9e253] [cursor=pointer]:
+            - /url: /reviews
+        - listitem [ref=f9e258]:
+          - link "التقارير" [ref=f9e259] [cursor=pointer]:
+            - /url: /reports
+        - listitem [ref=f9e263]:
+          - link "التقرير اليومي" [ref=f9e264] [cursor=pointer]:
+            - /url: /daily-report
+        - listitem [ref=f9e268]:
+          - link "تقرير تمويل الإعلانات" [ref=f9e269] [cursor=pointer]:
+            - /url: /ads-funding
+        - listitem [ref=f9e274]:
+          - link "الشكاوى والمقترحات" [ref=f9e275] [cursor=pointer]:
+            - /url: /complaints
+        - listitem [ref=f9e281]:
+          - link "التعليمات" [ref=f9e282] [cursor=pointer]:
+            - /url: /instructions
+        - listitem [ref=f9e288]:
+          - link "المناسبات" [ref=f9e289] [cursor=pointer]:
+            - /url: /occasions
+    - button "طي القائمة" [ref=f9e295] [cursor=pointer]
+  - generic [ref=f9e299]:
+    - banner [ref=f9e300]:
+      - button "بحث أو أمر... ⌘K" [ref=f9e302] [cursor=pointer]:
+        - generic [ref=f9e306]: بحث أو أمر...
+        - generic [ref=f9e307]: ⌘K
+      - generic [ref=f9e308]:
+        - button "الوضع الداكن" [ref=f9e309] [cursor=pointer]
+        - button [ref=f9e313] [cursor=pointer]
+        - button [ref=f9e320] [cursor=pointer]:
+          - img "Dev" [ref=f9e322]
+          - generic [ref=f9e324]:
+            - paragraph [ref=f9e325]: Dev
+            - paragraph [ref=f9e326]: Dev
+    - main [ref=f9e3]:
+      - generic [ref=f9e5]:
+        - generic [ref=f9e6]:
+          - generic [ref=f9e7]:
+            - heading [level=1] [ref=f9e8]
+            - paragraph [ref=f9e12]: اكتب شكواك أو مقترحك، اختار يوصل لمين، وتقدر تخليه باسمك أو مجهول
+          - button [ref=f9e13] [cursor=pointer]
+        - generic [ref=f9e16]:
+          - generic [ref=f9e19]:
+            - text: قيد الانتظار
+            - heading "0" [level=3] [ref=f9e329]
+          - generic [ref=f9e28]:
+            - text: قيد المعالجة
+            - heading "1" [level=3] [ref=f9e330]
+          - generic [ref=f9e39]:
+            - text: تم الحل
+            - heading "0" [level=3] [ref=f9e41]
+          - generic [ref=f9e48]:
+            - text: مرفوض
+            - heading "0" [level=3] [ref=f9e50]
+        - generic [ref=f9e56]:
+          - heading "الطلبات" [level=2] [ref=f9e58]
+          - generic [ref=f9e61]:
+            - generic [ref=f9e62]:
+              - heading "اختبار مقترح مجهول" [level=3] [ref=f9e66]
+              - generic [ref=f9e67]: قيد المعالجة
+              - generic [ref=f9e68]: مجهول
+            - paragraph [ref=f9e75]: ده مقترح تجريبي للفحص
+            - generic [ref=f9e76]:
+              - generic [ref=f9e77]: Dev
+              - generic [ref=f9e81]: "إلى: السوبر أدمن"
+              - generic [ref=f9e85]: ٦‏/٨‏/٢٠٢٦
+            - generic [ref=f9e331]:
+              - paragraph [ref=f9e332]: "الرد (Dev):"
+              - paragraph [ref=f9e335]: تمام وصلني المقترح — شكرًا ليك 👍
+            - generic [ref=f9e88]:
+              - generic [ref=f9e89]:
+                - button "قيد المعالجة" [ref=f9e90] [cursor=pointer]
+                - button "تم الحل" [ref=f9e91] [cursor=pointer]
+                - button "رفض" [ref=f9e92] [cursor=pointer]
+              - generic [ref=f9e93]:
+                - textbox "اكتب ردك على الموظف..." [ref=f9e94]
+                - button [disabled] [ref=f9e95]
+        - generic [ref=f9e338]:
+          - paragraph [ref=f9e342]: تم إرسال الرد
+          - button "إغلاق" [ref=f9e343] [cursor=pointer]

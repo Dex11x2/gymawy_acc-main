@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
-import { Pencil, LogOut, Save, X, ChevronRight, Camera, Loader2, CheckCircle2, Clock, MapPin, CalendarX } from 'lucide-react';
+import { Pencil, LogOut, Save, X, Camera, Loader2, CheckCircle2, Clock, MapPin, CalendarX } from 'lucide-react';
 import Toast from '../components/Toast';
 import api from '../services/api';
 
@@ -118,10 +118,10 @@ const Profile: React.FC = () => {
   // Get role display name
   const getRoleDisplay = (role: string) => {
     const roles: Record<string, string> = {
-      'dev': 'Dev',
-      'general_manager': 'General Manager',
-      'administrative_manager': 'Administrative Manager',
-      'employee': 'Employee'
+      'dev': 'مدير النظام',
+      'general_manager': 'مدير عام',
+      'administrative_manager': 'مدير إداري',
+      'employee': 'موظف'
     };
     return roles[role] || role;
   };
@@ -147,19 +147,9 @@ const Profile: React.FC = () => {
   return (
     <div className="mx-auto max-w-[970px]">
       {/* Breadcrumb */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-[26px] font-bold leading-[30px] text-black dark:text-white">
-          Profile
-        </h2>
-        <nav>
-          <ol className="flex items-center gap-2">
-            <li className="text-sm text-gray-500 dark:text-gray-400">Home</li>
-            <li>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </li>
-            <li className="text-sm text-primary">Profile</li>
-          </ol>
-        </nav>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">الملف الشخصي</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">بياناتك الشخصية وحالة حضورك</p>
       </div>
 
       {/* حضور النهاردة */}
@@ -206,127 +196,117 @@ const Profile: React.FC = () => {
         })()
       )}
 
-      {/* Profile Section */}
-      <div className="mb-6">
-        <h3 className="mb-5 text-xl font-semibold text-black dark:text-white">
-          Profile
-        </h3>
-
-        {/* Profile Card */}
-        <div className="rounded-[10px] border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-          <div className="p-6 lg:p-8">
-            <div className="flex flex-col items-center gap-6 xl:flex-row xl:justify-between">
-              {/* User Info */}
-              <div className="flex flex-col items-center gap-5 xl:flex-row">
-                {/* Avatar */}
-                <div className="relative h-[100px] w-[100px] rounded-full">
-                  <img
-                    src={(user as any).avatar || getAvatarUrl(user.name)}
-                    alt={user.name}
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                  <span className="absolute bottom-0 right-0 h-5 w-5 rounded-full border-[3px] border-white bg-meta-3 dark:border-boxdark"></span>
-                  <button
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={uploadingAvatar}
-                    title="تغيير صورة البروفايل"
-                    className="absolute bottom-0 left-0 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg hover:bg-brand-600 disabled:opacity-60"
-                  >
-                    {uploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                  </button>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarPick}
-                    className="hidden"
-                  />
-                </div>
-
-                {/* Name & Role */}
-                <div className="text-center xl:text-left">
-                  <h4 className="mb-1 text-xl font-semibold text-black dark:text-white">
-                    {user.name}
-                  </h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {(user as any).position || getRoleDisplay(user.role)}
-                    {user.departmentId && (
-                      <>
-                        <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
-                        {departments.find(d => d.id === user.departmentId)?.name || 'Department'}
-                      </>
-                    )}
-                  </p>
-                </div>
+      {/* Profile Card */}
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="p-6 lg:p-8">
+          <div className="flex flex-col items-center gap-6 xl:flex-row xl:justify-between">
+            {/* User Info */}
+            <div className="flex flex-col items-center gap-5 xl:flex-row">
+              {/* Avatar */}
+              <div className="relative h-[100px] w-[100px] rounded-full">
+                <img
+                  src={(user as any).avatar || getAvatarUrl(user.name)}
+                  alt={user.name}
+                  className="h-full w-full rounded-full object-cover"
+                />
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  title="تغيير صورة البروفايل"
+                  className="absolute bottom-0 start-0 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg hover:bg-brand-600 disabled:opacity-60"
+                >
+                  {uploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarPick}
+                  className="hidden"
+                />
               </div>
 
-              {/* Edit Button */}
-              <div className="flex flex-wrap items-center justify-center gap-3 xl:gap-4">
-                {canEditProfile && !isEditingProfile && (
-                  <button
-                    onClick={() => setIsEditingProfile(true)}
-                    className="flex items-center gap-2 rounded-md border border-stroke px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-gray-1 dark:border-strokedark dark:text-white dark:hover:bg-meta-4"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </button>
-                )}
-
-                {isEditingProfile && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleSave}
-                      className="flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-                    >
-                      <Save className="h-4 w-4" />
-                      Save
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      className="flex items-center gap-2 rounded-md border border-stroke px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-gray-1 dark:border-strokedark dark:text-white dark:hover:bg-meta-4"
-                    >
-                      <X className="h-4 w-4" />
-                      Cancel
-                    </button>
-                  </div>
-                )}
+              {/* Name & Role */}
+              <div className="text-center xl:text-start">
+                <h4 className="mb-1 text-xl font-semibold text-gray-900 dark:text-white">
+                  {user.name}
+                </h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {(user as any).position || getRoleDisplay(user.role)}
+                  {user.departmentId && (
+                    <>
+                      <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
+                      {departments.find(d => d.id === user.departmentId)?.name || 'القسم'}
+                    </>
+                  )}
+                </p>
               </div>
+            </div>
+
+            {/* Edit Button */}
+            <div className="flex flex-wrap items-center justify-center gap-3 xl:gap-4">
+              {canEditProfile && !isEditingProfile && (
+                <button
+                  onClick={() => setIsEditingProfile(true)}
+                  className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                >
+                  <Pencil className="h-4 w-4" />
+                  تعديل
+                </button>
+              )}
+
+              {isEditingProfile && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+                  >
+                    <Save className="h-4 w-4" />
+                    حفظ
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                  >
+                    <X className="h-4 w-4" />
+                    إلغاء
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Personal Information Section */}
-      <div className="rounded-[10px] border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stroke px-6 py-5 dark:border-strokedark lg:px-8">
-          <h4 className="text-xl font-semibold text-black dark:text-white">
-            Personal Information
-          </h4>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-5 dark:border-gray-800 lg:px-8">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">المعلومات الشخصية</h4>
           {canEditProfile && !isEditingPersonal && (
             <button
               onClick={() => setIsEditingPersonal(true)}
-              className="flex items-center gap-2 rounded-md border border-stroke px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-gray-1 dark:border-strokedark dark:text-white dark:hover:bg-meta-4"
+              className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               <Pencil className="h-4 w-4" />
-              Edit
+              تعديل
             </button>
           )}
           {isEditingPersonal && (
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+                className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
               >
                 <Save className="h-4 w-4" />
-                Save
+                حفظ
               </button>
               <button
                 onClick={handleCancel}
-                className="flex items-center gap-2 rounded-md border border-stroke px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-gray-1 dark:border-strokedark dark:text-white dark:hover:bg-meta-4"
+                className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
               >
                 <X className="h-4 w-4" />
-                Cancel
+                إلغاء
               </button>
             </div>
           )}
@@ -337,9 +317,7 @@ const Profile: React.FC = () => {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* First Name */}
             <div>
-              <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
-                First Name
-              </p>
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">الاسم الأول</p>
               {isEditingPersonal ? (
                 <input
                   type="text"
@@ -349,21 +327,17 @@ const Profile: React.FC = () => {
                     const lastName = editData.name.split(' ').slice(1).join(' ');
                     setEditData({ ...editData, name: `${newFirstName} ${lastName}`.trim() });
                   }}
-                  className="w-full rounded-md border border-stroke bg-gray-1 px-4 py-2.5 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-                  placeholder="First Name"
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  placeholder="الاسم الأول"
                 />
               ) : (
-                <p className="text-base font-medium text-black dark:text-white">
-                  {firstName || '-'}
-                </p>
+                <p className="text-base font-medium text-gray-900 dark:text-white">{firstName || '-'}</p>
               )}
             </div>
 
             {/* Last Name */}
             <div>
-              <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
-                Last Name
-              </p>
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">اسم العائلة</p>
               {isEditingPersonal ? (
                 <input
                   type="text"
@@ -373,71 +347,59 @@ const Profile: React.FC = () => {
                     const newLastName = e.target.value;
                     setEditData({ ...editData, name: `${firstName} ${newLastName}`.trim() });
                   }}
-                  className="w-full rounded-md border border-stroke bg-gray-1 px-4 py-2.5 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-                  placeholder="Last Name"
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  placeholder="اسم العائلة"
                 />
               ) : (
-                <p className="text-base font-medium text-black dark:text-white">
-                  {lastName || '-'}
-                </p>
+                <p className="text-base font-medium text-gray-900 dark:text-white">{lastName || '-'}</p>
               )}
             </div>
 
             {/* Email Address */}
             <div>
-              <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
-                Email address
-              </p>
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">البريد الإلكتروني</p>
               {isEditingPersonal ? (
                 <input
                   type="email"
                   value={editData.email}
                   onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                  className="w-full rounded-md border border-stroke bg-gray-1 px-4 py-2.5 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-                  placeholder="Email address"
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  placeholder="البريد الإلكتروني"
                 />
               ) : (
-                <p className="text-base font-medium text-black dark:text-white break-words">
-                  {user.email || '-'}
-                </p>
+                <p className="text-base font-medium text-gray-900 dark:text-white break-words">{user.email || '-'}</p>
               )}
             </div>
 
             {/* Phone */}
             <div>
-              <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
-                Phone
-              </p>
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">رقم الهاتف</p>
               {isEditingPersonal ? (
                 <input
                   type="tel"
                   value={editData.phone}
                   onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                  className="w-full rounded-md border border-stroke bg-gray-1 px-4 py-2.5 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-                  placeholder="Phone number"
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  placeholder="رقم الهاتف"
                 />
               ) : (
-                <p className="text-base font-medium text-black dark:text-white">
-                  {user.phone || '-'}
-                </p>
+                <p className="text-base font-medium text-gray-900 dark:text-white" dir="ltr">{user.phone || '-'}</p>
               )}
             </div>
 
             {/* Bio */}
             <div className="md:col-span-2">
-              <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
-                Bio
-              </p>
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">نبذة</p>
               {isEditingPersonal ? (
                 <textarea
                   value={editData.bio}
                   onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
                   rows={3}
-                  className="w-full rounded-md border border-stroke bg-gray-1 px-4 py-2.5 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-                  placeholder="Write something about yourself..."
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  placeholder="اكتب نبذة عن نفسك..."
                 />
               ) : (
-                <p className="text-base font-medium text-black dark:text-white">
+                <p className="text-base font-medium text-gray-900 dark:text-white">
                   {(user as any).bio || (user as any).position || getRoleDisplay(user.role)}
                 </p>
               )}
@@ -450,10 +412,10 @@ const Profile: React.FC = () => {
       <div className="mt-6">
         <button
           onClick={logout}
-          className="flex items-center gap-2 rounded-md border border-danger px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger hover:text-white"
+          className="flex items-center gap-2 rounded-lg border border-rose-300 px-4 py-2.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-500 hover:text-white hover:border-rose-500 dark:border-rose-500/40 dark:text-rose-400"
         >
           <LogOut className="h-4 w-4" />
-          Sign Out
+          تسجيل الخروج
         </button>
       </div>
 
