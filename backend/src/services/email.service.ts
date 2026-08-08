@@ -103,129 +103,123 @@ const getTransporter = (): nodemailer.Transporter => {
 
 const generateReportHTML = (reportData: DailyReportData, companyName: string): string => {
   const { attendance, financial, tasks, alerts } = reportData;
-  const date = reportData.date.toLocaleDateString('ar-EG', { 
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  const date = reportData.date.toLocaleDateString('ar-EG', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  return `
-<!DOCTYPE html>
+  const CUR: Record<string, { name: string; sym: string }> = {
+    EGP: { name: 'جنيه مصري', sym: 'ج.م' },
+    SAR: { name: 'ريال سعودي', sym: 'ر.س' },
+    USD: { name: 'دولار', sym: '$' },
+    AED: { name: 'درهم', sym: 'د.إ' },
+  };
+  const fmt = (n: number) => Math.round(n).toLocaleString('en-US');
+
+  // خلية إحصائية (بطاقة داخل <td>)
+  const statCell = (label: string, value: string | number, color: string) => `
+    <td width="20%" align="center" style="padding:6px;">
+      <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:14px 8px;">
+        <div style="font-size:13px;color:#6B7280;margin-bottom:6px;">${label}</div>
+        <div style="font-size:24px;font-weight:bold;color:${color};line-height:1;">${value}</div>
+      </div>
+    </td>`;
+
+  const sectionTitle = (t: string) =>
+    `<h2 style="font-size:17px;font-weight:bold;color:#111827;margin:0 0 12px;border-right:4px solid #F97316;padding-right:10px;">${t}</h2>`;
+
+  // جدول الملخص المالي لكل عملة
+  const financialRows = (financial.byCurrency || []).map((c) => {
+    const m = CUR[c.currency] || { name: c.currency, sym: '' };
+    const netColor = c.net >= 0 ? '#059669' : '#DC2626';
+    return `<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;font-weight:600;color:#111827;">${m.name}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;color:#059669;" align="left">${fmt(c.revenue)} ${m.sym}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;color:#DC2626;" align="left">${fmt(c.expense)} ${m.sym}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;color:${netColor};font-weight:bold;" align="left">${fmt(c.net)} ${m.sym}</td>
+    </tr>`;
+  }).join('');
+
+  const financialBlock = (financial.byCurrency && financial.byCurrency.length)
+    ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;">
+        <tr style="background:#FFF7ED;">
+          <th align="right" style="padding:10px 12px;font-size:13px;color:#9A3412;">العملة</th>
+          <th align="left" style="padding:10px 12px;font-size:13px;color:#9A3412;">الإيرادات</th>
+          <th align="left" style="padding:10px 12px;font-size:13px;color:#9A3412;">المصروفات</th>
+          <th align="left" style="padding:10px 12px;font-size:13px;color:#9A3412;">الصافي</th>
+        </tr>
+        ${financialRows}
+      </table>`
+    : `<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:16px;text-align:center;color:#6B7280;">لا توجد حركة مالية اليوم</div>`;
+
+  return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; }
-    .header h1 { margin: 0; font-size: 28px; }
-    .header p { margin: 10px 0 0; opacity: 0.9; }
-    .content { padding: 30px; }
-    .section { margin-bottom: 30px; }
-    .section-title { font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 15px; border-right: 4px solid #f59e0b; padding-right: 12px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-    .stat-card { background: #f9fafb; border-radius: 8px; padding: 20px; text-align: center; border: 1px solid #e5e7eb; }
-    .stat-value { font-size: 32px; font-weight: bold; color: #1f2937; margin: 10px 0; }
-    .stat-label { color: #6b7280; font-size: 14px; }
-    .alert-box { background: #fef3c7; border-right: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
-    .alert-box ul { margin: 10px 0; padding-right: 20px; }
-    .alert-box li { margin: 5px 0; color: #92400e; }
-    .positive { color: #059669; }
-    .negative { color: #dc2626; }
-    .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>📊 التقرير اليومي</h1>
-      <p>${companyName}</p>
-      <p>${date}</p>
-    </div>
-    
-    <div class="content">
-      <div class="section">
-        <div class="section-title">👥 الحضور والغياب</div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">إجمالي الموظفين</div>
-            <div class="stat-value">${attendance.totalEmployees}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">✅ حاضر</div>
-            <div class="stat-value positive">${attendance.present}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">⏰ متأخر</div>
-            <div class="stat-value" style="color: #f59e0b;">${attendance.late}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">❌ غائب</div>
-            <div class="stat-value negative">${attendance.absent}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">🏝️ إجازة</div>
-            <div class="stat-value" style="color: #3b82f6;">${attendance.onLeave}</div>
-          </div>
-        </div>
-      </div>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">
+  <table width="100%" cellspacing="0" cellpadding="0" style="background:#F3F4F6;padding:24px 12px;">
+    <tr><td align="center">
+      <table width="640" cellspacing="0" cellpadding="0" style="max-width:640px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr><td style="background:#F97316;background:linear-gradient(135deg,#F97316,#EA580C);padding:26px 24px;text-align:center;color:#FFFFFF;">
+          <div style="font-size:24px;font-weight:bold;">📊 التقرير اليومي</div>
+          <div style="opacity:.95;margin-top:6px;font-size:15px;">${companyName}</div>
+          <div style="opacity:.85;margin-top:2px;font-size:13px;">${date}</div>
+        </td></tr>
 
-      <div class="section">
-        <div class="section-title">💰 الملخص المالي</div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">📈 الإيرادات</div>
-            <div class="stat-value positive">${financial.revenue.toLocaleString('ar-EG')} ج.م</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">📉 المصروفات</div>
-            <div class="stat-value negative">${financial.expenses.toLocaleString('ar-EG')} ج.م</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">💵 صافي الربح</div>
-            <div class="stat-value ${financial.netProfit >= 0 ? 'positive' : 'negative'}">
-              ${financial.netProfit.toLocaleString('ar-EG')} ج.م
-            </div>
-          </div>
-        </div>
-      </div>
+        <!-- Content -->
+        <tr><td style="padding:24px;">
 
-      <div class="section">
-        <div class="section-title">📋 المهام</div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">✅ مكتملة اليوم</div>
-            <div class="stat-value positive">${tasks.completed}</div>
+          <!-- المالي أولاً -->
+          <div style="margin-bottom:26px;">
+            ${sectionTitle('💰 الملخص المالي اليومي')}
+            ${financialBlock}
+            <div style="font-size:11px;color:#9CA3AF;margin-top:6px;">الصافي = الإيرادات (بعد المرتجعات) − المصروفات التشغيلية · المصروفات التأسيسية لا تُخصم</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">⏳ قيد التنفيذ</div>
-            <div class="stat-value" style="color: #f59e0b;">${tasks.pending}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">⚠️ متأخرة</div>
-            <div class="stat-value negative">${tasks.overdue}</div>
-          </div>
-        </div>
-      </div>
 
-      ${alerts.length > 0 ? `
-      <div class="section">
-        <div class="section-title">🔔 التنبيهات المهمة</div>
-        <div class="alert-box">
-          <ul>
-            ${alerts.map(alert => `<li>${alert}</li>`).join('')}
-          </ul>
-        </div>
-      </div>
-      ` : ''}
-    </div>
+          <!-- الحضور -->
+          <div style="margin-bottom:26px;">
+            ${sectionTitle('👥 الحضور اليوم')}
+            <table width="100%" cellspacing="0" cellpadding="0"><tr>
+              ${statCell('الإجمالي', attendance.totalEmployees, '#111827')}
+              ${statCell('✅ حاضر', attendance.present, '#059669')}
+              ${statCell('⏰ متأخر', attendance.late, '#D97706')}
+              ${statCell('❌ غائب', attendance.absent, '#DC2626')}
+              ${statCell('🏝️ إجازة', attendance.onLeave, '#2563EB')}
+            </tr></table>
+          </div>
 
-    <div class="footer">
-      <p>هذا تقرير تلقائي من نظام جماوي المحاسبي</p>
-      <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
-    </div>
-  </div>
+          <!-- المهام -->
+          <div style="margin-bottom:${alerts.length ? '26px' : '4px'};">
+            ${sectionTitle('📋 المهام')}
+            <table width="100%" cellspacing="0" cellpadding="0"><tr>
+              ${statCell('✅ مكتملة اليوم', tasks.completed, '#059669')}
+              ${statCell('⏳ قيد التنفيذ', tasks.pending, '#D97706')}
+              ${statCell('⚠️ متأخرة', tasks.overdue, '#DC2626')}
+              <td width="40%"></td>
+            </tr></table>
+          </div>
+
+          ${alerts.length > 0 ? `
+          <!-- التنبيهات -->
+          <div>
+            ${sectionTitle('🔔 تنبيهات محتاجة انتباه')}
+            <table width="100%" cellspacing="0" cellpadding="0" style="background:#FEF3C7;border-right:4px solid #F59E0B;border-radius:10px;">
+              <tr><td style="padding:14px 16px;">
+                ${alerts.map((a) => `<div style="color:#92400E;font-size:14px;margin:4px 0;">• ${a}</div>`).join('')}
+              </td></tr>
+            </table>
+          </div>` : ''}
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#F9FAFB;padding:18px 24px;text-align:center;color:#6B7280;font-size:12px;border-top:1px solid #E5E7EB;">
+          تقرير تلقائي من نظام جيماوي · ${new Date().getFullYear()} ©
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
 </body>
-</html>
-  `;
+</html>`;
 };
 
 export const sendDailyReport = async (
