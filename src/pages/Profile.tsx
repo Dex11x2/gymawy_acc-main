@@ -48,13 +48,19 @@ const Profile: React.FC = () => {
 
   // حضور النهاردة (بيظهر في البروفايل إن الشخص سجّل حضوره)
   const [todayAtt, setTodayAtt] = useState<any | undefined>(undefined); // undefined=بيحمّل, null=مفيش تسجيل
+  const [myReview, setMyReview] = useState<any | null>(null); // تقييمي (الشهر الحالي + المتوسط)
+  const [eom, setEom] = useState<any | null>(null); // موظف الشهر
   useEffect(() => {
     let alive = true;
     api.get('/attendance-records/today')
       .then((res) => { if (alive) setTodayAtt(res.data?.data ?? null); })
       .catch(() => { if (alive) setTodayAtt(null); });
+    api.get('/reviews/mine').then((r) => { if (alive) setMyReview(r.data); }).catch(() => {});
+    api.get('/employee-of-month').then((r) => { if (alive) setEom(r.data); }).catch(() => {});
     return () => { alive = false; };
   }, []);
+
+  const stars = (n: number) => '★★★★★'.slice(0, Math.round(n)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(n));
 
   const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -194,6 +200,48 @@ const Profile: React.FC = () => {
             </div>
           );
         })()
+      )}
+
+      {/* موظف الشهر — يظهر للكل */}
+      {eom && (eom.employeeId || eom.employeeName) && (
+        <div className={`mb-6 rounded-2xl border p-4 ${eom.isMe
+          ? 'border-amber-300 bg-gradient-to-l from-amber-50 to-yellow-50 dark:border-amber-500/40 dark:from-amber-500/10 dark:to-yellow-500/10'
+          : 'border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/5'}`}>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🏆</span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">موظف الشهر</p>
+              <p className="font-bold text-gray-900 dark:text-white">
+                {eom.isMe ? 'أنت موظف الشهر! مبروك 🎉' : (eom.employeeId?.name || eom.employeeName)}
+              </p>
+              {eom.reason && <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{eom.reason}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* تقييمي هذا الشهر */}
+      {myReview && (myReview.current || myReview.count > 0) && (
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <h3 className="font-bold text-gray-900 dark:text-white">تقييم الأداء (هذا الشهر)</h3>
+            {myReview.count > 0 && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">المتوسط العام: <b className="text-amber-500">{myReview.average}</b> / 5 · {myReview.count} تقييم</span>
+            )}
+          </div>
+          {myReview.current ? (
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 text-lg tracking-widest">{stars(myReview.current.rating)}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{myReview.current.rating}/5</span>
+              </div>
+              {myReview.current.comment && <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{myReview.current.comment}</p>}
+              <p className="mt-1 text-xs text-gray-400">بواسطة {myReview.current.reviewerId?.name || 'الإدارة'}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">لسه مفيش تقييم لهذا الشهر.</p>
+          )}
+        </div>
       )}
 
       {/* Profile Card */}

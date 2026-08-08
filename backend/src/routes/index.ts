@@ -101,6 +101,9 @@ router.use('/daily-reports', dailyReportRoutes);
 import financialReportRoutes from './financialReport.routes';
 router.use('/financial-reports', financialReportRoutes);
 
+import employeeOfMonthRoutes from './employeeOfMonth.routes';
+router.use('/employee-of-month', employeeOfMonthRoutes);
+
 // Public registration endpoint
 router.post('/register', registrationController.create);
 

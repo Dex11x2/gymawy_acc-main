@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useDataStore } from '../store/dataStore';
+import api from '../services/api';
 import { usePermissions } from '../hooks/usePermissions';
 import Modal from '../components/Modal';
 import { Card, StatCard, Badge, Button, Table, Avatar } from '../components/ui';
@@ -50,10 +51,28 @@ const EmployeeReviews: React.FC = () => {
   const [selectedReview, setSelectedReview] = useState<any>(null);
   const [showReviewDetails, setShowReviewDetails] = useState(false);
   const [newComment, setNewComment] = useState('');
+  // موظف الشهر
+  const [eom, setEom] = useState<any | null>(null);
+  const [eomEmpId, setEomEmpId] = useState('');
+  const [eomReason, setEomReason] = useState('');
+  const [savingEom, setSavingEom] = useState(false);
 
   useEffect(() => {
     loadReviews();
+    api.get('/employee-of-month').then((r) => setEom(r.data)).catch(() => {});
   }, []);
+
+  const saveEmployeeOfMonth = async () => {
+    if (!eomEmpId) return;
+    setSavingEom(true);
+    try {
+      const res = await api.post('/employee-of-month', { employeeId: eomEmpId, reason: eomReason });
+      setEom(res.data);
+      setEomReason('');
+      setEomEmpId('');
+    } catch (e) { /* ignore */ }
+    finally { setSavingEom(false); }
+  };
 
   const reviews = (apiReviews || []).map((r: any) => ({
     ...r,
@@ -415,6 +434,39 @@ const EmployeeReviews: React.FC = () => {
           </Button>
         )}
       </div>
+
+      {/* موظف الشهر */}
+      <Card className="border-amber-200 dark:border-amber-500/30">
+        <Card.Body className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">🏆</span>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white">موظف الشهر</h2>
+          </div>
+          {eom && (eom.employeeId || eom.employeeName) ? (
+            <div className="mb-4 rounded-xl bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10 border border-amber-200 dark:border-amber-500/30 p-3">
+              <p className="font-bold text-gray-900 dark:text-white">{eom.employeeId?.name || eom.employeeName}</p>
+              {eom.reason && <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{eom.reason}</p>}
+              <p className="text-xs text-gray-400 mt-1">اختاره {eom.setByName} · بيظهر في بروفايل كل الموظفين لحد آخر الشهر</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">لسه محدّش اتعيّن موظف الشهر ده.</p>
+          )}
+          {canWriteReviews && (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select value={eomEmpId} onChange={(e) => setEomEmpId(e.target.value)}
+                className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                <option value="">اختر الموظف...</option>
+                {employees.map((emp: any) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+              </select>
+              <input value={eomReason} onChange={(e) => setEomReason(e.target.value)} placeholder="سبب الاختيار (اختياري)"
+                className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+              <Button onClick={saveEmployeeOfMonth} disabled={!eomEmpId || savingEom}>
+                {savingEom ? '...' : 'تعيين'}
+              </Button>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

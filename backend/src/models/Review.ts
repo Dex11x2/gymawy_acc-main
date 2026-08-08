@@ -7,6 +7,8 @@ export interface IReview extends Document {
   rating: number;
   comment: string;
   category: 'performance' | 'behavior' | 'skills' | 'general';
+  month: number;
+  year: number;
   comments: Array<{
     authorId: mongoose.Types.ObjectId;
     authorName: string;
@@ -23,6 +25,8 @@ const ReviewSchema = new Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
   category: { type: String, enum: ['performance', 'behavior', 'skills', 'general'], default: 'general' },
+  month: { type: Number, default: () => new Date().getMonth() + 1 },
+  year: { type: Number, default: () => new Date().getFullYear() },
   comments: [{
     authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     authorName: { type: String, required: true },

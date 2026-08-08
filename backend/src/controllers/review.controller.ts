@@ -11,6 +11,26 @@ export const getAll = async (req: any, res: Response) => {
   }
 };
 
+// تقييماتي (للموظف الحالي) — تقييم الشهر الحالي + المتوسط + آخر التقييمات
+export const getMine = async (req: any, res: Response) => {
+  try {
+    const Employee = (await import('../models/Employee')).default;
+    const emp = await Employee.findOne({ userId: req.user.id || req.user._id });
+    if (!emp) return res.json({ current: null, average: 0, count: 0, reviews: [] });
+
+    const reviews = await Review.find({ employeeId: emp._id })
+      .populate('reviewerId', 'name')
+      .sort({ year: -1, month: -1, createdAt: -1 });
+
+    const now = new Date();
+    const current = reviews.find((r: any) => r.month === now.getMonth() + 1 && r.year === now.getFullYear()) || null;
+    const avg = reviews.length ? reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / reviews.length : 0;
+    res.json({ current, average: Math.round(avg * 10) / 10, count: reviews.length, reviews: reviews.slice(0, 12) });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const create = async (req: any, res: Response) => {
   try {
     const review = await Review.create({
