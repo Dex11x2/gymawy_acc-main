@@ -245,38 +245,22 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       {/* Welcome Section - TailAdmin Hero Pattern */}
       <Card className="overflow-hidden">
-        <div className="relative bg-gradient-to-r from-brand-500 to-brand-600 p-6 lg:p-8">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <defs>
-                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="100" height="100" fill="url(#grid)" />
-            </svg>
-          </div>
-
-          <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div className="text-white">
-              <h1 className="text-2xl lg:text-3xl font-bold mb-2">مرحباً بك في لوحة التحكم</h1>
-              <p className="text-white/80 text-sm lg:text-base">
-                نظرة شاملة على أداء شركتك المالي والتشغيلي - {new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+        <div className="relative p-6 lg:p-8">
+          {/* شريط accent برتقالي خفيف بدل البلوك الكامل */}
+          <div className="absolute inset-y-4 start-0 w-1 rounded-e-full bg-brand-500" />
+          <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 ps-3">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">مرحباً بك في لوحة التحكم</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm lg:text-base">
+                نظرة شاملة على أداء شركتك المالي والتشغيلي — {new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button
-                onClick={() => setShowRevenueModal(true)}
-                className="border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
-              >
+              <Button variant="outline" onClick={() => setShowRevenueModal(true)}>
                 <Wallet className="h-4 w-4" />
                 إجمالي الإيرادات
               </Button>
-              <Button
-                onClick={() => setShowExpenseModal(true)}
-                className="border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
-              >
+              <Button variant="outline" onClick={() => setShowExpenseModal(true)}>
                 <BarChart3 className="h-4 w-4" />
                 إجمالي المصروفات
               </Button>

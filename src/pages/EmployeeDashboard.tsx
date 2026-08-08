@@ -53,10 +53,13 @@ const EmployeeDashboard: React.FC = () => {
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <Card className="bg-gradient-to-r from-brand-500 to-brand-600 border-0">
-        <Card.Body className="p-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-white">مرحباً، {user?.name}</h1>
-          <p className="mt-2 text-white/80">لوحة التحكم الخاصة بك</p>
+      <Card>
+        <Card.Body className="relative p-6">
+          <div className="absolute inset-y-4 start-0 w-1 rounded-e-full bg-brand-500" />
+          <div className="ps-3">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">مرحباً، {user?.name}</h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">لوحة التحكم الخاصة بك</p>
+          </div>
         </Card.Body>
       </Card>
 
