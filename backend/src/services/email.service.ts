@@ -329,8 +329,15 @@ export const sendDailyReport = async (
       attachments
     });
 
-    console.log(`✅ تم إرسال البريد الإلكتروني بنجاح إلى ${email} (Message ID: ${info.messageId})`);
-    console.log(`📧 الصيغة: ${reportFormat}`);
+    // التحقق من رد Brevo الحقيقي: المستلم لازم يكون ضمن accepted وليس rejected
+    const accepted = (info.accepted || []).map((a: any) => String(a).toLowerCase());
+    const rejected = (info.rejected || []).map((a: any) => String(a).toLowerCase());
+    if (rejected.length > 0 || !accepted.includes(email.toLowerCase())) {
+      throw new Error(
+        `خادم البريد (Brevo) لم يقبل التسليم إلى ${email} — accepted: [${accepted.join(', ')}], rejected: [${rejected.join(', ')}], response: ${info.response || 'بدون رد'}`
+      );
+    }
+    console.log(`✅ Brevo قَبِل التسليم إلى ${email} | messageId: ${info.messageId} | response: ${info.response} | الصيغة: ${reportFormat}`);
   } catch (error: any) {
     // تحسين رسائل الخطأ
     let errorMessage = 'فشل إرسال التقرير اليومي';
