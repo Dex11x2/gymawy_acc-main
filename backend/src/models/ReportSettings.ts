@@ -29,8 +29,8 @@ export interface IReportSettings extends Document {
 const ReportSettingsSchema = new Schema<IReportSettings>({
   enabled: { type: Boolean, default: true },
   sendTime: { type: String, default: '18:00' },
-  senderEmail: { type: String, default: process.env.EMAIL_USER || 'Dexter11x2@gmail.com' },
-  senderName: { type: String, default: 'نظام جماوي' },
+  senderEmail: { type: String, default: process.env.EMAIL_FROM || 'reports@gymmawy.net' },
+  senderName: { type: String, default: 'جيماوي — التقارير المالية' },
   reportFormat: { type: String, enum: ['pdf', 'html', 'both'], default: 'both' },
   recipients: [{
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

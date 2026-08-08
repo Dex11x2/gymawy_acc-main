@@ -318,6 +318,7 @@ export const sendDailyReport = async (
     const info = await mailTransporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       sender: fromEmail,
+      replyTo: process.env.EMAIL_REPLY_TO || fromEmail,
       envelope: {
         from: fromEmail,
         to: email
