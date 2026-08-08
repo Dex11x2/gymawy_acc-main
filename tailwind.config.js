@@ -36,7 +36,7 @@ export default {
       },
       colors: {
         // App canvas: warm near-white so white cards read as elevated surfaces
-        app: '#F6F4F1',
+        app: '#F1F4F8',
         // Brand Colors
         brand: {
           50: '#FFF7ED',
@@ -62,10 +62,10 @@ export default {
           500: '#667085',
           600: '#475467',
           700: '#344054',
-          800: '#1d2939',
-          900: '#101828',
-          950: '#0c111d',
-          dark: '#1a2231',
+          800: '#1e293b',
+          900: '#141d2e',
+          950: '#0a0f1a',
+          dark: '#141d2e',
         },
         // Blue Light
         'blue-light': {
