@@ -577,7 +577,7 @@ const DevTasks: React.FC = () => {
   ];
 
   return (
-    <div className="p-4 lg:p-6 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2">

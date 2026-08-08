@@ -547,7 +547,7 @@ const Layout: React.FC = () => {
 
         {/* Page Content */}
         <main className={`flex-1 bg-app dark:bg-gray-950 ${location.pathname === '/chat' ? 'overflow-hidden p-0' : 'overflow-auto p-4 lg:p-6'}`}>
-          <div className={location.pathname === '/chat' ? 'h-full' : 'mx-auto max-w-screen-2xl'}>
+          <div className={location.pathname === '/chat' ? 'h-full' : 'mx-auto max-w-7xl'}>
             <Outlet />
           </div>
         </main>

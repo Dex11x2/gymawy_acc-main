@@ -106,7 +106,7 @@ const Custody: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
           <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -119,7 +119,7 @@ const Custody: React.FC = () => {
   const totalValue = activeCustodies.reduce((sum, item) => sum + (item.amount || 0), 0);
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
