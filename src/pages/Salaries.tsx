@@ -394,7 +394,7 @@ const Salaries: React.FC = () => {
                   setSortField(field);
                   setSortDir(dir);
                 }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-brand-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
                 <option value="name-asc">الاسم (أ-ي)</option>
                 <option value="name-desc">الاسم (ي-أ)</option>
@@ -409,7 +409,7 @@ const Salaries: React.FC = () => {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-brand-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>
@@ -423,7 +423,7 @@ const Salaries: React.FC = () => {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-brand-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
                 {Array.from({ length: 5 }, (_, i) => {
                   const y = 2024 + i;
@@ -499,7 +499,7 @@ const Salaries: React.FC = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-brand-100 dark:bg-gray-800/50 border-b border-brand-200 dark:border-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
                   <tr>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       الموظف
@@ -533,7 +533,7 @@ const Salaries: React.FC = () => {
                     return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
                   }).map((salary) => (
                     <React.Fragment key={salary._id}>
-                      <tr className="hover:bg-brand-100/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                         <td className="px-6 py-4">
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">
