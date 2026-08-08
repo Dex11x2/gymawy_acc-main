@@ -8,11 +8,13 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from '../store/toastStore';
 import { financialReportApi, FinancialReportSend } from '../services/financialReport';
 import ProgressMetricCard from '../components/metric/ProgressMetricCard';
+import { exportFinancialReportToExcel } from '../utils/exportUtils';
 import {
   FileBarChart,
   Lock,
   Settings,
   FileText,
+  FileSpreadsheet,
   Filter,
   DollarSign,
   TrendingUp,
@@ -39,6 +41,8 @@ const Reports: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency | "all">("all");
+  const [dateFrom, setDateFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 13); return d.toISOString().split('T')[0]; });
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
   const [sending, setSending] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [lastSends, setLastSends] = useState<FinancialReportSend[]>([]);
@@ -78,6 +82,10 @@ const Reports: React.FC = () => {
         return itemDate.getMonth() + 1 === selectedMonth && itemDate.getFullYear() === selectedYear;
       } else if (selectedPeriod === "year") {
         return itemDate.getFullYear() === selectedYear;
+      } else if (selectedPeriod === "custom") {
+        const from = new Date(dateFrom); from.setHours(0, 0, 0, 0);
+        const to = new Date(dateTo); to.setHours(23, 59, 59, 999);
+        return itemDate >= from && itemDate <= to;
       }
       return true;
     });
@@ -136,24 +144,39 @@ const Reports: React.FC = () => {
 
   const monthLabel = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
 
-  // سلسلتان يوميّتان (إيرادات/مصروفات بالجنيه) للرسم التفاعلي — تُحسب دائمًا (rules of hooks)
+  // سلسلة الرسم التفاعلي بالجنيه — تتكيّف مع الفترة (يومي للشهر/المخصّص، شهري للسنة أو النطاقات الكبيرة)
   const dailyEgpSeries = useMemo(() => {
-    const days = new Date(selectedYear, selectedMonth, 0).getDate();
-    const rev: { date: string; value: number }[] = [];
-    const exp: { date: string; value: number }[] = [];
-    for (let d = 1; d <= days; d++) {
-      rev.push({ date: String(d), value: filteredRevenues.filter((r) => r.currency === 'EGP' && new Date(r.date).getDate() === d).reduce((s, r) => s + (r.amount || 0), 0) });
-      exp.push({ date: String(d), value: filteredExpenses.filter((e) => e.currency === 'EGP' && e.type !== 'refund' && new Date(e.date).getDate() === d).reduce((s, e) => s + (e.amount || 0), 0) });
+    let days: Date[] = [];
+    let byMonth = selectedPeriod === 'year';
+    if (selectedPeriod === 'custom') {
+      const from = new Date(dateFrom); const to = new Date(dateTo);
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+      if (days.length > 62) byMonth = true; // نطاق كبير → تجميع بالشهر
+    } else if (selectedPeriod === 'year') {
+      days = Array.from({ length: 12 }, (_, i) => new Date(selectedYear, i, 1));
+    } else {
+      const n = new Date(selectedYear, selectedMonth, 0).getDate();
+      days = Array.from({ length: n }, (_, i) => new Date(selectedYear, selectedMonth - 1, i + 1));
     }
+    const keyOf = (d: Date) => byMonth ? `${d.getFullYear()}-${d.getMonth()}` : d.toDateString();
+    const labelOf = (d: Date) => byMonth ? d.toLocaleDateString('ar-EG', { month: 'short' }) : d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+    const map = new Map<string, { label: string; rev: number; exp: number }>();
+    days.forEach((d) => { const k = keyOf(d); if (!map.has(k)) map.set(k, { label: labelOf(d), rev: 0, exp: 0 }); });
+    filteredRevenues.filter((r) => r.currency === 'EGP').forEach((r) => { const k = keyOf(new Date(r.date)); if (map.has(k)) map.get(k)!.rev += r.amount || 0; });
+    filteredExpenses.filter((e) => e.currency === 'EGP' && e.type !== 'refund').forEach((e) => { const k = keyOf(new Date(e.date)); if (map.has(k)) map.get(k)!.exp += e.amount || 0; });
+    const arr = [...map.values()];
     return [
-      { name: 'الإيرادات', accent: 'emerald' as const, data: rev },
-      { name: 'المصروفات', accent: 'rose' as const, data: exp },
+      { name: 'الإيرادات', accent: 'emerald' as const, data: arr.map((b) => ({ date: b.label, value: b.rev })) },
+      { name: 'المصروفات', accent: 'rose' as const, data: arr.map((b) => ({ date: b.label, value: b.exp })) },
     ];
-  }, [filteredRevenues, filteredExpenses, selectedMonth, selectedYear]);
+  }, [filteredRevenues, filteredExpenses, selectedMonth, selectedYear, selectedPeriod, dateFrom, dateTo]);
 
+  const fmtD = (s: string) => new Date(s).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
   const periodText = selectedPeriod === "month"
     ? new Date(selectedYear, selectedMonth - 1).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
-    : `سنة ${selectedYear}`;
+    : selectedPeriod === "custom"
+      ? `من ${fmtD(dateFrom)} إلى ${fmtD(dateTo)}`
+      : `سنة ${selectedYear}`;
 
   const generatePDF = () => {
     const displayCurrencies = selectedCurrency === "all" ? currencies : [selectedCurrency as Currency];
@@ -175,14 +198,14 @@ const Reports: React.FC = () => {
         const curRevs = filteredRevenues.filter((r: any) => r.currency === currency);
         const curExps = filteredExpenses.filter((e: any) => e.currency === currency);
 
-        // تفصيل يومي (الأيام اللي فيها حركة)
-        const daysInM = new Date(selectedYear, selectedMonth, 0).getDate();
-        let dailyRows = '';
-        for (let d = 1; d <= daysInM; d++) {
-          const rev = curRevs.filter((r: any) => new Date(r.date).getDate() === d).reduce((s: number, r: any) => s + (r.amount || 0), 0);
-          const exp = curExps.filter((e: any) => new Date(e.date).getDate() === d && e.type !== 'refund').reduce((s: number, e: any) => s + (e.amount || 0), 0);
-          if (rev || exp) dailyRows += `<tr><td>${d}</td><td style="color:#059669">${rev.toLocaleString()}</td><td style="color:#ea580c">${exp.toLocaleString()}</td><td style="font-weight:bold;color:${rev - exp >= 0 ? '#059669' : '#dc2626'}">${(rev - exp).toLocaleString()}</td></tr>`;
-        }
+        // تفصيل حسب الفترة (يومي للشهر/المخصّص، شهري للسنة) — الفترات اللي فيها حركة فقط
+        const bucketKey = (dt: Date) => selectedPeriod === 'year' ? `${dt.getMonth()}` : dt.toDateString();
+        const bucketLabel = (dt: Date) => selectedPeriod === 'year' ? dt.toLocaleDateString('ar-EG', { month: 'long' }) : (selectedPeriod === 'custom' ? dt.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) : String(dt.getDate()));
+        const bmap = new Map<string, { label: string; order: number; rev: number; exp: number }>();
+        curRevs.forEach((r: any) => { const dt = new Date(r.date); const k = bucketKey(dt); if (!bmap.has(k)) bmap.set(k, { label: bucketLabel(dt), order: dt.getTime(), rev: 0, exp: 0 }); bmap.get(k)!.rev += r.amount || 0; });
+        curExps.filter((e: any) => e.type !== 'refund').forEach((e: any) => { const dt = new Date(e.date); const k = bucketKey(dt); if (!bmap.has(k)) bmap.set(k, { label: bucketLabel(dt), order: dt.getTime(), rev: 0, exp: 0 }); bmap.get(k)!.exp += e.amount || 0; });
+        const dailyRows = [...bmap.values()].sort((a, b) => a.order - b.order)
+          .map((b) => `<tr><td>${b.label}</td><td style="color:#059669">${b.rev.toLocaleString()}</td><td style="color:#ea580c">${b.exp.toLocaleString()}</td><td style="font-weight:bold;color:${b.rev - b.exp >= 0 ? '#059669' : '#dc2626'}">${(b.rev - b.exp).toLocaleString()}</td></tr>`).join('');
 
         // كل العمليات بالتفصيل
         const txRows = [
@@ -239,9 +262,9 @@ const Reports: React.FC = () => {
             </table>
 
             ${dailyRows ? `
-            <h3 style="color:#1e40af;margin:20px 0 10px;">التفصيل اليومي</h3>
+            <h3 style="color:#1e40af;margin:20px 0 10px;">${selectedPeriod === 'year' ? 'التفصيل الشهري' : 'التفصيل اليومي'}</h3>
             <table>
-              <thead><tr><th>اليوم</th><th>الإيرادات</th><th>المصروفات</th><th>الصافي</th></tr></thead>
+              <thead><tr><th>${selectedPeriod === 'year' ? 'الشهر' : selectedPeriod === 'custom' ? 'التاريخ' : 'اليوم'}</th><th>الإيرادات</th><th>المصروفات</th><th>الصافي</th></tr></thead>
               <tbody>${dailyRows}</tbody>
             </table>` : ''}
 
@@ -328,6 +351,27 @@ const Reports: React.FC = () => {
     }
   };
 
+  const generateExcel = () => {
+    const cols = selectedCurrency === "all" ? currencies : [selectedCurrency as Currency];
+    const fileLabel = selectedPeriod === 'custom'
+      ? `${dateFrom}_${dateTo}`
+      : selectedPeriod === 'year'
+        ? `${selectedYear}`
+        : `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+    exportFinancialReportToExcel({
+      periodText,
+      currencies: cols,
+      calc: calculateByCurrency,
+      revenues: filteredRevenues,
+      expenses: filteredExpenses,
+      currencyName: getCurrencyName,
+      currencySymbol: getCurrencySymbol,
+      groupBy: selectedPeriod === 'year' ? 'month' : 'day',
+      fileLabel,
+    });
+    toast('تم تصدير ملف Excel ✅', 'success');
+  };
+
   const displayCurrencies = selectedCurrency === "all" ? currencies : [selectedCurrency as Currency];
 
   // Permission Guard
@@ -371,6 +415,10 @@ const Reports: React.FC = () => {
           <Button variant="outline" onClick={generatePDF}>
             <FileText className="w-4 h-4" />
             تصدير PDF
+          </Button>
+          <Button variant="outline" onClick={generateExcel}>
+            <FileSpreadsheet className="w-4 h-4" />
+            تصدير Excel
           </Button>
           <Button onClick={() => setShowSendConfirm(true)} disabled={sending}>
             <Send className="w-4 h-4" />
@@ -418,8 +466,24 @@ const Reports: React.FC = () => {
               >
                 <option value="month">شهري</option>
                 <option value="year">سنوي</option>
+                <option value="custom">فترة مخصّصة</option>
               </select>
             </div>
+
+            {selectedPeriod === "custom" && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">من تاريخ</label>
+                  <input type="date" value={dateFrom} max={dateTo} onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">إلى تاريخ</label>
+                  <input type="date" value={dateTo} min={dateFrom} onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                </div>
+              </>
+            )}
 
             {selectedPeriod === "month" && (
               <div>
@@ -438,18 +502,20 @@ const Reports: React.FC = () => {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السنة</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              >
-                {Array.from({ length: 10 }, (_, i) => 2024 + i).map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
+            {selectedPeriod !== "custom" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السنة</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                >
+                  {Array.from({ length: 10 }, (_, i) => 2024 + i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">العملة</label>
@@ -469,19 +535,17 @@ const Reports: React.FC = () => {
         </Card.Body>
       </Card>
 
-      {/* الرسم اليومي التفاعلي (شهري فقط، بالجنيه) */}
-      {selectedPeriod === 'month' && (
-        <ProgressMetricCard
-          title={`الإيرادات والمصروفات اليومية — ${monthLabel} (ج.م)`}
-          unit="ج.م"
-          defaultView="curve"
-          size="lg"
-          period="كل الشهر"
-          periodOptions={[{ label: 'كل الشهر' }, { label: 'آخر 14 يوم', points: 14 }, { label: 'آخر 7 أيام', points: 7 }]}
-          dateFormatter={(d) => `يوم ${d}`}
-          series={dailyEgpSeries}
-        />
-      )}
+      {/* الرسم التفاعلي (يتكيّف مع الفترة، بالجنيه) */}
+      <ProgressMetricCard
+        title={`الإيرادات والمصروفات — ${periodText} (ج.م)`}
+        unit="ج.م"
+        defaultView="curve"
+        size="lg"
+        period="كل الفترة"
+        periodOptions={[{ label: 'كل الفترة' }, { label: 'آخر 14 نقطة', points: 14 }, { label: 'آخر 7 نقاط', points: 7 }]}
+        dateFormatter={(d) => String(d)}
+        series={dailyEgpSeries}
+      />
 
       {/* Currency Reports */}
       <div className="space-y-6">

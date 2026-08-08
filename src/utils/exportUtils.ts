@@ -412,6 +412,95 @@ export const exportEmployeesToExcel = (employees: any[]) => {
   XLSX.writeFile(wb, `employees-${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
+/**
+ * تصدير التقرير المالي الشامل (متعدد العملات + تفصيل زمني + كل العمليات) إلى Excel.
+ * ورقة «الملخص» فيها صف لكل عملة، وورقة مستقلة لكل عملة بها حركة.
+ */
+export const exportFinancialReportToExcel = (opts: {
+  periodText: string;
+  currencies: any[];
+  calc: (c: any) => { totalRevenue: number; operationalExpense: number; capitalExpense: number; netProfit: number; revenueCount: number; expenseCount: number };
+  revenues: any[];
+  expenses: any[];
+  currencyName: (c: any) => string;
+  currencySymbol: (c: any) => string;
+  groupBy: 'day' | 'month';
+  fileLabel: string;
+}) => {
+  const { periodText, currencies, calc, revenues, expenses, currencyName, currencySymbol, groupBy, fileLabel } = opts;
+  const wb = XLSX.utils.book_new();
+
+  // ── ورقة الملخص ──
+  const summaryHeader = ['العملة', 'إجمالي الإيرادات', 'المصروفات التشغيلية', 'صافي الربح', 'هامش الربح %', 'مصروفات تأسيسية (متراكمة)', 'عدد الإيرادات', 'عدد المصروفات'];
+  const summaryRows: any[][] = [];
+  const activeCurrencies = currencies.filter((c) => {
+    const d = calc(c);
+    return d.totalRevenue || d.operationalExpense || d.capitalExpense;
+  });
+  activeCurrencies.forEach((c) => {
+    const d = calc(c);
+    const margin = d.totalRevenue > 0 ? Math.round((d.netProfit / d.totalRevenue) * 100) : 0;
+    summaryRows.push([currencyName(c) + ' (' + currencySymbol(c) + ')', d.totalRevenue, d.operationalExpense, d.netProfit, margin, d.capitalExpense, d.revenueCount, d.expenseCount]);
+  });
+  const summaryWs = XLSX.utils.aoa_to_sheet([
+    ['التقرير المالي الشامل'],
+    ['الفترة: ' + periodText],
+    ['تاريخ التقرير: ' + new Date().toLocaleDateString('en-GB')],
+    [],
+    summaryHeader,
+    ...summaryRows,
+  ]);
+  summaryWs['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: summaryHeader.length - 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: summaryHeader.length - 1 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: summaryHeader.length - 1 } },
+  ];
+  summaryWs['!cols'] = [{ wch: 20 }, { wch: 16 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'الملخص');
+
+  // ── ورقة لكل عملة بها حركة ──
+  const bucketKey = (dt: Date) => groupBy === 'month' ? `${dt.getFullYear()}-${dt.getMonth()}` : dt.toDateString();
+  const bucketLabel = (dt: Date) => groupBy === 'month' ? dt.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' }) : dt.toLocaleDateString('en-GB');
+
+  activeCurrencies.forEach((c) => {
+    const curRevs = revenues.filter((r: any) => r.currency === c);
+    const curExps = expenses.filter((e: any) => e.currency === c);
+
+    // تفصيل زمني
+    const bmap = new Map<string, { label: string; order: number; rev: number; exp: number }>();
+    curRevs.forEach((r: any) => { const dt = new Date(r.date); const k = bucketKey(dt); if (!bmap.has(k)) bmap.set(k, { label: bucketLabel(dt), order: dt.getTime(), rev: 0, exp: 0 }); bmap.get(k)!.rev += r.amount || 0; });
+    curExps.filter((e: any) => e.type !== 'refund').forEach((e: any) => { const dt = new Date(e.date); const k = bucketKey(dt); if (!bmap.has(k)) bmap.set(k, { label: bucketLabel(dt), order: dt.getTime(), rev: 0, exp: 0 }); bmap.get(k)!.exp += e.amount || 0; });
+    const periodRows = [...bmap.values()].sort((a, b) => a.order - b.order).map((b) => [b.label, b.rev, b.exp, b.rev - b.exp]);
+
+    // كل العمليات
+    const txRows = [
+      ...curRevs.map((r: any) => ({ date: r.date, kind: 'إيراد', desc: r.title || r.description || r.category || '', amount: r.amount || 0 })),
+      ...curExps.map((e: any) => ({ date: e.date, kind: e.type === 'refund' ? 'مرتجع' : 'مصروف', desc: e.title || e.description || e.category || '', amount: e.amount || 0 })),
+    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map((t) => [new Date(t.date).toLocaleDateString('en-GB'), t.kind, t.desc, t.amount]);
+
+    const sym = currencySymbol(c);
+    const aoa: any[][] = [
+      [currencyName(c) + ' (' + sym + ')'],
+      [],
+      [groupBy === 'month' ? 'الشهر' : 'اليوم', 'الإيرادات', 'المصروفات', 'الصافي'],
+      ...periodRows,
+      [],
+      ['كل العمليات (' + (curRevs.length + curExps.length) + ')'],
+      ['التاريخ', 'النوع', 'البيان', 'المبلغ (' + sym + ')'],
+      ...txRows,
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
+    ws['!cols'] = [{ wch: 16 }, { wch: 16 }, { wch: 30 }, { wch: 16 }];
+    // اسم الورقة لازم يكون ≤31 حرف وبدون رموز ممنوعة
+    const sheetName = currencyName(c).slice(0, 28) || c;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  XLSX.writeFile(wb, `financial-report-${fileLabel}.xlsx`);
+};
+
 // ─── Salaries Export Helpers ─────────────────────────────────────────────────
 
 const getMonthNameAr = (month: number): string => {
