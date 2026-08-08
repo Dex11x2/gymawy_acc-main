@@ -282,7 +282,7 @@ const Layout: React.FC = () => {
     { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: true },
   ].filter(item => item.show);
 
-  const sidebarWidth = sidebarOpen ? 'w-[290px]' : 'w-[90px]';
+  const sidebarWidth = sidebarOpen ? 'w-[240px]' : 'w-[72px]';
 
   return (
     <div className="app-shell-height flex overflow-hidden">
@@ -302,16 +302,16 @@ const Layout: React.FC = () => {
           shadow-lg lg:shadow-none
           transition-all duration-300 ease-in-out
           ${isMobile
-            ? `w-[290px] ${mobileSidebarOpen
+            ? `w-[260px] ${mobileSidebarOpen
                 ? (language === 'ar' ? 'right-0' : 'left-0')
-                : (language === 'ar' ? '-right-[290px]' : '-left-[290px]')
+                : (language === 'ar' ? '-right-[260px]' : '-left-[260px]')
               }`
             : sidebarWidth
           }
         `}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 px-6 py-5">
+        <div className="flex items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 px-4 py-4">
           <Link to="/dashboard" className="flex items-center">
             {(sidebarOpen || isMobile) ? (
               <Logo variant="wordmark" height={32} />
@@ -333,16 +333,16 @@ const Layout: React.FC = () => {
 
         {/* Menu Section Label */}
         {(sidebarOpen || isMobile) && (
-          <div className="px-5 py-4">
-            <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          <div className="px-4 pt-3 pb-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
               {language === 'ar' ? 'القائمة' : 'MENU'}
             </span>
           </div>
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
-          <ul className="space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 custom-scrollbar">
+          <ul className="space-y-0.5">
             {menuItems.map((item) => {
               const IconComponent = iconComponents[item.id];
               const isActive = location.pathname === item.path;
@@ -354,7 +354,7 @@ const Layout: React.FC = () => {
                     to={item.path}
                     onClick={() => isMobile && setMobileSidebarOpen(false)}
                     className={`
-                      group relative flex items-center gap-3 rounded-lg px-3.5 py-3 font-medium
+                      group relative flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium
                       transition-all duration-200
                       ${(sidebarOpen || isMobile) ? 'justify-start' : 'justify-center'}
                       ${isActive
@@ -365,13 +365,13 @@ const Layout: React.FC = () => {
                   >
                     {/* Active Indicator */}
                     {isActive && (
-                      <span className={`absolute ${language === 'ar' ? 'right-0' : 'left-0'} top-1/2 -translate-y-1/2 h-8 w-1 rounded-full bg-brand-500`} />
+                      <span className={`absolute ${language === 'ar' ? 'right-0' : 'left-0'} top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-brand-500`} />
                     )}
 
                     <span className="relative flex-shrink-0">
                       <IconComponent
                         className={`transition-transform duration-200 ${!isActive ? 'group-hover:scale-110' : ''}`}
-                        size={20}
+                        size={18}
                       />
                       {/* نقطة تنبيه على الأيقونة عند طيّ القائمة */}
                       {!!badge && badge > 0 && !(sidebarOpen || isMobile) && (
