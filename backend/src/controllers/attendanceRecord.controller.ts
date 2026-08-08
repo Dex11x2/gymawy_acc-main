@@ -102,14 +102,24 @@ export const checkIn = async (req: any, res: Response) => {
     let matchedBranch: any = null;
     let authMethod = 'location'; // location | ip | bypass
 
-    // التحقق من IP أولاً إذا طلب المستخدم
-    if (useIPAuth && branchId) {
-      const branch = await Branch.findById(branchId);
+    // التسجيل عبر شبكة الشركة (WiFi/IP) — يشتغل بدون GPS
+    if (useIPAuth) {
+      // جرّب الفرع المحدد، وإلا دوّر على أي فرع الـIP بتاعه مطابق
+      let branch: any = branchId ? await Branch.findById(branchId) : null;
+      if (!(branch && branch.allowedIPs && branch.allowedIPs.includes(clientIP))) {
+        branch = await Branch.findOne({ allowedIPs: clientIP });
+      }
       if (branch && branch.allowedIPs && branch.allowedIPs.includes(clientIP)) {
-        // IP مطابق - تسجيل مباشر بدون فحص الموقع
         skipLocationCheck = true;
         matchedBranch = branch;
         authMethod = 'ip';
+      } else {
+        // طلب تسجيل عبر الشبكة لكنه مش متصل بشبكة معتمدة
+        return res.status(403).json({
+          success: false,
+          message: 'لست متصلاً بشبكة الشركة المعتمدة. اتصل بشبكة WiFi الخاصة بالفرع أو استخدم تحديد الموقع.',
+          clientIP,
+        });
       }
     }
 

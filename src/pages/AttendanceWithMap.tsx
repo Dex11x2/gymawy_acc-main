@@ -239,6 +239,24 @@ const AttendanceWithMap: React.FC = () => {
     }
   };
 
+  // تسجيل الحضور عبر شبكة الشركة (WiFi) — بدون الحاجة لـGPS
+  const handleWifiCheckIn = async () => {
+    setLoading(true);
+    try {
+      await api.post('/attendance-records/check-in', {
+        useIPAuth: true,
+        branchId: nearestBranch?._id, // اختياري — السيرفر يطابق الفرع بالـIP لو مش متوفر
+        clientTime: new Date().toISOString(),
+      });
+      setToast({ message: '✅ تم تسجيل الحضور عبر شبكة الشركة', type: 'success', isOpen: true });
+      await loadTodayRecord();
+    } catch (error: any) {
+      setToast({ message: error.response?.data?.message || 'تعذّر التسجيل عبر الشبكة — تأكد إنك متصل بواي فاي الشركة', type: 'error', isOpen: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCheckOut = async (forceBypass = false) => {
     if (!location) {
       setToast({ message: 'يرجى تفعيل الموقع', type: 'error', isOpen: true });
@@ -543,6 +561,21 @@ const AttendanceWithMap: React.FC = () => {
           </p>
         </button>
       </div>
+
+      {/* تسجيل عبر شبكة الشركة (WiFi) — بديل لو الموقع مش شغّال */}
+      {!(todayRecord?.checkIn || todayRecord?.hasCheckedIn) && (
+        <button
+          onClick={handleWifiCheckIn}
+          disabled={loading}
+          className="mt-4 w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-purple-300 bg-purple-50 text-purple-700 font-bold hover:bg-purple-100 transition-all disabled:opacity-50 dark:border-purple-500/40 dark:bg-purple-500/10 dark:text-purple-300"
+        >
+          <span className="text-2xl">📡</span>
+          {loading ? 'جاري التسجيل...' : 'تسجيل الحضور عبر شبكة الشركة (WiFi)'}
+        </button>
+      )}
+      <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+        لو الموقع (GPS) مش شغّال وإنت متصل بواي فاي الشركة، استخدم الزر ده — بيتحقق من الشبكة بدون تحديد موقع.
+      </p>
 
       {/* Today's Record */}
       {todayRecord && (
