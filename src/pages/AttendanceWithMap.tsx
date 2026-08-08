@@ -193,14 +193,9 @@ const AttendanceWithMap: React.FC = () => {
   };
 
   const handleCheckIn = async (forceBypass = false) => {
-    if (!location) {
-      setToast({ message: 'يرجى تفعيل الموقع', type: 'error', isOpen: true });
-      return;
-    }
-
-    if (!nearestBranch) {
-      setToast({ message: '❌ لا يوجد فرع قريب منك', type: 'error', isOpen: true });
-      return;
+    // لو الـGPS مقفول/مش متاح، نحوّل تلقائيًا لتسجيل عبر شبكة الشركة (WiFi)
+    if (!location || !nearestBranch) {
+      return handleWifiCheckIn();
     }
 
     // حساب النطاق الفعلي مع مراعاة دقة GPS
@@ -531,7 +526,7 @@ const AttendanceWithMap: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <button
           onClick={() => handleCheckIn()}
-          disabled={loading || !location || (todayRecord?.checkIn || todayRecord?.hasCheckedIn)}
+          disabled={loading || (todayRecord?.checkIn || todayRecord?.hasCheckedIn)}
           className="p-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <div className="text-6xl mb-3">✅</div>
@@ -541,7 +536,7 @@ const AttendanceWithMap: React.FC = () => {
               ? (isManager && todayRecord?.checkIn
                   ? `تم التسجيل: ${new Date(todayRecord.checkIn).toLocaleTimeString('ar-EG')}`
                   : 'تم التسجيل بنجاح ✓')
-              : 'اضغط لتسجيل الحضور'}
+              : (location ? 'اضغط لتسجيل الحضور' : 'اضغط للتسجيل (هيجرّب الموقع ثم شبكة الشركة)')}
           </p>
         </button>
 
