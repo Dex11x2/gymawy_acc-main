@@ -472,8 +472,8 @@ const Tasks: React.FC = () => {
                 className={`
                   flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
                   ${statusFilter === filter.key
-                    ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                    : 'bg-brand-50 text-gray-600 hover:bg-brand-100 border border-brand-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700'
+                    ? 'bg-brand-500 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700'
                   }
                 `}
               >
@@ -538,7 +538,7 @@ const Tasks: React.FC = () => {
                     <Table.Row key={task.id} className={`group transition-colors ${
                       hasUnseen(task)
                         ? 'bg-warning-50/70 dark:bg-warning-500/5 hover:bg-warning-100/70 dark:hover:bg-warning-500/10'
-                        : 'hover:bg-brand-50/50 dark:hover:bg-brand-500/5'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                     }`}>
                       <Table.Cell className="font-medium text-gray-900 dark:text-gray-100">
                         <div className="flex items-center gap-3">
@@ -581,7 +581,7 @@ const Tasks: React.FC = () => {
                           <select
                             value={task.status}
                             onChange={(e) => updateTaskStatus(task.id, e.target.value as any)}
-                            className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-brand-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                           >
                             <option value="pending">معلقة</option>
                             <option value="in_progress">قيد التنفيذ</option>
