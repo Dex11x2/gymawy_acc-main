@@ -28,10 +28,14 @@ export const isIncomingTask = (task: any, myEmpId?: string): boolean =>
 export const isSentTask = (task: any, myEmpId?: string): boolean =>
   !!myEmpId && empIdOf(task.assignedBy) === String(myEmpId);
 
-// يحتاج انتباهي: وارد لي ومعلّق/قيد التنفيذ، أو أي مهمة فيها تغيير جديد لم أشاهده
+// يحتاج انتباهي: لازم تكون مهمة ليها علاقة بيّ (واردة لي أو أرسلتها)،
+// وبعدين: واردة ومعلّقة/قيد التنفيذ، أو فيها تغيير جديد لم أشاهده.
+// بدون شرط العلاقة كانت الشارة بتعدّ مهام بين موظفين تانيين (شارة وهمية).
 export const taskNeedsAttention = (task: any, myEmpId?: string, userId?: string): boolean => {
+  const involvesMe = isIncomingTask(task, myEmpId) || isSentTask(task, myEmpId);
+  if (!involvesMe) return false;
   const activeIncoming = isIncomingTask(task, myEmpId) && (task.status === 'pending' || task.status === 'in_progress');
-  return hasUnseenTask(task, userId) || activeIncoming;
+  return activeIncoming || hasUnseenTask(task, userId);
 };
 
 export const attentionCount = (tasks: any[], myEmpId?: string, userId?: string): number =>
