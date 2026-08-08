@@ -5,6 +5,9 @@ import { usePermissions } from '../hooks/usePermissions';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { Card, Button, Avatar } from '../components/ui';
+import api from '../services/api';
+
+const REACTIONS = ['👍', '❤️', '😂', '🎉', '👏', '🔥'];
 import {
   Megaphone,
   Plus,
@@ -74,17 +77,30 @@ const Posts: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const isManager = ['dev', 'general_manager', 'administrative_manager'].includes(user?.role || '');
+  const [pollOptions, setPollOptions] = useState<string[]>([]); // خيارات الاستطلاع (فاضية = مفيش استطلاع)
+
   const [formData, setFormData] = useState({
     content: '',
     targetDepartment: ''
   });
 
+  // تحميل المنشورات من السيرفر (بتتحفظ فعلاً)
+  const loadPosts = async () => {
+    try {
+      const res = await api.get('/posts');
+      const list = (res.data || []).map((p: any) => ({ ...p, id: String(p.id || p._id) }));
+      setPosts(list);
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
-    setPosts([]);
+    loadPosts();
 
     const socket = (window as any).socket;
     if (socket) {
       socket.on('new-post', (data: any) => {
+        loadPosts();
         if (data.authorId !== user?.id) {
           addNotification({
             userId: user?.id || '',
@@ -129,7 +145,7 @@ const Posts: React.FC = () => {
     setSelectedFiles(prev => [...prev, ...Array.from(files)]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const attachments: AttachmentData[] = selectedFiles.map(file => ({
@@ -140,79 +156,57 @@ const Posts: React.FC = () => {
       size: file.size
     }));
 
-    const newPost: PostData = {
-      id: Date.now().toString(),
-      authorId: user?.id || '',
-      authorName: user?.name || '',
-      authorAvatar: user?.avatar,
-      content: formData.content,
-      targetDepartment: formData.targetDepartment || undefined,
-      likes: [],
-      comments: [],
-      images: selectedImages.length > 0 ? selectedImages : undefined,
-      attachments: attachments.length > 0 ? attachments : undefined,
-      createdAt: new Date()
-    };
+    // استطلاع رأي (لو المستخدم ضاف خيارين على الأقل)
+    const validPollOpts = pollOptions.map((t) => t.trim()).filter(Boolean);
+    const poll = validPollOpts.length >= 2
+      ? { question: formData.content, options: validPollOpts.map((text, i) => ({ id: `o${i}`, text, votes: [] })) }
+      : undefined;
 
-    savePosts([newPost, ...posts]);
-
-    addNotification({
-      userId: 'all',
-      type: 'system',
-      title: 'منشور جديد',
-      message: `${user?.name} نشر منشوراً جديداً`,
-      link: '/posts'
-    });
-
-    const socket = (window as any).socket;
-    if (socket) {
-      socket.emit('new-post', newPost);
-    }
-
-    setShowModal(false);
-    resetForm();
+    try {
+      await api.post('/posts', {
+        content: formData.content,
+        targetDepartment: formData.targetDepartment || undefined,
+        images: selectedImages.length > 0 ? selectedImages : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        poll,
+      });
+      const socket = (window as any).socket;
+      if (socket) socket.emit('new-post', { authorId: user?.id });
+      setShowModal(false);
+      resetForm();
+      await loadPosts();
+    } catch { /* ignore */ }
   };
 
   const resetForm = () => {
     setFormData({ content: '', targetDepartment: '' });
     setSelectedImages([]);
     setSelectedFiles([]);
+    setPollOptions([]);
   };
 
-  const handleLike = (postId: string) => {
-    const updated = posts.map(post => {
-      if (post.id === postId) {
-        const likes = post.likes.includes(user?.id || '')
-          ? post.likes.filter(id => id !== user?.id)
-          : [...post.likes, user?.id || ''];
-        return { ...post, likes };
-      }
-      return post;
-    });
-    savePosts(updated);
+  // تفاعل بإيموجي (متعدد)
+  const handleReact = async (postId: string, emoji: string) => {
+    try { await api.post(`/posts/${postId}/react`, { emoji }); await loadPosts(); } catch { /* ignore */ }
+    setShowEmojiPicker(null);
   };
 
-  const handleAddComment = (postId: string) => {
+  const handlePin = async (postId: string) => {
+    try { await api.post(`/posts/${postId}/pin`, {}); await loadPosts(); } catch { /* ignore */ }
+  };
+
+  const handleVote = async (postId: string, optionId: string) => {
+    try { await api.post(`/posts/${postId}/vote`, { optionId }); await loadPosts(); } catch { /* ignore */ }
+  };
+
+  const handleAddComment = async (postId: string) => {
     const comment = newComment[postId];
     if (!comment?.trim()) return;
-
-    const updated = posts.map(post => {
-      if (post.id === postId) {
-        const newCommentData: CommentData = {
-          id: Date.now().toString(),
-          authorId: user?.id || '',
-          authorName: user?.name || '',
-          authorAvatar: user?.avatar,
-          content: comment,
-          createdAt: new Date()
-        };
-        return { ...post, comments: [...post.comments, newCommentData] };
-      }
-      return post;
-    });
-
-    savePosts(updated);
-    setNewComment({ ...newComment, [postId]: '' });
+    try {
+      await api.post(`/posts/${postId}/comments`, { content: comment });
+      setNewComment({ ...newComment, [postId]: '' });
+      await loadPosts();
+    } catch { /* ignore */ }
   };
 
   const insertEmoji = (emoji: string, postId?: string) => {
@@ -300,7 +294,12 @@ const Posts: React.FC = () => {
           </Card>
         ) : (
           posts.map((post) => (
-            <Card key={post.id} className="overflow-hidden">
+            <Card key={post.id} className={`overflow-hidden ${(post as any).pinned ? 'ring-2 ring-amber-300 dark:ring-amber-500/40' : ''}`}>
+              {(post as any).pinned && (
+                <div className="bg-amber-50 dark:bg-amber-500/10 px-6 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                  📌 منشور مثبّت
+                </div>
+              )}
               {/* Post Header */}
               <div className="p-6 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center">
@@ -334,6 +333,33 @@ const Posts: React.FC = () => {
                 <p className="text-gray-800 dark:text-white text-lg leading-relaxed whitespace-pre-wrap break-words mb-4">
                   {post.content}
                 </p>
+
+                {/* استطلاع رأي */}
+                {(post as any).poll?.options?.length > 0 && (() => {
+                  const poll = (post as any).poll;
+                  const total = poll.options.reduce((s: number, o: any) => s + (o.votes?.length || 0), 0);
+                  const myVote = poll.options.find((o: any) => (o.votes || []).some((v: any) => String(v) === String(user?.id)))?.id;
+                  return (
+                    <div className="mb-4 space-y-2">
+                      {poll.options.map((o: any) => {
+                        const n = o.votes?.length || 0;
+                        const pct = total ? Math.round((n / total) * 100) : 0;
+                        const mine = myVote === o.id;
+                        return (
+                          <button key={o.id} onClick={() => handleVote(post.id, o.id)}
+                            className={`relative w-full overflow-hidden rounded-lg border text-start ${mine ? 'border-brand-400 dark:border-brand-500/50' : 'border-gray-200 dark:border-gray-700'}`}>
+                            <div className="absolute inset-y-0 start-0 bg-brand-100 dark:bg-brand-500/20 transition-all" style={{ width: `${pct}%` }} />
+                            <div className="relative flex items-center justify-between px-3 py-2.5">
+                              <span className="font-medium text-gray-800 dark:text-gray-100">{mine ? '✓ ' : ''}{o.text}</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{pct}% ({n})</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      <p className="text-xs text-gray-400">{total} صوت · اضغط للتصويت أو التغيير</p>
+                    </div>
+                  );
+                })()}
 
                 {/* Images */}
                 {post.images && post.images.length > 0 && (
@@ -372,25 +398,49 @@ const Posts: React.FC = () => {
                 )}
               </Card.Body>
 
-              {/* Actions */}
-              <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4">
-                <button
-                  onClick={() => handleLike(post.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium ${
-                    post.likes.includes(user?.id || '')
-                      ? 'bg-error-50 dark:bg-error-900/20 text-error-600 dark:text-error-400'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  <Heart className={`w-5 h-5 ${post.likes.includes(user?.id || '') ? 'fill-current' : ''}`} />
-                  <span>{post.likes.length}</span>
-                </button>
-
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all font-medium">
-                  <MessageCircle className="w-5 h-5" />
-                  <span>{post.comments.length}</span>
-                </button>
-              </div>
+              {/* Actions — تفاعلات إيموجي */}
+              {(() => {
+                const reactions: any[] = (post as any).reactions || [];
+                const myReaction = reactions.find((r) => String(r.userId) === String(user?.id))?.emoji;
+                const counts: Record<string, number> = {};
+                reactions.forEach((r) => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+                const shown = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                return (
+                  <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 flex-wrap relative">
+                    {/* عدّادات التفاعلات الظاهرة */}
+                    {shown.map(([emoji, n]) => (
+                      <button key={emoji} onClick={() => handleReact(post.id, emoji)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm transition-all ${
+                          myReaction === emoji ? 'bg-brand-50 dark:bg-brand-500/15 ring-1 ring-brand-300 dark:ring-brand-500/40' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        <span>{emoji}</span><span className="text-gray-600 dark:text-gray-300 font-medium">{n}</span>
+                      </button>
+                    ))}
+                    {/* زر إضافة تفاعل */}
+                    <div className="relative">
+                      <button onClick={() => setShowEmojiPicker(showEmojiPicker === `react-${post.id}` ? null : `react-${post.id}`)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm">
+                        <Heart className="w-4 h-4" /> تفاعل
+                      </button>
+                      {showEmojiPicker === `react-${post.id}` && (
+                        <div className="absolute bottom-full mb-2 z-20 flex gap-1 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                          {REACTIONS.map((e) => (
+                            <button key={e} onClick={() => handleReact(post.id, e)} className={`text-2xl hover:scale-125 transition-transform ${myReaction === e ? 'scale-110' : ''}`}>{e}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <span className="flex items-center gap-1 px-2 text-sm text-gray-500 dark:text-gray-400">
+                      <MessageCircle className="w-4 h-4" /> {post.comments.length}
+                    </span>
+                    {isManager && (
+                      <button onClick={() => handlePin(post.id)}
+                        className={`ml-auto flex items-center gap-1 px-3 py-1.5 rounded-full text-sm ${(post as any).pinned ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200'}`}>
+                        📌 {(post as any).pinned ? 'مثبّت' : 'تثبيت'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Comments */}
               {post.comments.length > 0 && (
@@ -498,6 +548,31 @@ const Posts: React.FC = () => {
             )}
           </div>
 
+          {/* استطلاع رأي (اختياري) */}
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">📊 استطلاع رأي (اختياري)</span>
+              {pollOptions.length === 0 ? (
+                <button type="button" onClick={() => setPollOptions(['', ''])} className="text-xs font-medium text-brand-600 dark:text-brand-400">+ إضافة استطلاع</button>
+              ) : (
+                <button type="button" onClick={() => setPollOptions([])} className="text-xs font-medium text-rose-500">إزالة</button>
+              )}
+            </div>
+            {pollOptions.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <p className="text-xs text-gray-400">نص المنشور فوق = سؤال الاستطلاع.</p>
+                {pollOptions.map((opt, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={opt} onChange={(e) => { const c = [...pollOptions]; c[i] = e.target.value; setPollOptions(c); }}
+                      placeholder={`خيار ${i + 1}`} className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                    {pollOptions.length > 2 && <button type="button" onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))} className="text-rose-500 px-2">✕</button>}
+                  </div>
+                ))}
+                {pollOptions.length < 6 && <button type="button" onClick={() => setPollOptions([...pollOptions, ''])} className="text-xs font-medium text-brand-600 dark:text-brand-400">+ خيار آخر</button>}
+              </div>
+            )}
+          </div>
+
           {/* Image Preview */}
           {selectedImages.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -594,9 +669,10 @@ const Posts: React.FC = () => {
       <ConfirmDialog
         isOpen={!!deletePostId}
         onClose={() => setDeletePostId(null)}
-        onConfirm={() => {
-          setPosts(posts.filter(p => p.id !== deletePostId));
+        onConfirm={async () => {
+          try { await api.delete(`/posts/${deletePostId}`); } catch { /* ignore */ }
           setDeletePostId(null);
+          await loadPosts();
         }}
         title="حذف المنشور"
         message="هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."

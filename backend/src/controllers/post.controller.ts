@@ -12,7 +12,7 @@ export const getAll = async (req: any, res: Response) => {
 
     const posts = await Post.find(filter)
       .populate('authorId', 'name avatar')
-      .sort({ createdAt: -1 });
+      .sort({ pinned: -1, createdAt: -1 }); // المثبّت أولاً
 
     const formattedPosts = posts.map(post => ({
       ...post.toObject(),
@@ -135,6 +135,64 @@ export const addComment = async (req: any, res: Response) => {
     res.json(post);
   } catch (error: any) {
     console.error('Add comment error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// تفاعل بإيموجي (تبديل — إيموجي واحد لكل مستخدم)
+export const react = async (req: any, res: Response) => {
+  try {
+    const { emoji } = req.body;
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    const userId = String(req.user.id || req.user._id);
+    const list: any[] = (post.reactions as any) || [];
+    const mine = list.find((r) => String(r.userId) === userId);
+    if (mine && mine.emoji === emoji) {
+      post.reactions = list.filter((r) => String(r.userId) !== userId) as any; // إلغاء
+    } else if (mine) {
+      mine.emoji = emoji; // تغيير
+    } else {
+      list.push({ userId: req.user.id || req.user._id, emoji });
+      post.reactions = list as any;
+    }
+    await post.save();
+    res.json(post);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// تثبيت/إلغاء تثبيت (المدراء فقط)
+export const togglePin = async (req: any, res: Response) => {
+  try {
+    const managerRoles = ['dev', 'general_manager', 'administrative_manager'];
+    if (!managerRoles.includes(req.user?.role)) return res.status(403).json({ message: 'المدراء فقط يقدروا يثبّتوا' });
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    post.pinned = !post.pinned;
+    await post.save();
+    res.json(post);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// التصويت في استطلاع (اختيار واحد — قابل للتبديل)
+export const votePoll = async (req: any, res: Response) => {
+  try {
+    const { optionId } = req.body;
+    const post = await Post.findById(req.params.id);
+    if (!post || !post.poll || !post.poll.options?.length) return res.status(404).json({ message: 'لا يوجد استطلاع' });
+    const userId = String(req.user.id || req.user._id);
+    post.poll.options.forEach((opt: any) => {
+      opt.votes = (opt.votes || []).filter((v: any) => String(v) !== userId); // شيل صوته من الكل
+      if (opt.id === optionId) opt.votes.push(req.user.id || req.user._id); // وحطه في المختار
+    });
+    post.markModified('poll');
+    await post.save();
+    res.json(post);
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };

@@ -12,5 +12,8 @@ router.put('/:id', controller.update);
 router.delete('/:id', controller.remove);
 router.post('/:id/like', controller.toggleLike);
 router.post('/:id/comments', controller.addComment);
+router.post('/:id/react', controller.react);
+router.post('/:id/pin', controller.togglePin);
+router.post('/:id/vote', controller.votePoll);
 
 export default router;

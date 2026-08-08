@@ -21,6 +21,12 @@ export interface IPost extends Document {
     url: string;
     size: number;
   }>;
+  reactions?: Array<{ userId: mongoose.Types.ObjectId; emoji: string }>;
+  pinned?: boolean;
+  poll?: {
+    question: string;
+    options: Array<{ id: string; text: string; votes: mongoose.Types.ObjectId[] }>;
+  } | null;
 }
 
 const PostSchema = new Schema({
@@ -44,7 +50,23 @@ const PostSchema = new Schema({
     name: { type: String, required: true },
     url: { type: String, required: true },
     size: { type: Number, required: true }
-  }]
+  }],
+  reactions: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    emoji: { type: String, required: true }
+  }],
+  pinned: { type: Boolean, default: false },
+  poll: {
+    type: {
+      question: { type: String },
+      options: [{
+        id: { type: String, required: true },
+        text: { type: String, required: true },
+        votes: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+      }]
+    },
+    default: null
+  }
 }, { timestamps: true });
 
 export default mongoose.model<IPost>('Post', PostSchema);
