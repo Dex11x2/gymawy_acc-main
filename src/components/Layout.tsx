@@ -282,7 +282,7 @@ const Layout: React.FC = () => {
     { id: 'occasions' as IconName, name: language === 'ar' ? 'المناسبات' : 'Occasions', path: '/occasions', show: true },
   ].filter(item => item.show);
 
-  const sidebarWidth = sidebarOpen ? 'w-[240px]' : 'w-[72px]';
+  const sidebarWidth = sidebarOpen ? 'w-[212px]' : 'w-[68px]';
 
   return (
     <div className="app-shell-height flex overflow-hidden">
@@ -382,7 +382,7 @@ const Layout: React.FC = () => {
                     </span>
 
                     {(sidebarOpen || isMobile) && (
-                      <span className="text-sm flex-1">{item.name}</span>
+                      <span className="text-[13px] flex-1 truncate">{item.name}</span>
                     )}
                     {/* شارة العدد عند فتح القائمة */}
                     {!!badge && badge > 0 && (sidebarOpen || isMobile) && (
